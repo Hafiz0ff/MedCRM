@@ -49,6 +49,8 @@ export function LoginForm() {
       document.cookie = `${ACCESS_TOKEN_COOKIE}=${data.accessToken}; path=/; max-age=900; samesite=lax`;
       router.replace('/dashboard');
       router.refresh();
+    } catch {
+      setError('API недоступен. Проверьте, что backend запущен.');
     } finally {
       setSubmitting(false);
     }
@@ -58,21 +60,21 @@ export function LoginForm() {
     <form className="form" onSubmit={submit}>
       <div className="field">
         <label htmlFor="tenantCode">Код клиники</label>
-        <input id="tenantCode" value={tenantCode} onChange={(event) => setTenantCode(event.target.value)} />
+        <input id="tenantCode" autoComplete="organization" value={tenantCode} onChange={(event) => setTenantCode(event.target.value)} />
       </div>
       <div className="field">
         <label htmlFor="email">Email</label>
-        <input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+        <input id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} />
       </div>
       <div className="field">
         <label htmlFor="password">Пароль</label>
-        <input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+        <input id="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} />
       </div>
       {error ? <div className="error">{error}</div> : null}
       <button className="button" type="submit" disabled={submitting}>
         {submitting ? 'Вход...' : 'Войти'}
       </button>
+      <p className="muted">Demo: demo-clinic · admin@demo.clinic</p>
     </form>
   );
 }
-

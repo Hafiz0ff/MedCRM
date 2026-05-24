@@ -4,7 +4,10 @@ import { ReactNode } from 'react';
 
 export const metadata: Metadata = {
   title: 'MedCRM',
-  description: 'Cloud-first SaaS CRM/MIS platform for clinics'
+  description: 'Cloud-first SaaS CRM/MIS platform for clinics',
+  icons: {
+    icon: '/icon.svg'
+  }
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -14,4 +17,3 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     </html>
   );
 }
-

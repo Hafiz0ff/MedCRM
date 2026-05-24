@@ -16,12 +16,11 @@ export async function getBootstrap(): Promise<BootstrapPayload | null> {
   const response = await fetch(`${apiBaseUrl()}/auth/bootstrap`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store'
-  });
+  }).catch(() => null);
 
-  if (!response.ok) {
+  if (!response?.ok) {
     return null;
   }
 
   return (await response.json()) as BootstrapPayload;
 }
-
