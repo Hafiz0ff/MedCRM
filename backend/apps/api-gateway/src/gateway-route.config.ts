@@ -39,6 +39,7 @@ const publicDomainPrefixes = [
   ['schedules', '/schedules', true],
   ['services', '/services', true],
   ['slots', '/slots', true],
+  ['system', '/system', true],
   ['waiting-list', '/waiting-list', true]
 ] satisfies Array<[string, string, boolean]>;
 

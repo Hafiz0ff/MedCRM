@@ -78,6 +78,17 @@ export class RealtimeGateway implements OnGatewayConnection {
     this.logger.debug(`Emitted ${event} for tenant=${tenantId}`);
   }
 
+  /**
+   * Broadcasts a system-administration event (settings change, module toggle,
+   * role/permission update, integration key rotation) to every socket joined
+   * to the tenant room. Used by `system-admin` services to push live config
+   * updates to all connected clients.
+   */
+  emitTenantSystemEvent(event: string, tenantId: string, payload: unknown): void {
+    this.server.to(`tenant:${tenantId}`).emit(event, payload);
+    this.logger.debug(`Emitted ${event} for tenant=${tenantId}`);
+  }
+
   private extractToken(client: Socket): string | undefined {
     const authToken = client.handshake.auth?.token;
     if (typeof authToken === 'string') return authToken;

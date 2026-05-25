@@ -30,6 +30,7 @@ describe('gateway route config', () => {
       '/api/v1/schedules',
       '/api/v1/services',
       '/api/v1/slots',
+      '/api/v1/system',
       '/api/v1/waiting-list'
     ]);
   });

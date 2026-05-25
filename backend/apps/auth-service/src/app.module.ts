@@ -19,6 +19,7 @@ import { CommunicationsModule } from './communications/communications.module';
 import { IntegrationGatewayModule } from './integration-gateway/integration.module';
 import { BusinessIntelligenceModule } from './business-intelligence/bi.module';
 import { InventoryModule } from './inventory-warehouse/inventory.module';
+import { SystemAdminModule } from './system-admin/system-admin.module';
 
 @Module({
   imports: [
@@ -38,7 +39,8 @@ import { InventoryModule } from './inventory-warehouse/inventory.module';
     CommunicationsModule,
     IntegrationGatewayModule,
     BusinessIntelligenceModule,
-    InventoryModule
+    InventoryModule,
+    SystemAdminModule
   ],
   controllers: [HealthController],
   providers: [
