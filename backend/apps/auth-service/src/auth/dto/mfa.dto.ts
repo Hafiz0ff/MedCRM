@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const MfaVerifySchema = z.object({
   mfaToken: z.string().min(1),
-  code: z.string().length(6),
+  code: z.string().min(6).max(8),
   deviceName: z.string().max(255).optional(),
 });
 

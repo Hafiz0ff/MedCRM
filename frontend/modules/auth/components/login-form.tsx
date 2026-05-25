@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { loginSchema } from '../schemas/login.schema';
+import { MfaChallenge } from './mfa-challenge';
 import { useRouter } from '@/i18n/routing';
 import { ACCESS_TOKEN_COOKIE } from '@/shared/auth/cookies';
 import { Button } from '@/shared/ui/button';
@@ -10,7 +11,9 @@ import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 
 type LoginResponse = {
-  accessToken: string;
+  accessToken?: string;
+  mfaRequired?: boolean;
+  mfaToken?: string;
 };
 
 function apiBaseUrl(): string {
@@ -25,6 +28,7 @@ export function LoginForm() {
   const [password, setPassword] = useState('Admin123!');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -51,14 +55,36 @@ export function LoginForm() {
       }
 
       const data = (await response.json()) as LoginResponse;
-      document.cookie = `${ACCESS_TOKEN_COOKIE}=${data.accessToken}; path=/; max-age=900; samesite=lax`;
-      router.replace('/dashboard');
-      router.refresh();
+
+      if (data.mfaRequired && data.mfaToken) {
+        setMfaToken(data.mfaToken);
+        return;
+      }
+
+      if (data.accessToken) {
+        handleAuthSuccess(data.accessToken);
+      }
     } catch {
       setError('API недоступен. Проверьте, что backend запущен.');
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function handleAuthSuccess(accessToken: string) {
+    document.cookie = `${ACCESS_TOKEN_COOKIE}=${accessToken}; path=/; max-age=900; samesite=lax`;
+    router.replace('/dashboard');
+    router.refresh();
+  }
+
+  if (mfaToken) {
+    return (
+      <MfaChallenge
+        mfaToken={mfaToken}
+        onSuccess={handleAuthSuccess}
+        onCancel={() => setMfaToken(null)}
+      />
+    );
   }
 
   return (

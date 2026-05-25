@@ -6,6 +6,7 @@ import {
   ScrollText,
   Settings as SettingsIcon,
   ShieldCheck,
+  Lock,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useSystemAdminRealtime } from '../hooks/use-system-realtime';
@@ -13,10 +14,11 @@ import { AuditTab } from './audit-tab';
 import { GeneralTab } from './general-tab';
 import { IntegrationsTab } from './integrations-tab';
 import { RbacTab } from './rbac-tab';
+import { SecurityTab } from './security-tab';
 import { can } from '@/shared/permissions/can';
 import { BootstrapPayload } from '@/shared/types/bootstrap';
 
-type TabKey = 'general' | 'rbac' | 'integrations' | 'audit';
+type TabKey = 'general' | 'rbac' | 'security' | 'integrations' | 'audit';
 
 type TabDef = {
   key: TabKey;
@@ -40,6 +42,13 @@ const tabs: TabDef[] = [
     icon: ShieldCheck,
     permission: 'roles.read',
     description: 'Управление ролями, матрицей прав и назначениями сотрудников',
+  },
+  {
+    key: 'security',
+    label: 'Безопасность и 2FA',
+    icon: Lock,
+    permission: 'system.settings.read',
+    description: 'Управление двухфакторной аутентификацией (2FA) и активными сессиями устройств',
   },
   {
     key: 'integrations',
@@ -115,6 +124,7 @@ export function SettingsPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
       <div className="settings-tab-panel" role="tabpanel">
         {active === 'general' && <GeneralTab bootstrap={bootstrap} />}
         {active === 'rbac' && <RbacTab bootstrap={bootstrap} />}
+        {active === 'security' && <SecurityTab bootstrap={bootstrap} />}
         {active === 'integrations' && <IntegrationsTab bootstrap={bootstrap} />}
         {active === 'audit' && <AuditTab />}
       </div>

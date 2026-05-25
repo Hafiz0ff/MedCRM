@@ -1,9 +1,9 @@
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID, randomInt } from 'node:crypto';
 import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser, JwtAccessPayload } from '@core/security/jwt-payload';
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
@@ -280,7 +280,55 @@ export class AuthService {
 
     return { count: sessions.length };
   }
+  async getActiveSessions(user: AuthenticatedUser): Promise<any[]> {
+    return this.prisma.userSession.findMany({
+      where: {
+        userId: user.userId,
+        tenantId: user.tenantId,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        deviceName: true,
+        ipAddress: true,
+        userAgent: true,
+        lastActivityAt: true,
+        createdAt: true,
+      },
+      orderBy: { lastActivityAt: 'desc' },
+    });
+  }
 
+  async revokeSessionById(
+    user: AuthenticatedUser,
+    sessionId: string,
+  ): Promise<{ success: boolean }> {
+    const session = await this.prisma.userSession.findFirst({
+      where: {
+        id: sessionId,
+        userId: user.userId,
+        tenantId: user.tenantId,
+        revokedAt: null,
+      },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Session not found or already revoked');
+    }
+
+    await this.revokeSession(sessionId);
+
+    await this.audit.log({
+      tenantId: user.tenantId,
+      userId: user.userId,
+      action: 'auth.session_revoked',
+      entityType: 'session',
+      entityId: sessionId,
+    });
+
+    return { success: true };
+  }
   async bootstrap(user: AuthenticatedUser, branchId?: string): Promise<BootstrapPayload> {
     const context = await this.buildAuthContext(user.userId, user.tenantId, branchId);
     return this.bootstrapFromIds(user.userId, user.tenantId, context);
@@ -435,16 +483,49 @@ export class AuthService {
       throw new UnauthorizedException('2FA is not enabled for this user');
     }
 
-    const isValid = verifyTOTP(dto.code, mfaSettings.secretHash);
+    let isValid = false;
+    let isBackupCodeUsed = false;
+    let updatedBackupCodes: any = null;
+
+    if (dto.code.length === 8) {
+      const hashedCodes = mfaSettings.backupCodes ? (mfaSettings.backupCodes as string[]) : [];
+      for (let i = 0; i < hashedCodes.length; i++) {
+        const match = await argon2.verify(hashedCodes[i], dto.code);
+        if (match) {
+          isValid = true;
+          isBackupCodeUsed = true;
+          hashedCodes.splice(i, 1);
+          updatedBackupCodes = hashedCodes;
+          break;
+        }
+      }
+    } else {
+      isValid = verifyTOTP(dto.code, mfaSettings.secretHash);
+    }
+
     if (!isValid) {
       await this.audit.log({
         tenantId: payload.tenant_id,
         userId: payload.sub,
-        action: 'auth.2fa.failed',
+        action: isBackupCodeUsed ? 'auth.backup_code.failed' : 'auth.2fa.failed',
         ipAddress: metadata.ipAddress,
         userAgent: this.userAgent(metadata),
       });
-      throw new UnauthorizedException('Invalid 2FA code');
+      throw new UnauthorizedException(
+        isBackupCodeUsed ? 'Invalid backup code' : 'Invalid 2FA code',
+      );
+    }
+
+    if (isBackupCodeUsed) {
+      await this.prisma.user2faSettings.update({
+        where: { userId: payload.sub },
+        data: { backupCodes: updatedBackupCodes },
+      });
+      await this.audit.log({
+        tenantId: payload.tenant_id,
+        userId: payload.sub,
+        action: 'auth.backup_code.used',
+      });
     }
 
     const context = await this.buildAuthContext(payload.sub, payload.tenant_id, payload.branch_id);
@@ -499,6 +580,13 @@ export class AuthService {
     };
   }
 
+  async getMfaStatus(user: AuthenticatedUser): Promise<{ isEnabled: boolean }> {
+    const settings = await this.prisma.user2faSettings.findUnique({
+      where: { userId: user.userId },
+    });
+    return { isEnabled: settings?.isEnabled ?? false };
+  }
+
   async enableMfa(user: AuthenticatedUser): Promise<{ secret: string; qrCodeUri: string }> {
     const secret = generateSecret();
     const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
@@ -526,7 +614,10 @@ export class AuthService {
     return { secret, qrCodeUri };
   }
 
-  async confirmMfa(user: AuthenticatedUser, dto: MfaConfirmDto): Promise<{ success: boolean }> {
+  async confirmMfa(
+    user: AuthenticatedUser,
+    dto: MfaConfirmDto,
+  ): Promise<{ success: boolean; backupCodes: string[] }> {
     const mfaSettings = await this.prisma.user2faSettings.findUnique({
       where: { userId: user.userId },
     });
@@ -540,9 +631,20 @@ export class AuthService {
       throw new UnauthorizedException('Invalid 2FA code');
     }
 
+    const plaintextBackupCodes: string[] = [];
+    const hashedBackupCodes: string[] = [];
+    for (let i = 0; i < 10; i++) {
+      const code = String(randomInt(10000000, 99999999));
+      plaintextBackupCodes.push(code);
+      hashedBackupCodes.push(await argon2.hash(code));
+    }
+
     await this.prisma.user2faSettings.update({
       where: { userId: user.userId },
-      data: { isEnabled: true },
+      data: {
+        isEnabled: true,
+        backupCodes: hashedBackupCodes,
+      },
     });
 
     await this.audit.log({
@@ -551,7 +653,7 @@ export class AuthService {
       action: 'auth.2fa.enabled',
     });
 
-    return { success: true };
+    return { success: true, backupCodes: plaintextBackupCodes };
   }
 
   async disableMfa(user: AuthenticatedUser, dto: MfaConfirmDto): Promise<{ success: boolean }> {

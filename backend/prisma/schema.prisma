@@ -249,6 +249,7 @@ model User {
   employee            Employee?
   patientNotes        PatientNote[]
   signedDocuments     PatientLegalDocument[]
+  credentials         UserCredential[]
 
   changedVisitStates AppointmentVisitState[]
   handledCalls       IncomingCall[]
@@ -357,6 +358,8 @@ model UserSession {
   expiresAt        DateTime  @map("expires_at") @db.Timestamptz(6)
   revokedAt        DateTime? @map("revoked_at") @db.Timestamptz(6)
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  mfaSatisfiedAt   DateTime? @map("mfa_satisfied_at") @db.Timestamptz(6)
+  revokedReason    String?   @map("revoked_reason") @db.VarChar(255)
 
   user   User   @relation(fields: [userId], references: [id])
   tenant Tenant @relation(fields: [tenantId], references: [id])
@@ -379,11 +382,15 @@ model AuditLog {
   userAgent     String?  @map("user_agent")
   requestId     String   @map("request_id") @db.VarChar(160)
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  prevHash      String?  @map("prev_hash") @db.VarChar(128)
+  hash          String?  @map("hash") @db.VarChar(128)
+  signature     String?  @map("signature") @db.VarChar(255)
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
   user   User?  @relation(fields: [userId], references: [id])
 
   @@index([tenantId, action, createdAt])
+  @@index([tenantId, hash])
   @@map("audit_logs")
 }
 
@@ -405,6 +412,14 @@ model Patient {
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   archivedAt           DateTime? @map("archived_at") @db.Timestamptz(6)
+  firstNameEnc         String?   @map("first_name_enc")
+  firstNameBi          String?   @map("first_name_bi") @db.VarChar(64)
+  lastNameEnc          String?   @map("last_name_enc")
+  lastNameBi           String?   @map("last_name_bi") @db.VarChar(64)
+  middleNameEnc        String?   @map("middle_name_enc")
+  middleNameBi         String?   @map("middle_name_bi") @db.VarChar(64)
+  passportNumberEnc    String?   @map("passport_number_enc")
+  passportNumberBi     String?   @map("passport_number_bi") @db.VarChar(64)
 
   tenant             Tenant           @relation(fields: [tenantId], references: [id])
   registrationBranch Branch?          @relation(fields: [registrationBranchId], references: [id])
@@ -450,6 +465,8 @@ model Patient {
   @@unique([tenantId, patientCode])
   @@index([tenantId, fullName])
   @@index([tenantId, registrationBranchId])
+  @@index([tenantId, firstNameBi])
+  @@index([tenantId, lastNameBi])
   @@map("patients")
 }
 
@@ -465,10 +482,13 @@ model PatientContact {
   comment             String?
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  valueEnc            String?  @map("value_enc")
+  valueBi             String?  @map("value_bi") @db.VarChar(64)
 
   patient Patient @relation(fields: [patientId], references: [id])
 
   @@index([tenantId, type, normalizedValueHash])
+  @@index([tenantId, valueBi])
   @@map("patient_contacts")
 }
 
@@ -3072,4 +3092,33 @@ model StockAlert {
   item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@map("stock_alerts")
+}
+
+model UserCredential {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  credentialId String    @unique @map("credential_id")
+  publicKey    Bytes     @map("public_key")
+  counter      Int       @default(0)
+  transports   String[]  @map("transports")
+  deviceName   String?   @map("device_name")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastUsedAt   DateTime? @map("last_used_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_credentials")
+}
+
+model EncryptionKey {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  version      Int
+  encryptedDek Bytes     @map("encrypted_dek")
+  state        String    @db.VarChar(20) // active | retired
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  retiredAt    DateTime? @map("retired_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, version])
+  @@map("encryption_keys")
 }

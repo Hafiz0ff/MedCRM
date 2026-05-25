@@ -12,6 +12,8 @@ import {
   Res,
   UseGuards,
   UsePipes,
+  Delete,
+  Param,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
@@ -60,6 +62,14 @@ export class AuthController {
     });
     this.auth.attachRefreshCookie(response, result.refreshToken!);
     return { accessToken: result.accessToken, bootstrap: result.bootstrap };
+  }
+
+  @Get('2fa/status')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get 2FA status for current user' })
+  async getMfaStatus(@CurrentUser() user: AuthenticatedUser) {
+    return this.auth.getMfaStatus(user);
   }
 
   @Post('2fa/enable')
@@ -123,6 +133,22 @@ export class AuthController {
   @ApiOperation({ summary: 'Revoke all active sessions for current user except the current one' })
   async revokeAllOtherSessions(@CurrentUser() user: AuthenticatedUser) {
     return this.auth.revokeAllOtherSessions(user);
+  }
+
+  @Get('sessions')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'List all active sessions for current user' })
+  async getActiveSessions(@CurrentUser() user: AuthenticatedUser) {
+    return this.auth.getActiveSessions(user);
+  }
+
+  @Delete('sessions/:id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Revoke a specific active session by ID' })
+  async revokeSessionById(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.auth.revokeSessionById(user, id);
   }
 
   @Get('bootstrap')

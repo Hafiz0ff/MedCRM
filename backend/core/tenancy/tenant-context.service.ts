@@ -14,6 +14,7 @@ export class TenantContextService {
         tenantId: context.tenantId,
         tenantCode: context.tenantCode,
         branchId: context.branchId,
+        userId: context.userId,
       },
       callback,
     );
@@ -21,5 +22,19 @@ export class TenantContextService {
 
   get(): TenantContextValue {
     return this.storage.getStore() ?? { requestId: randomUUID() };
+  }
+
+  setTenantId(tenantId: string): void {
+    const store = this.storage.getStore();
+    if (store) {
+      store.tenantId = tenantId;
+    }
+  }
+
+  setUserId(userId: string): void {
+    const store = this.storage.getStore();
+    if (store) {
+      store.userId = userId;
+    }
   }
 }

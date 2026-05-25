@@ -1,5 +1,6 @@
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser, JwtAccessPayload } from '@core/security/jwt-payload';
+import { TenantContextService } from '@core/tenancy/tenant-context.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
@@ -10,6 +11,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
     config: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly tenantContext: TenantContextService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -19,6 +21,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: JwtAccessPayload): Promise<AuthenticatedUser> {
+    // Populate request context store for Prisma RLS
+    this.tenantContext.setTenantId(payload.tenant_id);
+    this.tenantContext.setUserId(payload.sub);
+
     const session = await this.prisma.userSession.findUnique({
       where: { id: payload.session_id },
       select: { revokedAt: true, expiresAt: true },

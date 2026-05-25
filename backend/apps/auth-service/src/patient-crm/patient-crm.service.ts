@@ -2,6 +2,13 @@ import { createHash } from 'node:crypto';
 import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { PrismaService } from '@core/database/prisma.service';
+import {
+  normalizeName,
+  normalizePhone,
+  normalizePassport,
+  computeBlindIndex,
+} from '@core/security/blind-index';
+import { EncryptionService } from '@core/security/encryption.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
 import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -31,10 +38,11 @@ export class PatientCrmService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditLoggerService,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly encryption: EncryptionService,
   ) {}
 
   async list(user: AuthenticatedUser, query: PatientListQuery) {
-    const where = this.buildWhere(user, query);
+    const where = await this.buildWhere(user, query);
     const [items, total] = await Promise.all([
       this.prisma.patient.findMany({
         where,
@@ -166,8 +174,45 @@ export class PatientCrmService {
     return patient;
   }
 
-  private buildWhere(user: AuthenticatedUser, query: PatientListQuery) {
+  private async buildWhere(user: AuthenticatedUser, query: PatientListQuery) {
     if (query.branchId) this.assertBranchAccess(user, query.branchId);
+
+    const searchConditions: any[] = [];
+    if (query.q) {
+      const { dek } = await this.encryption.getOrCreateTenantDek(user.tenantId);
+
+      const isDigits = /^\+?[0-9\s\-()]+$/.test(query.q);
+      if (isDigits && query.q.replace(/\D/g, '').length >= 3) {
+        const phoneBi = computeBlindIndex(normalizePhone(query.q), dek);
+        searchConditions.push({
+          contacts: {
+            some: { valueBi: phoneBi },
+          },
+        });
+      } else {
+        const isCode = /^P-\d+$/i.test(query.q.trim()) || /^[a-fA-F0-9-]{36}$/.test(query.q.trim());
+        if (isCode) {
+          searchConditions.push({
+            patientCode: { contains: query.q.trim(), mode: 'insensitive' as const },
+          });
+        } else {
+          const tokens = query.q.trim().split(/\s+/).map(normalizeName);
+          const tokenConditions = tokens.map((token) => {
+            const bi = computeBlindIndex(token, dek);
+            return {
+              OR: [
+                { firstNameBi: bi },
+                { lastNameBi: bi },
+                { middleNameBi: bi },
+                { passportNumberBi: bi },
+              ],
+            };
+          });
+          searchConditions.push({ AND: tokenConditions });
+        }
+      }
+    }
+
     return {
       tenantId: user.tenantId,
       archivedAt: null,
@@ -179,35 +224,39 @@ export class PatientCrmService {
             ? [{ registrationBranchId: query.branchId }]
             : [{ registrationBranchId: null }, { registrationBranchId: { in: user.branchIds } }],
         },
-        ...(query.q
-          ? [
-              {
-                OR: [
-                  { fullName: { contains: query.q, mode: 'insensitive' as const } },
-                  { patientCode: { contains: query.q, mode: 'insensitive' as const } },
-                  {
-                    contacts: {
-                      some: { value: { contains: query.q, mode: 'insensitive' as const } },
-                    },
-                  },
-                ],
-              },
-            ]
-          : []),
+        ...searchConditions,
       ],
     };
   }
 
   private async findDuplicateCandidates(user: AuthenticatedUser, q: string) {
-    const normalized = this.normalize(q);
-    const hash = this.hash(normalized);
+    const { dek } = await this.encryption.getOrCreateTenantDek(user.tenantId);
+
+    const isPhone = /^\+?[0-9\s\-()]+$/.test(q);
+    if (isPhone) {
+      const phoneBi = computeBlindIndex(normalizePhone(q), dek);
+      return this.prisma.patient.findMany({
+        where: {
+          tenantId: user.tenantId,
+          contacts: { some: { valueBi: phoneBi } },
+        },
+        include: { contacts: true },
+        take: 5,
+      });
+    }
+
+    const tokens = q.trim().split(/\s+/).map(normalizeName);
+    const tokenConditions = tokens.map((token) => {
+      const bi = computeBlindIndex(token, dek);
+      return {
+        OR: [{ firstNameBi: bi }, { lastNameBi: bi }, { middleNameBi: bi }],
+      };
+    });
+
     return this.prisma.patient.findMany({
       where: {
         tenantId: user.tenantId,
-        OR: [
-          { fullName: { contains: q, mode: 'insensitive' } },
-          { contacts: { some: { normalizedValueHash: hash } } },
-        ],
+        AND: tokenConditions,
       },
       include: { contacts: true },
       take: 5,
