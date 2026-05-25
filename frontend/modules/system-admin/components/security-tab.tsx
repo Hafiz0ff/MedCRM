@@ -309,7 +309,7 @@ export function SecurityTab({ bootstrap }: { bootstrap: BootstrapPayload }) {
                   </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-6 items-center justify-center p-4 bg-white dark:bg-zinc-900 rounded-lg border border-border/40">
+                <div className="flex flex-col md:flex-row gap-6 items-center justify-center p-4 bg-surface rounded-lg border border-border/40">
                   {qrCodeUri && (
                     <img
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=180&data=${encodeURIComponent(qrCodeUri)}`}

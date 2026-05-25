@@ -368,8 +368,9 @@ export function PatientsPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                                 key={t.tag.id}
                                 className="status-badge"
                                 style={{
-                                  background: t.tag.color || 'var(--surface-soft)',
-                                  color: '#1e293b',
+                                  background: 'var(--surface)',
+                                  borderColor: t.tag.color || 'var(--line)',
+                                  color: 'var(--ink)',
                                   fontSize: '10px',
                                   padding: '1px 6px',
                                   fontWeight: 'bold',

@@ -66,3 +66,30 @@ export const ChatbotWebhookSchema = z.object({
   externalMessageId: z.string().optional(),
 });
 export type ChatbotWebhookDto = z.infer<typeof ChatbotWebhookSchema>;
+
+export const UpdateNotificationRuleSchema = z.object({
+  ruleName: z.string().min(1).max(255).optional(),
+  templateId: z.string().uuid().optional(),
+  delayMinutes: z.number().min(0).optional(),
+  isActive: z.boolean().optional(),
+  conditionsJson: z.any().optional().nullable(),
+});
+export type UpdateNotificationRuleDto = z.infer<typeof UpdateNotificationRuleSchema>;
+
+export const ConfigureChannelSchema = z.object({
+  channelType: z.enum(['TELEGRAM', 'WHATSAPP', 'SMS', 'EMAIL', 'INTERNAL', 'WEBCHAT']),
+  providerCode: z.string().min(1).max(80),
+  configurationJson: z.any(),
+  isActive: z.boolean().optional().default(true),
+});
+export type ConfigureChannelDto = z.infer<typeof ConfigureChannelSchema>;
+
+export const ConfigureSmsProviderSchema = z.object({
+  providerCode: z.string().min(1).max(80),
+  providerName: z.string().min(1).max(120),
+  apiCredentialsJson: z.any(),
+  senderName: z.string().min(1).max(80),
+  dailyLimit: z.number().min(0).optional().default(1000),
+  isActive: z.boolean().optional().default(true),
+});
+export type ConfigureSmsProviderDto = z.infer<typeof ConfigureSmsProviderSchema>;

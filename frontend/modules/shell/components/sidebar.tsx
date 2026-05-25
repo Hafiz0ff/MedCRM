@@ -11,6 +11,7 @@ import {
   UserRoundCheck,
   Users,
   WalletCards,
+  MessageSquare,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { Link, usePathname } from '@/i18n/routing';
@@ -58,6 +59,14 @@ const navItems: NavItem[] = [
     permission: 'patients.read',
     group: 'Рабочая зона',
     icon: Users,
+  },
+  {
+    href: '/communications',
+    label: 'Рассылки',
+    module: 'communications',
+    permission: 'communications.rule.manage',
+    group: 'Управление',
+    icon: MessageSquare,
   },
   {
     href: '/finance',

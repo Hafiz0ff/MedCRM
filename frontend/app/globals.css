@@ -1,17 +1,41 @@
 @import 'tailwindcss';
 
 @theme inline {
+  --color-transparent: transparent;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
   --color-brand-50: #e7f8f5;
   --color-brand-100: #bff0e8;
   --color-brand-300: #7fdcca;
+  --color-brand: var(--brand);
   --color-brand-500: #3fb9a3;
   --color-brand-600: #079685;
   --color-brand-700: #04786b;
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
 
   --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-surface-soft: var(--surface-soft);
+  --color-surface-muted: var(--surface-muted);
   --color-ink: var(--ink);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
   --color-line: var(--line);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-violet: var(--violet);
+  --color-violet-soft: var(--violet-soft);
 
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'SFMono-Regular', Consolas, monospace;
@@ -44,6 +68,7 @@
   --brand: #079685;
   --brand-strong: #04786b;
   --brand-soft: #e7f8f5;
+  --brand-contrast: #052c28;
   --info: #2563eb;
   --info-soft: #eff6ff;
   --success: #15803d;
@@ -77,6 +102,7 @@
   --brand: #3fb9a3;
   --brand-strong: #7fdcca;
   --brand-soft: rgba(7, 150, 133, 0.15);
+  --brand-contrast: #06201d;
   --info: #3b82f6;
   --info-soft: rgba(37, 99, 235, 0.15);
   --success: #22c55e;
@@ -85,7 +111,7 @@
   --warning-soft: rgba(180, 83, 9, 0.15);
   --danger: #ef4444;
   --danger-soft: rgba(180, 35, 24, 0.15);
-  --violet: #8b5cf6;
+  --violet: #a78bfa;
   --violet-soft: rgba(109, 40, 217, 0.15);
   --shadow-sm: 0 8px 22px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 18px 48px rgba(0, 0, 0, 0.4);
@@ -109,6 +135,7 @@
   --brand: #ffff00;
   --brand-strong: #ffff00;
   --brand-soft: rgba(255, 255, 0, 0.2);
+  --brand-contrast: #000000;
   --info: #00ffff;
   --info-soft: rgba(0, 255, 255, 0.2);
   --success: #00ff00;
@@ -175,8 +202,82 @@ button {
   color: inherit;
 }
 
+button.text-white,
+a.text-white,
+.bg-brand.text-white {
+  color: var(--brand-contrast);
+}
+
+.bg-danger.text-white {
+  color: #ffffff;
+}
+
 svg {
   flex: 0 0 auto;
+}
+
+.bg-brand {
+  background-color: var(--brand);
+}
+
+.bg-brand-strong {
+  background-color: var(--brand-strong);
+}
+
+.bg-surface {
+  background-color: var(--surface);
+}
+
+.bg-surface-soft {
+  background-color: var(--surface-soft);
+}
+
+.bg-surface-muted {
+  background-color: var(--surface-muted);
+}
+
+.text-white {
+  color: #ffffff;
+}
+
+.text-ink {
+  color: var(--ink);
+}
+
+.text-muted {
+  color: var(--muted);
+}
+
+.text-brand {
+  color: var(--brand);
+}
+
+.text-brand-strong {
+  color: var(--brand-strong);
+}
+
+.text-danger {
+  color: var(--danger);
+}
+
+.border-border {
+  border-color: var(--border);
+}
+
+.hover\:bg-brand-strong:hover {
+  background-color: var(--brand-strong);
+}
+
+.hover\:bg-surface-soft:hover {
+  background-color: var(--surface-soft);
+}
+
+.hover\:text-ink:hover {
+  color: var(--ink);
+}
+
+.hover\:text-brand-strong:hover {
+  color: var(--brand-strong);
 }
 
 .muted {
@@ -279,7 +380,7 @@ svg {
   align-items: center;
   min-height: 100svh;
   padding: 36px;
-  background: rgba(248, 250, 252, 0.94);
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
 }
 
 .auth-panel {
@@ -288,7 +389,7 @@ svg {
   padding: 30px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
   box-shadow: var(--shadow-md);
 }
 
@@ -333,7 +434,7 @@ svg {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px 12px;
-  background: #ffffff;
+  background: var(--surface);
   color: var(--text);
   outline: 0;
   transition:
@@ -375,7 +476,7 @@ svg {
 
 .button {
   background: var(--brand);
-  color: #ffffff;
+  color: var(--brand-contrast);
 }
 
 .button:hover {
@@ -384,7 +485,7 @@ svg {
 
 .secondary-button {
   border-color: var(--line);
-  background: #ffffff;
+  background: var(--surface);
   color: var(--text);
 }
 
@@ -404,7 +505,7 @@ svg {
   width: 38px;
   padding: 0;
   border-color: var(--line);
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .button:disabled,
@@ -582,7 +683,7 @@ svg {
   margin: 0 -28px 28px;
   padding: 0 28px;
   border-bottom: 1px solid var(--line);
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .topbar-left,
@@ -617,7 +718,7 @@ svg {
   min-height: 34px;
   padding: 0;
   border-color: var(--line);
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .tenant-context strong {
@@ -640,7 +741,7 @@ svg {
   min-height: 36px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--surface);
   padding: 0 12px;
   color: var(--muted);
   box-shadow: 0 1px 0 rgba(16, 24, 40, 0.02);
@@ -696,7 +797,8 @@ svg {
   min-height: 32px;
   padding: 6px 10px;
   border-radius: 999px;
-  background: var(--success-soft);
+  border: 1px solid color-mix(in srgb, var(--success) 42%, transparent);
+  background: var(--surface);
   color: var(--success);
   font-size: 13px;
   font-weight: 800;
@@ -844,7 +946,7 @@ svg {
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .operations-row strong {
@@ -1021,7 +1123,7 @@ svg {
 }
 
 .segmented button.active {
-  background: #ffffff;
+  background: var(--surface);
   color: var(--brand-strong);
   box-shadow: 0 1px 4px rgba(16, 24, 40, 0.08);
 }
@@ -1050,7 +1152,7 @@ svg {
 }
 
 .data-table tr:hover td {
-  background: #fbfdff;
+  background: var(--surface-soft);
 }
 
 .data-table tr:last-child td {
@@ -1070,8 +1172,9 @@ svg {
   height: 36px;
   place-items: center;
   border-radius: 10px;
-  background: var(--brand-soft);
-  color: var(--brand-strong);
+  border: 1px solid color-mix(in srgb, var(--brand) 42%, transparent);
+  background: var(--surface);
+  color: var(--brand);
   font-size: 13px;
   font-weight: 850;
 }
@@ -1094,39 +1197,46 @@ svg {
   min-height: 24px;
   border-radius: 999px;
   padding: 4px 9px;
-  background: #eef2f7;
-  color: #344054;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
   font-size: 12px;
   font-weight: 800;
 }
 
 .status-neutral {
-  background: #eef2f7;
-  color: #344054;
+  border-color: var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .status-info {
-  background: var(--info-soft);
-  color: #1d4ed8;
+  border-color: color-mix(in srgb, var(--info) 42%, transparent);
+  background: var(--surface);
+  color: var(--info);
 }
 
 .status-success {
-  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 42%, transparent);
+  background: var(--surface);
   color: var(--success);
 }
 
 .status-warning {
-  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning) 42%, transparent);
+  background: var(--surface);
   color: var(--warning);
 }
 
 .status-danger {
-  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 42%, transparent);
+  background: var(--surface);
   color: var(--danger);
 }
 
 .status-violet {
-  background: var(--violet-soft);
+  border-color: color-mix(in srgb, var(--violet) 42%, transparent);
+  background: var(--surface);
   color: var(--violet);
 }
 
@@ -1153,7 +1263,7 @@ svg {
   border: 1px solid var(--line);
   border-radius: 9px;
   padding: 12px;
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .row:hover {
@@ -1191,7 +1301,7 @@ svg {
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: linear-gradient(135deg, #ffffff, #f7fbfa);
+  background: linear-gradient(135deg, var(--surface), var(--surface-soft));
 }
 
 .patient-identity {
@@ -1262,7 +1372,7 @@ svg {
   min-height: 70px;
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  background: #ffffff;
+  background: var(--surface);
   padding: 10px;
 }
 
@@ -1345,7 +1455,7 @@ svg {
   margin-bottom: 8px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #ffffff;
+  background: var(--surface);
   padding: 11px;
   cursor: grab;
   transition:
@@ -1419,7 +1529,7 @@ svg {
   min-height: 70px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #ffffff;
+  background: var(--surface);
   padding: 14px;
 }
 
@@ -1430,12 +1540,12 @@ svg {
 
 .finance-shift-card.is-open {
   border-color: rgba(21, 128, 61, 0.24);
-  background: linear-gradient(135deg, #ffffff, var(--success-soft));
+  background: linear-gradient(135deg, var(--surface), var(--success-soft));
 }
 
 .finance-shift-card.is-locked {
   border-color: rgba(180, 35, 24, 0.24);
-  background: linear-gradient(135deg, #ffffff, var(--danger-soft));
+  background: linear-gradient(135deg, var(--surface), var(--danger-soft));
 }
 
 .finance-shift-icon {
@@ -1597,7 +1707,7 @@ svg {
   min-height: 40px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--surface);
   color: var(--text);
   cursor: pointer;
   font-weight: 750;
@@ -2393,8 +2503,9 @@ svg {
   gap: 6px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: var(--brand-soft);
-  color: var(--brand-strong);
+  border: 1px solid color-mix(in srgb, var(--brand) 42%, transparent);
+  background: var(--surface);
+  color: var(--brand);
   font-size: 12px;
   font-weight: 700;
 }

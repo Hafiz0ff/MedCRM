@@ -10,6 +10,7 @@ import {
   Param,
   Post,
   Put,
+  Delete,
   UseGuards,
   UsePipes,
   ForbiddenException,
@@ -37,6 +38,12 @@ import {
   UpdatePreferencesDto,
   ChatbotWebhookSchema,
   ChatbotWebhookDto,
+  UpdateNotificationRuleSchema,
+  UpdateNotificationRuleDto,
+  ConfigureChannelSchema,
+  ConfigureChannelDto,
+  ConfigureSmsProviderSchema,
+  ConfigureSmsProviderDto,
 } from './dto/communications.dto';
 
 @ApiTags('communications')
@@ -174,5 +181,57 @@ export class CommunicationsController {
     if (!phone || !text) throw new BadRequestException('Invalid SMS webhook payload');
 
     return this.comms.handleInboundMessage(user.tenantId, phone, 'SMS', text);
+  }
+
+  @Get('rules')
+  @RequirePermissions('communications.rule.manage')
+  getNotificationRules(@CurrentUser() user: AuthenticatedUser) {
+    return this.comms.getNotificationRules(user);
+  }
+
+  @Put('rules/:id')
+  @RequirePermissions('communications.rule.manage')
+  @UsePipes(new ZodValidationPipe(UpdateNotificationRuleSchema))
+  updateNotificationRule(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateNotificationRuleDto,
+  ) {
+    return this.comms.updateNotificationRule(user, id, dto);
+  }
+
+  @Delete('rules/:id')
+  @RequirePermissions('communications.rule.manage')
+  deleteNotificationRule(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.comms.deleteNotificationRule(user, id);
+  }
+
+  @Get('channels')
+  @RequirePermissions('communications.rule.manage')
+  getChannels(@CurrentUser() user: AuthenticatedUser) {
+    return this.comms.getChannels(user);
+  }
+
+  @Post('channels')
+  @RequirePermissions('communications.rule.manage')
+  @UsePipes(new ZodValidationPipe(ConfigureChannelSchema))
+  configureChannel(@CurrentUser() user: AuthenticatedUser, @Body() dto: ConfigureChannelDto) {
+    return this.comms.configureChannel(user, dto);
+  }
+
+  @Get('sms-providers')
+  @RequirePermissions('communications.rule.manage')
+  getSmsProviders(@CurrentUser() user: AuthenticatedUser) {
+    return this.comms.getSmsProviders(user);
+  }
+
+  @Post('sms-providers')
+  @RequirePermissions('communications.rule.manage')
+  @UsePipes(new ZodValidationPipe(ConfigureSmsProviderSchema))
+  configureSmsProvider(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ConfigureSmsProviderDto,
+  ) {
+    return this.comms.configureSmsProvider(user, dto);
   }
 }

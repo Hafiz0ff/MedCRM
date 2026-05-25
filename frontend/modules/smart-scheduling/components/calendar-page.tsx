@@ -459,12 +459,12 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                                 height: '100%',
                                 minHeight: '44px',
                                 borderRadius: '4px',
-                                border: '1px dashed transparent',
+                                border: '1px dashed var(--line)',
                                 display: 'grid',
                                 placeItems: 'center',
                                 padding: 0,
                                 fontSize: '11px',
-                                color: 'transparent',
+                                color: 'var(--muted)',
                                 cursor: 'pointer',
                                 transition: 'all 0.15s ease',
                               }}
@@ -474,8 +474,8 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                                 e.currentTarget.style.background = 'var(--surface-soft)';
                               }}
                               onMouseLeave={(e) => {
-                                e.currentTarget.style.borderColor = 'transparent';
-                                e.currentTarget.style.color = 'transparent';
+                                e.currentTarget.style.borderColor = 'var(--line)';
+                                e.currentTarget.style.color = 'var(--muted)';
                                 e.currentTarget.style.background = 'transparent';
                               }}
                               type="button"

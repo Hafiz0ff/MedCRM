@@ -143,6 +143,7 @@ model Tenant {
   inventoryConsumptions InventoryConsumption[]
   stockAlertRules       StockAlertRule[]
   stockAlerts           StockAlert[]
+  integrationOutboxes   IntegrationOutbox[]
 
   @@map("tenants")
 }
@@ -3121,4 +3122,24 @@ model EncryptionKey {
 
   @@unique([tenantId, version])
   @@map("encryption_keys")
+}
+
+model IntegrationOutbox {
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  eventType     String    @map("event_type") @db.VarChar(120)
+  aggregateType String    @map("aggregate_type") @db.VarChar(120)
+  aggregateId   String    @map("aggregate_id") @db.Uuid
+  payloadJson   Json      @map("payload_json")
+  scheduledAt   DateTime  @default(now()) @map("scheduled_at") @db.Timestamptz(6)
+  attemptCount  Int       @default(0) @map("attempt_count")
+  lastError     String?   @map("last_error")
+  processedAt   DateTime? @map("processed_at") @db.Timestamptz(6)
+  state         String    @default("PENDING") @db.VarChar(20) // PENDING | IN_PROGRESS | DONE | FAILED
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([state, scheduledAt])
+  @@index([tenantId, aggregateType, aggregateId])
+  @@map("integration_outbox")
 }

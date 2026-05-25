@@ -17,6 +17,9 @@ import {
   CreateNotificationRuleDto,
   CreateCampaignDto,
   UpdatePreferencesDto,
+  UpdateNotificationRuleDto,
+  ConfigureChannelDto,
+  ConfigureSmsProviderDto,
 } from './dto/communications.dto';
 
 @Injectable()
@@ -73,6 +76,11 @@ export class CommunicationsService {
       where: { tenantId, normalizedValueHash: phoneHash },
       include: { patient: true },
     });
+
+    console.log('[DEBUG-CHATBOT] phoneOrSocialId:', phoneOrSocialId);
+    console.log('[DEBUG-CHATBOT] calculated hash:', phoneHash);
+    console.log('[DEBUG-CHATBOT] contact found:', contact ? 'YES' : 'NO');
+    if (contact) console.log('[DEBUG-CHATBOT] contact patientId:', contact.patientId);
 
     let patientId: string;
     let isNewLead = false;
@@ -181,11 +189,10 @@ export class CommunicationsService {
     // 5. Audit Log Inbound message
     await this.audit.log({
       tenantId,
-      userId: patientId, // Sender context
       action: 'message.received',
       entityType: 'message',
       entityId: message.id,
-      newValuesJson: message,
+      newValuesJson: message as any,
     });
 
     // 6. Push to Chatbot Engine for automated event-driven processing
@@ -578,9 +585,20 @@ export class CommunicationsService {
 
     // Find the latest pending appointment to confirm or cancel
     const app = await this.prisma.appointment.findFirst({
-      where: { tenantId, patientId, status: { in: ['SCHEDULED', 'CHECKED_IN'] } },
+      where: { tenantId, patientId, status: { in: ['SCHEDULED', 'CHECKED_IN', 'CONFIRMED'] } },
       orderBy: { startAt: 'desc' },
     });
+
+    console.log(
+      '[DEBUG-CHATBOT] processChatbotFlow trigger input:',
+      normalizedInput,
+      'patientId:',
+      patientId,
+    );
+    console.log(
+      '[DEBUG-CHATBOT] latest pending appointment:',
+      app ? `${app.id} status ${app.status}` : 'NONE',
+    );
 
     if (!app) return;
 
@@ -951,5 +969,158 @@ export class CommunicationsService {
     });
 
     return pref;
+  }
+
+  async getNotificationRules(user: AuthenticatedUser) {
+    return this.prisma.notificationRule.findMany({
+      where: { tenantId: user.tenantId },
+      include: { template: true },
+    });
+  }
+
+  async updateNotificationRule(
+    user: AuthenticatedUser,
+    id: string,
+    dto: UpdateNotificationRuleDto,
+  ) {
+    const rule = await this.prisma.notificationRule.findUnique({ where: { id } });
+    if (!rule) throw new NotFoundException('Правило не найдено');
+    if (rule.tenantId !== user.tenantId) throw new ForbiddenException();
+
+    const updated = await this.prisma.notificationRule.update({
+      where: { id },
+      data: {
+        ruleName: dto.ruleName,
+        templateId: dto.templateId,
+        delayMinutes: dto.delayMinutes,
+        isActive: dto.isActive,
+        conditionsJson: dto.conditionsJson !== undefined ? dto.conditionsJson : undefined,
+      },
+    });
+
+    await this.audit.log({
+      tenantId: user.tenantId,
+      userId: user.userId,
+      action: 'rule.updated',
+      entityType: 'notification_rule',
+      entityId: id,
+      oldValuesJson: rule,
+      newValuesJson: updated,
+    });
+
+    return updated;
+  }
+
+  async deleteNotificationRule(user: AuthenticatedUser, id: string) {
+    const rule = await this.prisma.notificationRule.findUnique({ where: { id } });
+    if (!rule) throw new NotFoundException('Правило не найдено');
+    if (rule.tenantId !== user.tenantId) throw new ForbiddenException();
+
+    await this.prisma.notificationRule.delete({ where: { id } });
+
+    await this.audit.log({
+      tenantId: user.tenantId,
+      userId: user.userId,
+      action: 'rule.deleted',
+      entityType: 'notification_rule',
+      entityId: id,
+      oldValuesJson: rule,
+    });
+
+    return { ok: true };
+  }
+
+  async getChannels(user: AuthenticatedUser) {
+    return this.prisma.communicationChannel.findMany({
+      where: { tenantId: user.tenantId },
+    });
+  }
+
+  async configureChannel(user: AuthenticatedUser, dto: ConfigureChannelDto) {
+    const existing = await this.prisma.communicationChannel.findFirst({
+      where: { tenantId: user.tenantId, channelType: dto.channelType },
+    });
+
+    let channel;
+    if (existing) {
+      channel = await this.prisma.communicationChannel.update({
+        where: { id: existing.id },
+        data: {
+          providerCode: dto.providerCode,
+          configurationJson: dto.configurationJson || {},
+          isActive: dto.isActive,
+        },
+      });
+    } else {
+      channel = await this.prisma.communicationChannel.create({
+        data: {
+          tenantId: user.tenantId,
+          channelType: dto.channelType,
+          providerCode: dto.providerCode,
+          configurationJson: dto.configurationJson || {},
+          isActive: dto.isActive ?? true,
+        },
+      });
+    }
+
+    await this.audit.log({
+      tenantId: user.tenantId,
+      userId: user.userId,
+      action: 'channel.configured',
+      entityType: 'communication_channel',
+      entityId: channel.id,
+      newValuesJson: channel,
+    });
+
+    return channel;
+  }
+
+  async getSmsProviders(user: AuthenticatedUser) {
+    return this.prisma.smsProvider.findMany({
+      where: { tenantId: user.tenantId },
+    });
+  }
+
+  async configureSmsProvider(user: AuthenticatedUser, dto: ConfigureSmsProviderDto) {
+    const existing = await this.prisma.smsProvider.findFirst({
+      where: { tenantId: user.tenantId, providerCode: dto.providerCode },
+    });
+
+    let provider;
+    if (existing) {
+      provider = await this.prisma.smsProvider.update({
+        where: { id: existing.id },
+        data: {
+          providerName: dto.providerName,
+          apiCredentialsJson: dto.apiCredentialsJson || {},
+          senderName: dto.senderName,
+          dailyLimit: dto.dailyLimit,
+          isActive: dto.isActive,
+        },
+      });
+    } else {
+      provider = await this.prisma.smsProvider.create({
+        data: {
+          tenantId: user.tenantId,
+          providerCode: dto.providerCode,
+          providerName: dto.providerName,
+          apiCredentialsJson: dto.apiCredentialsJson || {},
+          senderName: dto.senderName,
+          dailyLimit: dto.dailyLimit ?? 1000,
+          isActive: dto.isActive ?? true,
+        },
+      });
+    }
+
+    await this.audit.log({
+      tenantId: user.tenantId,
+      userId: user.userId,
+      action: 'sms_provider.configured',
+      entityType: 'sms_provider',
+      entityId: provider.id,
+      newValuesJson: provider,
+    });
+
+    return provider;
   }
 }
