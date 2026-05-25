@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Patch, Query, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Get, Header, Param, Post, Put, Patch, Query, UseGuards, UsePipes } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
@@ -9,6 +9,8 @@ import { ModuleEnabledGuard } from '../auth/guards/module-enabled.guard';
 import { RbacGuard } from '../auth/guards/rbac.guard';
 import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { EmrService } from './emr.service';
+import { FhirExportService } from './fhir/fhir-export.service';
+import { FhirExportQueryDto, FhirExportQuerySchema } from './dto/fhir-export.dto';
 import {
   UpdateMedicalRecordSchema,
   UpdateMedicalRecordDto,
@@ -36,7 +38,10 @@ import {
 @RequireModule('emr-ehr')
 @Controller('emr')
 export class EmrController {
-  constructor(private readonly emr: EmrService) {}
+  constructor(
+    private readonly emr: EmrService,
+    private readonly fhirExport: FhirExportService
+  ) {}
 
   @Get('medical-records/patient/:patientId')
   @RequirePermissions('emr.records.read')
@@ -174,20 +179,36 @@ export class EmrController {
 
   // FHIR Export Endpoints
   @Get('fhir/Patient/:id')
+  @Header('Content-Type', 'application/fhir+json')
   @RequirePermissions('emr.fhir.read')
   fhirExportPatient(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.emr.fhirExportPatient(user, id);
   }
 
   @Get('fhir/Encounter/:id')
+  @Header('Content-Type', 'application/fhir+json')
   @RequirePermissions('emr.fhir.read')
   fhirExportEncounter(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.emr.fhirExportEncounter(user, id);
   }
 
   @Get('fhir/Observation/:id')
+  @Header('Content-Type', 'application/fhir+json')
   @RequirePermissions('emr.fhir.read')
   fhirExportObservation(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.emr.fhirExportObservation(user, id);
+  }
+
+  // FHIR R4 Bundle export — aggregates Patient, Encounter, Condition,
+  // MedicationRequest, and Observation resources for a single patient.
+  @Get('fhir/Bundle/Patient/:patientId')
+  @Header('Content-Type', 'application/fhir+json')
+  @RequirePermissions('emr.fhir.read')
+  fhirExportPatientBundle(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('patientId') patientId: string,
+    @Query(new ZodValidationPipe(FhirExportQuerySchema)) query: FhirExportQueryDto
+  ) {
+    return this.fhirExport.exportPatientBundle(user, patientId, query);
   }
 }
