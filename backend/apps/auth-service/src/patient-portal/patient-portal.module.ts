@@ -1,3 +1,4 @@
+import { AuditModule } from '@core/audit/audit.module';
 import { CoreCommunicationsModule } from '@core/communications/core-communications.module';
 import { QueueModule } from '@core/queue/queue.module';
 import { Module } from '@nestjs/common';
@@ -12,6 +13,8 @@ import { PortalConnectService } from './auth/portal-connect.service';
 import { PortalOtpService } from './auth/portal-otp.service';
 import { PortalBookingController } from './booking/portal-booking.controller';
 import { PortalBookingService } from './booking/portal-booking.service';
+import { PortalDocumentsController } from './documents/portal-documents.controller';
+import { PortalDocumentsService } from './documents/portal-documents.service';
 import { PaymentRegistryService } from './payments/payment-registry.service';
 import { AlifAdapter } from './payments/providers/alif.adapter';
 import { YooKassaAdapter } from './payments/providers/yookassa.adapter';
@@ -24,6 +27,7 @@ import { PortalVisitsService } from './visits/portal-visits.service';
   imports: [
     ConfigModule,
     CoreCommunicationsModule,
+    AuditModule,
     QueueModule,
     SmartSchedulingModule,
     PassportModule.register({ defaultStrategy: 'patient-jwt' }),
@@ -43,6 +47,7 @@ import { PortalVisitsService } from './visits/portal-visits.service';
   controllers: [
     PortalAuthController,
     PortalBookingController,
+    PortalDocumentsController,
     PortalVisitsController,
     PortalPublicController,
   ],
@@ -52,6 +57,7 @@ import { PortalVisitsService } from './visits/portal-visits.service';
     PortalConnectService,
     PatientJwtStrategy,
     PortalBookingService,
+    PortalDocumentsService,
     PortalVisitsService,
     PortalPublicService,
     PaymentRegistryService,
