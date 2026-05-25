@@ -1,16 +1,25 @@
-import { Body, Controller, Get, Header, Param, Post, Put, Patch, Query, UseGuards, UsePipes } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { RequirePermissions } from '@core/security/permissions.decorator';
 import { RequireModule } from '@core/security/modules.decorator';
+import { RequirePermissions } from '@core/security/permissions.decorator';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  Param,
+  Post,
+  Put,
+  Patch,
+  Query,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ModuleEnabledGuard } from '../auth/guards/module-enabled.guard';
 import { RbacGuard } from '../auth/guards/rbac.guard';
-import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
-import { EmrService } from './emr.service';
-import { FhirExportService } from './fhir/fhir-export.service';
-import { FhirExportQueryDto, FhirExportQuerySchema } from './dto/fhir-export.dto';
 import {
   UpdateMedicalRecordSchema,
   UpdateMedicalRecordDto,
@@ -29,8 +38,11 @@ import {
   AssignDiagnosisSchema,
   AssignDiagnosisDto,
   CreatePrescriptionSchema,
-  CreatePrescriptionDto
+  CreatePrescriptionDto,
 } from './dto/emr.dto';
+import { FhirExportQueryDto, FhirExportQuerySchema } from './dto/fhir-export.dto';
+import { EmrService } from './emr.service';
+import { FhirExportService } from './fhir/fhir-export.service';
 
 @ApiTags('emr')
 @ApiBearerAuth()
@@ -40,7 +52,7 @@ import {
 export class EmrController {
   constructor(
     private readonly emr: EmrService,
-    private readonly fhirExport: FhirExportService
+    private readonly fhirExport: FhirExportService,
   ) {}
 
   @Get('medical-records/patient/:patientId')
@@ -55,7 +67,7 @@ export class EmrController {
   updateMedicalRecord(
     @CurrentUser() user: AuthenticatedUser,
     @Param('patientId') patientId: string,
-    @Body() dto: UpdateMedicalRecordDto
+    @Body() dto: UpdateMedicalRecordDto,
   ) {
     return this.emr.updateMedicalRecord(user, patientId, dto);
   }
@@ -73,7 +85,7 @@ export class EmrController {
   updateEpisodeOfCare(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() dto: UpdateEpisodeOfCareDto
+    @Body() dto: UpdateEpisodeOfCareDto,
   ) {
     return this.emr.updateEpisodeOfCare(user, id, dto);
   }
@@ -103,7 +115,7 @@ export class EmrController {
   updateEncounterDraft(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() dto: SaveEncounterDto
+    @Body() dto: SaveEncounterDto,
   ) {
     return this.emr.saveEncounterDraft(user, dto, id);
   }
@@ -114,7 +126,7 @@ export class EmrController {
   signEncounter(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() dto: SignEncounterDto
+    @Body() dto: SignEncounterDto,
   ) {
     return this.emr.signEncounter(user, id, dto);
   }
@@ -125,7 +137,7 @@ export class EmrController {
   amendEncounter(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() dto: AmendEncounterDto
+    @Body() dto: AmendEncounterDto,
   ) {
     return this.emr.amendEncounter(user, id, dto);
   }
@@ -142,7 +154,7 @@ export class EmrController {
   assignDiagnosis(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') encounterId: string,
-    @Body() dto: AssignDiagnosisDto
+    @Body() dto: AssignDiagnosisDto,
   ) {
     return this.emr.assignDiagnosis(user, encounterId, dto);
   }
@@ -153,7 +165,7 @@ export class EmrController {
   createPrescription(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') encounterId: string,
-    @Body() dto: CreatePrescriptionDto
+    @Body() dto: CreatePrescriptionDto,
   ) {
     return this.emr.createPrescription(user, encounterId, dto);
   }
@@ -167,7 +179,10 @@ export class EmrController {
   @Post('templates')
   @RequirePermissions('emr.templates.manage')
   @UsePipes(new ZodValidationPipe(CreateClinicalTemplateSchema))
-  createClinicalTemplate(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateClinicalTemplateDto) {
+  createClinicalTemplate(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreateClinicalTemplateDto,
+  ) {
     return this.emr.createClinicalTemplate(user, dto);
   }
 
@@ -207,7 +222,7 @@ export class EmrController {
   fhirExportPatientBundle(
     @CurrentUser() user: AuthenticatedUser,
     @Param('patientId') patientId: string,
-    @Query(new ZodValidationPipe(FhirExportQuerySchema)) query: FhirExportQueryDto
+    @Query(new ZodValidationPipe(FhirExportQuerySchema)) query: FhirExportQueryDto,
   ) {
     return this.fhirExport.exportPatientBundle(user, patientId, query);
   }

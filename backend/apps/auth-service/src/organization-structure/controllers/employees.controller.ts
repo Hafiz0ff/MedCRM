@@ -1,20 +1,31 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { RequirePermissions } from '@core/security/permissions.decorator';
 import { RequireModule } from '@core/security/modules.decorator';
+import { RequirePermissions } from '@core/security/permissions.decorator';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { ModuleEnabledGuard } from '../../auth/guards/module-enabled.guard';
 import { RbacGuard } from '../../auth/guards/rbac.guard';
-import { EmployeesService } from '../services/employees.service';
 import {
   EmployeeDto,
   EmployeeSchema,
   EmployeePositionDto,
-  EmployeePositionSchema
+  EmployeePositionSchema,
 } from '../dto/organization-structure.schemas';
+import { EmployeesService } from '../services/employees.service';
 
 @ApiTags('employees')
 @ApiBearerAuth()
@@ -46,7 +57,11 @@ export class EmployeesController {
   @Patch(':id')
   @RequirePermissions('organization.employees.manage')
   @UsePipes(new ZodValidationPipe(EmployeeSchema))
-  update(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() dto: EmployeeDto) {
+  update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: EmployeeDto,
+  ) {
     return this.employees.update(user, id, dto);
   }
 
@@ -72,7 +87,10 @@ export class EmployeesController {
 
   @Delete('positions/:id')
   @RequirePermissions('organization.employees.manage')
-  removePosition(@CurrentUser() user: AuthenticatedUser, @Param('id') positionAssignmentId: string) {
+  removePosition(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') positionAssignmentId: string,
+  ) {
     return this.employees.removePosition(user, positionAssignmentId);
   }
 }

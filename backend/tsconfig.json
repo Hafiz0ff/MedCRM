@@ -27,4 +27,3 @@
   "include": ["apps/**/*.ts", "core/**/*.ts", "shared/**/*.ts", "prisma/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
-

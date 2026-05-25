@@ -8,4 +8,3 @@ export default async function Page() {
   if (!bootstrap || !can(bootstrap, 'patients.read')) redirect('/dashboard');
   return <PatientsPage bootstrap={bootstrap} />;
 }
-

@@ -1,0 +1,6 @@
+# Gitleaks configuration file
+[allowlist]
+description = "Allow test secrets in .env.example"
+paths = [
+  '''\.env\.example$'''
+]

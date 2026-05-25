@@ -13,6 +13,7 @@
 ### Task 1: Shell And Design Tokens
 
 **Files:**
+
 - Modify: `frontend/app/globals.css`
 - Modify: `frontend/app/(protected)/layout.tsx`
 - Modify: `frontend/modules/shell/components/sidebar.tsx`
@@ -26,6 +27,7 @@
 ### Task 2: Dashboard RM499 Layout
 
 **Files:**
+
 - Modify: `frontend/app/(protected)/dashboard/dashboard-view.tsx`
 - Modify: `frontend/app/globals.css`
 
@@ -37,6 +39,7 @@
 ### Task 3: Reception As Live Queue Board
 
 **Files:**
+
 - Modify: `frontend/modules/reception/components/reception-board.tsx`
 - Modify: `frontend/modules/reception/hooks/use-reception-dashboard.ts`
 - Modify: `frontend/app/globals.css`
@@ -49,6 +52,7 @@
 ### Task 4: Patients Registry
 
 **Files:**
+
 - Modify: `frontend/modules/patient-crm/components/patients-page.tsx`
 - Modify: `backend/apps/auth-service/src/patient-crm/patient-crm.service.ts`
 
@@ -60,6 +64,7 @@
 ### Task 5: Schedule
 
 **Files:**
+
 - Modify: `frontend/modules/smart-scheduling/components/calendar-page.tsx`
 - Modify: `frontend/modules/smart-scheduling/components/create-appointment-form.tsx`
 
@@ -71,6 +76,7 @@
 ### Task 6: Doctors Workspace
 
 **Files:**
+
 - Create: `frontend/app/(protected)/doctors/page.tsx`
 - Create or modify: `frontend/modules/doctors/components/doctors-page.tsx`
 - Modify: `frontend/modules/shell/components/sidebar.tsx`

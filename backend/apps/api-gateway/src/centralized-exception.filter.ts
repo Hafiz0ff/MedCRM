@@ -8,7 +8,8 @@ export class CentralizedExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<any>();
 
-    const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status =
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const requestId = request.headers['x-request-id'] || 'unknown';
 
     let code = 'INTERNAL_SERVER_ERROR';
@@ -36,8 +37,8 @@ export class CentralizedExceptionFilter implements ExceptionFilter {
         message,
         details,
         requestId,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
   }
 }

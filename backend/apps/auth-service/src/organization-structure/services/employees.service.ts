@@ -1,14 +1,14 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EmployeeDto, EmployeePositionDto } from '../dto/organization-structure.schemas';
 
 @Injectable()
 export class EmployeesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly audit: AuditLoggerService
+    private readonly audit: AuditLoggerService,
   ) {}
 
   async list(user: AuthenticatedUser, branchId?: string) {
@@ -19,7 +19,7 @@ export class EmployeesService {
         tenantId: user.tenantId,
         positions: branchId
           ? { some: { branchId } }
-          : { some: { branchId: { in: user.branchIds } } }
+          : { some: { branchId: { in: user.branchIds } } },
       },
       include: {
         positions: {
@@ -27,11 +27,11 @@ export class EmployeesService {
             branch: true,
             department: true,
             position: true,
-            specialty: true
-          }
-        }
+            specialty: true,
+          },
+        },
       },
-      orderBy: { lastName: 'asc' }
+      orderBy: { lastName: 'asc' },
     });
   }
 
@@ -44,16 +44,18 @@ export class EmployeesService {
             branch: true,
             department: true,
             position: true,
-            specialty: true
-          }
-        }
-      }
+            specialty: true,
+          },
+        },
+      },
     });
 
     if (!employee) throw new NotFoundException('Employee not found');
 
     // Check if user has access to at least one branch of the employee
-    const hasBranchAccess = employee.positions.length === 0 || employee.positions.some(pos => user.branchIds.includes(pos.branchId));
+    const hasBranchAccess =
+      employee.positions.length === 0 ||
+      employee.positions.some((pos) => user.branchIds.includes(pos.branchId));
     if (!hasBranchAccess) throw new ForbiddenException('Access to this employee profile is denied');
 
     return employee;
@@ -76,8 +78,8 @@ export class EmployeesService {
         dismissalDate: dto.dismissalDate ? new Date(dto.dismissalDate) : null,
         employmentType: dto.employmentType,
         photoFileId: dto.photoFileId,
-        status: dto.status
-      }
+        status: dto.status,
+      },
     });
 
     await this.audit.log({
@@ -86,7 +88,7 @@ export class EmployeesService {
       action: 'employee.created',
       entityType: 'employee',
       entityId: employee.id,
-      newValuesJson: employee
+      newValuesJson: employee,
     });
 
     return employee;
@@ -111,8 +113,8 @@ export class EmployeesService {
         dismissalDate: dto.dismissalDate ? new Date(dto.dismissalDate) : null,
         employmentType: dto.employmentType,
         photoFileId: dto.photoFileId,
-        status: dto.status
-      }
+        status: dto.status,
+      },
     });
 
     await this.audit.log({
@@ -122,7 +124,7 @@ export class EmployeesService {
       entityType: 'employee',
       entityId: employee.id,
       oldValuesJson: current,
-      newValuesJson: employee
+      newValuesJson: employee,
     });
 
     return employee;
@@ -138,7 +140,7 @@ export class EmployeesService {
       userId: user.userId,
       action: 'employee.deleted',
       entityType: 'employee',
-      entityId: employee.id
+      entityId: employee.id,
     });
 
     return { success: true };
@@ -154,8 +156,8 @@ export class EmployeesService {
         branch: true,
         department: true,
         position: true,
-        specialty: true
-      }
+        specialty: true,
+      },
     });
   }
 
@@ -175,8 +177,8 @@ export class EmployeesService {
         workRate: dto.workRate,
         isPrimary: dto.isPrimary,
         activeFrom: dto.activeFrom ? new Date(dto.activeFrom) : undefined,
-        activeTo: dto.activeTo ? new Date(dto.activeTo) : null
-      }
+        activeTo: dto.activeTo ? new Date(dto.activeTo) : null,
+      },
     });
 
     await this.audit.log({
@@ -186,7 +188,7 @@ export class EmployeesService {
       action: 'employee.position.assigned',
       entityType: 'employee_position',
       entityId: assignment.id,
-      newValuesJson: assignment
+      newValuesJson: assignment,
     });
 
     return assignment;
@@ -194,7 +196,7 @@ export class EmployeesService {
 
   async removePosition(user: AuthenticatedUser, positionAssignmentId: string) {
     const current = await this.prisma.employeePosition.findFirst({
-      where: { id: positionAssignmentId, tenantId: user.tenantId }
+      where: { id: positionAssignmentId, tenantId: user.tenantId },
     });
     if (!current) throw new NotFoundException('Assignment not found');
 
@@ -208,7 +210,7 @@ export class EmployeesService {
       userId: user.userId,
       action: 'employee.position.removed',
       entityType: 'employee_position',
-      entityId: positionAssignmentId
+      entityId: positionAssignmentId,
     });
 
     return { success: true };

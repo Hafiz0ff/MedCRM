@@ -91,7 +91,16 @@ export type FhirPatient = FhirResourceBase & {
 // Resource: Encounter (R4)
 export type FhirEncounter = FhirResourceBase & {
   resourceType: 'Encounter';
-  status: 'planned' | 'arrived' | 'triaged' | 'in-progress' | 'onleave' | 'finished' | 'cancelled' | 'entered-in-error' | 'unknown';
+  status:
+    | 'planned'
+    | 'arrived'
+    | 'triaged'
+    | 'in-progress'
+    | 'onleave'
+    | 'finished'
+    | 'cancelled'
+    | 'entered-in-error'
+    | 'unknown';
   class: FhirCoding;
   type?: FhirCodeableConcept[];
   subject: FhirReference;
@@ -126,8 +135,24 @@ export type FhirCondition = FhirResourceBase & {
 // Resource: MedicationRequest (R4)
 export type FhirMedicationRequest = FhirResourceBase & {
   resourceType: 'MedicationRequest';
-  status: 'active' | 'on-hold' | 'cancelled' | 'completed' | 'entered-in-error' | 'stopped' | 'draft' | 'unknown';
-  intent: 'proposal' | 'plan' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
+  status:
+    | 'active'
+    | 'on-hold'
+    | 'cancelled'
+    | 'completed'
+    | 'entered-in-error'
+    | 'stopped'
+    | 'draft'
+    | 'unknown';
+  intent:
+    | 'proposal'
+    | 'plan'
+    | 'order'
+    | 'original-order'
+    | 'reflex-order'
+    | 'filler-order'
+    | 'instance-order'
+    | 'option';
   medicationCodeableConcept?: FhirCodeableConcept;
   subject: FhirReference;
   encounter?: FhirReference;
@@ -149,7 +174,15 @@ export type FhirMedicationRequest = FhirResourceBase & {
 // Resource: Observation (R4)
 export type FhirObservation = FhirResourceBase & {
   resourceType: 'Observation';
-  status: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
+  status:
+    | 'registered'
+    | 'preliminary'
+    | 'final'
+    | 'amended'
+    | 'corrected'
+    | 'cancelled'
+    | 'entered-in-error'
+    | 'unknown';
   category?: FhirCodeableConcept[];
   code: FhirCodeableConcept;
   subject: FhirReference;
@@ -189,7 +222,7 @@ export const FHIR_RESOURCE_TYPES = [
   'Encounter',
   'Condition',
   'MedicationRequest',
-  'Observation'
+  'Observation',
 ] as const;
 
 export type FhirResourceTypeName = (typeof FHIR_RESOURCE_TYPES)[number];

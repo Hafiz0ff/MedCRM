@@ -1,31 +1,25 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
 import { Building2, Globe2, Loader2, RefreshCw, Save, ToggleLeft, ToggleRight } from 'lucide-react';
-import { BootstrapPayload } from '@/shared/types/bootstrap';
-import { can } from '@/shared/permissions/can';
-import { useToast } from '@/shared/ui/toast';
+import { FormEvent, useEffect, useState } from 'react';
 import {
   useTenantModules,
   useTenantProfile,
   useUpdateTenantModule,
-  useUpdateTenantProfile
+  useUpdateTenantProfile,
 } from '../hooks/use-system-admin';
+import { can } from '@/shared/permissions/can';
+import { BootstrapPayload } from '@/shared/types/bootstrap';
+import { useToast } from '@/shared/ui/toast';
 
 const locales = [
   { value: 'ru', label: 'Русский (ru)' },
   { value: 'en', label: 'English (en)' },
   { value: 'tg', label: 'Тоҷикӣ (tg)' },
-  { value: 'uz', label: 'O‘zbek (uz)' }
+  { value: 'uz', label: 'O‘zbek (uz)' },
 ];
 
-const timezones = [
-  'Asia/Dushanbe',
-  'Asia/Tashkent',
-  'Asia/Almaty',
-  'Europe/Moscow',
-  'UTC'
-];
+const timezones = ['Asia/Dushanbe', 'Asia/Tashkent', 'Asia/Almaty', 'Europe/Moscow', 'UTC'];
 
 export function GeneralTab({ bootstrap }: { bootstrap: BootstrapPayload }) {
   const { toast } = useToast();
@@ -54,9 +48,10 @@ export function GeneralTab({ bootstrap }: { bootstrap: BootstrapPayload }) {
     updateProfile.mutate(
       { name: name.trim(), defaultLocale, timezone },
       {
-        onSuccess: () => toast('success', 'Профиль обновлён', 'Изменения применены и попадут в аудит'),
-        onError: (error) => toast('error', 'Не удалось сохранить', error.message)
-      }
+        onSuccess: () =>
+          toast('success', 'Профиль обновлён', 'Изменения применены и попадут в аудит'),
+        onError: (error) => toast('error', 'Не удалось сохранить', error.message),
+      },
     );
   };
 
@@ -69,10 +64,10 @@ export function GeneralTab({ bootstrap }: { bootstrap: BootstrapPayload }) {
           toast(
             'success',
             nextEnabled ? 'Модуль включён' : 'Модуль выключен',
-            'Live sync разошлёт изменение всем активным сессиям'
+            'Live sync разошлёт изменение всем активным сессиям',
           ),
-        onError: (error) => toast('error', 'Не удалось изменить модуль', error.message)
-      }
+        onError: (error) => toast('error', 'Не удалось изменить модуль', error.message),
+      },
     );
   };
 
@@ -86,7 +81,11 @@ export function GeneralTab({ bootstrap }: { bootstrap: BootstrapPayload }) {
   }
 
   if (profileQuery.error) {
-    return <div className="error">Не удалось загрузить профиль клиники: {profileQuery.error.message}</div>;
+    return (
+      <div className="error">
+        Не удалось загрузить профиль клиники: {profileQuery.error.message}
+      </div>
+    );
   }
 
   const profile = profileQuery.data;
@@ -100,7 +99,9 @@ export function GeneralTab({ bootstrap }: { bootstrap: BootstrapPayload }) {
             <h2>
               <Building2 size={18} /> Профиль клиники
             </h2>
-            <p className="muted">Эти параметры используются всеми модулями: расписанием, EMR, FHIR-экспортом.</p>
+            <p className="muted">
+              Эти параметры используются всеми модулями: расписанием, EMR, FHIR-экспортом.
+            </p>
           </div>
           <button
             type="button"
@@ -170,7 +171,11 @@ export function GeneralTab({ bootstrap }: { bootstrap: BootstrapPayload }) {
           </div>
 
           <div className="page-actions">
-            <button type="submit" className="button" disabled={!canManage || updateProfile.isPending}>
+            <button
+              type="submit"
+              className="button"
+              disabled={!canManage || updateProfile.isPending}
+            >
               <Save size={16} />
               {updateProfile.isPending ? 'Сохраняем…' : 'Сохранить профиль'}
             </button>
@@ -202,14 +207,19 @@ export function GeneralTab({ bootstrap }: { bootstrap: BootstrapPayload }) {
             const isCore = module.isCore;
             const Icon = module.enabled ? ToggleRight : ToggleLeft;
             return (
-              <li key={module.moduleId} className={`settings-module${module.enabled ? ' is-on' : ''}`}>
+              <li
+                key={module.moduleId}
+                className={`settings-module${module.enabled ? ' is-on' : ''}`}
+              >
                 <div className="settings-module-meta">
                   <strong>{module.moduleName}</strong>
                   <small className="muted">
                     <code>{module.moduleCode}</code>
                     {isCore ? <span className="settings-pill is-warning">core</span> : null}
                     {module.activatedAt ? (
-                      <span className="muted">с {new Date(module.activatedAt).toLocaleDateString('ru-RU')}</span>
+                      <span className="muted">
+                        с {new Date(module.activatedAt).toLocaleDateString('ru-RU')}
+                      </span>
                     ) : null}
                   </small>
                 </div>

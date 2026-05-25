@@ -12,7 +12,15 @@ export const CloseShiftSchema = z.object({
 export type CloseShiftDto = z.infer<typeof CloseShiftSchema>;
 
 export const CreatePaymentSchema = z.object({
-  paymentMethod: z.enum(['CASH', 'CARD', 'QR', 'BANK_TRANSFER', 'WALLET', 'FAMILY_BALANCE', 'ONLINE_GATEWAY']),
+  paymentMethod: z.enum([
+    'CASH',
+    'CARD',
+    'QR',
+    'BANK_TRANSFER',
+    'WALLET',
+    'FAMILY_BALANCE',
+    'ONLINE_GATEWAY',
+  ]),
   paymentProvider: z.string().max(80).optional().nullable(),
   amount: z.number().positive(),
   currency: z.string().max(10).default('TJS'),

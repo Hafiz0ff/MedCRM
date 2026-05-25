@@ -38,19 +38,19 @@ smart-scheduling
   |-- resource-reservations
 ```
 
-| Подмодуль | Ответственность |
-|---|---|
-| appointments | CRUD записей, жизненный цикл визита |
-| calendars | Day/week/month views, врач/кабинет/филиал |
-| availability-engine | Расчет свободных окон и optimal slots |
-| conflict-engine | Проверка пересечений врача, кабинета, оборудования |
-| waiting-list | Лист ожидания и matching после отмен |
-| online-booking | Omnichannel booking flow |
-| public-booking-api | Публичные слоты, captcha, anti-spam, phone verification |
-| recurrence-engine | Серии визитов и повторные процедуры |
-| reminders | Уведомления до/после визита |
-| booking-rules | Ограничения услуг, филиалов, буферы, политики |
-| resource-reservations | Временная блокировка слотов и resource locks |
+| Подмодуль             | Ответственность                                         |
+| --------------------- | ------------------------------------------------------- |
+| appointments          | CRUD записей, жизненный цикл визита                     |
+| calendars             | Day/week/month views, врач/кабинет/филиал               |
+| availability-engine   | Расчет свободных окон и optimal slots                   |
+| conflict-engine       | Проверка пересечений врача, кабинета, оборудования      |
+| waiting-list          | Лист ожидания и matching после отмен                    |
+| online-booking        | Omnichannel booking flow                                |
+| public-booking-api    | Публичные слоты, captcha, anti-spam, phone verification |
+| recurrence-engine     | Серии визитов и повторные процедуры                     |
+| reminders             | Уведомления до/после визита                             |
+| booking-rules         | Ограничения услуг, филиалов, буферы, политики           |
+| resource-reservations | Временная блокировка слотов и resource locks            |
 
 ## 3. Статусная модель Appointment
 
@@ -90,33 +90,33 @@ Alternative:
 
 Основная таблица записей.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| branch_id | uuid | Да |
-| patient_id | uuid | Да |
-| employee_id | uuid | Да |
-| department_id | uuid | Нет |
-| room_id | uuid | Нет |
-| service_id | uuid | Нет |
-| appointment_number | varchar | Да |
-| booking_source | varchar | Да |
-| appointment_type | varchar | Да |
-| status | varchar | Да |
-| priority | varchar | Да |
-| start_at | timestamptz | Да |
-| end_at | timestamptz | Да |
-| duration_minutes | integer | Да |
-| notes | text | Нет |
-| cancellation_reason | text | Нет |
-| confirmed_at | timestamptz | Нет |
-| checked_in_at | timestamptz | Нет |
-| completed_at | timestamptz | Нет |
-| cancelled_at | timestamptz | Нет |
-| created_by | uuid | Нет |
-| created_at | timestamptz | Да |
-| updated_at | timestamptz | Да |
+| Поле                | Тип         | Обязательность |
+| ------------------- | ----------- | -------------- |
+| id                  | uuid        | Да             |
+| tenant_id           | uuid        | Да             |
+| branch_id           | uuid        | Да             |
+| patient_id          | uuid        | Да             |
+| employee_id         | uuid        | Да             |
+| department_id       | uuid        | Нет            |
+| room_id             | uuid        | Нет            |
+| service_id          | uuid        | Нет            |
+| appointment_number  | varchar     | Да             |
+| booking_source      | varchar     | Да             |
+| appointment_type    | varchar     | Да             |
+| status              | varchar     | Да             |
+| priority            | varchar     | Да             |
+| start_at            | timestamptz | Да             |
+| end_at              | timestamptz | Да             |
+| duration_minutes    | integer     | Да             |
+| notes               | text        | Нет            |
+| cancellation_reason | text        | Нет            |
+| confirmed_at        | timestamptz | Нет            |
+| checked_in_at       | timestamptz | Нет            |
+| completed_at        | timestamptz | Нет            |
+| cancelled_at        | timestamptz | Нет            |
+| created_by          | uuid        | Нет            |
+| created_at          | timestamptz | Да             |
+| updated_at          | timestamptz | Да             |
 
 `booking_source`: `ADMIN_PANEL`, `ONLINE_WIDGET`, `TELEGRAM_BOT`, `WHATSAPP`, `PHONE_CALL`, `WALK_IN`, `API`.
 
@@ -124,30 +124,30 @@ Alternative:
 
 ### `appointment_status_history`
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| appointment_id | uuid | Да |
-| old_status | varchar | Нет |
-| new_status | varchar | Да |
-| changed_by | uuid | Нет |
-| reason | text | Нет |
-| created_at | timestamptz | Да |
+| Поле           | Тип         | Обязательность |
+| -------------- | ----------- | -------------- |
+| id             | uuid        | Да             |
+| tenant_id      | uuid        | Да             |
+| appointment_id | uuid        | Да             |
+| old_status     | varchar     | Нет            |
+| new_status     | varchar     | Да             |
+| changed_by     | uuid        | Нет            |
+| reason         | text        | Нет            |
+| created_at     | timestamptz | Да             |
 
 ### `appointment_resources`
 
 Ресурсы, занятые записью.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| appointment_id | uuid | Да |
-| resource_type | varchar | Да |
-| resource_id | uuid | Да |
-| reserved_from | timestamptz | Да |
-| reserved_to | timestamptz | Да |
+| Поле           | Тип         | Обязательность |
+| -------------- | ----------- | -------------- |
+| id             | uuid        | Да             |
+| tenant_id      | uuid        | Да             |
+| appointment_id | uuid        | Да             |
+| resource_type  | varchar     | Да             |
+| resource_id    | uuid        | Да             |
+| reserved_from  | timestamptz | Да             |
+| reserved_to    | timestamptz | Да             |
 
 `resource_type`: `EMPLOYEE`, `ROOM`, `EQUIPMENT`.
 
@@ -155,14 +155,14 @@ Alternative:
 
 Буферное время до/после использования ресурса.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| resource_type | varchar | Да |
-| resource_id | uuid | Да |
-| before_minutes | integer | Да |
-| after_minutes | integer | Да |
+| Поле           | Тип     | Обязательность |
+| -------------- | ------- | -------------- |
+| id             | uuid    | Да             |
+| tenant_id      | uuid    | Да             |
+| resource_type  | varchar | Да             |
+| resource_id    | uuid    | Да             |
+| before_minutes | integer | Да             |
+| after_minutes  | integer | Да             |
 
 Буферы покрывают санитарный интервал, подготовку кабинета и настройку оборудования.
 
@@ -170,27 +170,27 @@ Alternative:
 
 Справочник услуг для записи.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| code | varchar | Да |
-| name | varchar | Да |
-| duration_minutes | integer | Да |
-| requires_room | boolean | Да |
-| requires_equipment | boolean | Да |
-| color | varchar | Нет |
-| is_online_bookable | boolean | Да |
-| is_active | boolean | Да |
+| Поле               | Тип     | Обязательность |
+| ------------------ | ------- | -------------- |
+| id                 | uuid    | Да             |
+| tenant_id          | uuid    | Да             |
+| code               | varchar | Да             |
+| name               | varchar | Да             |
+| duration_minutes   | integer | Да             |
+| requires_room      | boolean | Да             |
+| requires_equipment | boolean | Да             |
+| color              | varchar | Нет            |
+| is_online_bookable | boolean | Да             |
+| is_active          | boolean | Да             |
 
 ### `service_required_resources`
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| service_id | uuid | Да |
-| resource_type | varchar | Да |
-| resource_category_id | uuid | Нет |
+| Поле                 | Тип     | Обязательность |
+| -------------------- | ------- | -------------- |
+| id                   | uuid    | Да             |
+| service_id           | uuid    | Да             |
+| resource_type        | varchar | Да             |
+| resource_category_id | uuid    | Нет            |
 
 Пример: УЗИ требует `ROOM: ultrasound_room` и `EQUIPMENT: ultrasound_machine`.
 
@@ -198,34 +198,34 @@ Alternative:
 
 Кэш свободных слотов для online booking.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| employee_id | uuid | Нет |
-| branch_id | uuid | Да |
-| date | date | Да |
-| available_slots_json | jsonb | Да |
-| recalculated_at | timestamptz | Да |
+| Поле                 | Тип         | Обязательность |
+| -------------------- | ----------- | -------------- |
+| id                   | uuid        | Да             |
+| tenant_id            | uuid        | Да             |
+| employee_id          | uuid        | Нет            |
+| branch_id            | uuid        | Да             |
+| date                 | date        | Да             |
+| available_slots_json | jsonb       | Да             |
+| recalculated_at      | timestamptz | Да             |
 
 ### `waiting_list`
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| patient_id | uuid | Да |
-| branch_id | uuid | Да |
-| employee_id | uuid | Нет |
-| preferred_date_from | date | Нет |
-| preferred_date_to | date | Нет |
-| preferred_time_from | time | Нет |
-| preferred_time_to | time | Нет |
-| service_id | uuid | Нет |
-| priority | integer | Да |
-| notes | text | Нет |
-| status | varchar | Да |
-| created_at | timestamptz | Да |
+| Поле                | Тип         | Обязательность |
+| ------------------- | ----------- | -------------- |
+| id                  | uuid        | Да             |
+| tenant_id           | uuid        | Да             |
+| patient_id          | uuid        | Да             |
+| branch_id           | uuid        | Да             |
+| employee_id         | uuid        | Нет            |
+| preferred_date_from | date        | Нет            |
+| preferred_date_to   | date        | Нет            |
+| preferred_time_from | time        | Нет            |
+| preferred_time_to   | time        | Нет            |
+| service_id          | uuid        | Нет            |
+| priority            | integer     | Да             |
+| notes               | text        | Нет            |
+| status              | varchar     | Да             |
+| created_at          | timestamptz | Да             |
 
 Статусы: `ACTIVE`, `MATCHED`, `CANCELLED`, `EXPIRED`.
 
@@ -233,51 +233,51 @@ Alternative:
 
 Временные блокировки слотов для online booking.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| slot_key | varchar | Да |
-| reserved_by | varchar | Нет |
-| expires_at | timestamptz | Да |
-| created_at | timestamptz | Да |
+| Поле        | Тип         | Обязательность |
+| ----------- | ----------- | -------------- |
+| id          | uuid        | Да             |
+| tenant_id   | uuid        | Да             |
+| slot_key    | varchar     | Да             |
+| reserved_by | varchar     | Нет            |
+| expires_at  | timestamptz | Да             |
+| created_at  | timestamptz | Да             |
 
 TTL: 5-10 минут.
 
 ### `online_booking_tokens`
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| patient_id | uuid | Нет |
-| token | varchar | Да |
-| expires_at | timestamptz | Да |
-| ip_address | inet | Нет |
-| created_at | timestamptz | Да |
+| Поле       | Тип         | Обязательность |
+| ---------- | ----------- | -------------- |
+| id         | uuid        | Да             |
+| tenant_id  | uuid        | Да             |
+| patient_id | uuid        | Нет            |
+| token      | varchar     | Да             |
+| expires_at | timestamptz | Да             |
+| ip_address | inet        | Нет            |
+| created_at | timestamptz | Да             |
 
 ### `appointment_recurrence_rules`
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| appointment_id | uuid | Да |
-| recurrence_type | varchar | Да |
-| interval | integer | Да |
-| end_date | date | Нет |
+| Поле            | Тип     | Обязательность |
+| --------------- | ------- | -------------- |
+| id              | uuid    | Да             |
+| appointment_id  | uuid    | Да             |
+| recurrence_type | varchar | Да             |
+| interval        | integer | Да             |
+| end_date        | date    | Нет            |
 
 ### `appointment_notifications`
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| appointment_id | uuid | Да |
-| notification_type | varchar | Да |
-| channel | varchar | Да |
-| status | varchar | Да |
-| sent_at | timestamptz | Нет |
-| delivered_at | timestamptz | Нет |
+| Поле              | Тип         | Обязательность |
+| ----------------- | ----------- | -------------- |
+| id                | uuid        | Да             |
+| tenant_id         | uuid        | Да             |
+| appointment_id    | uuid        | Да             |
+| notification_type | varchar     | Да             |
+| channel           | varchar     | Да             |
+| status            | varchar     | Да             |
+| sent_at           | timestamptz | Нет            |
+| delivered_at      | timestamptz | Нет            |
 
 ## 5. SQL baseline
 
@@ -817,4 +817,3 @@ export const SmartSchedulingModuleManifest = {
   },
 } as const;
 ```
-

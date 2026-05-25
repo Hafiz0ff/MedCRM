@@ -1,5 +1,5 @@
-import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { describe, it, before, after } from 'node:test';
 import { setupE2eTest, teardownE2eTest, TestContext } from './e2e-helper';
 
 describe('E2E FHIR R4 Export Subsystem', () => {
@@ -17,17 +17,17 @@ describe('E2E FHIR R4 Export Subsystem', () => {
     const patient = await context.prisma.patient.findFirstOrThrow({
       where: {
         tenantId: context.tenantId,
-        encounters: { some: {} }
-      }
+        encounters: { some: {} },
+      },
     });
     patientId = patient.id;
 
     const otherTenant = await context.prisma.tenant.findFirst({
-      where: { code: { not: 'demo-clinic' } }
+      where: { code: { not: 'demo-clinic' } },
     });
     if (otherTenant) {
       const cross = await context.prisma.patient.findFirst({
-        where: { tenantId: otherTenant.id }
+        where: { tenantId: otherTenant.id },
       });
       otherTenantPatientId = cross?.id;
     }
@@ -38,16 +38,16 @@ describe('E2E FHIR R4 Export Subsystem', () => {
   });
 
   it('returns a FHIR Bundle (collection) when no resourceType is provided', async () => {
-    const res = await fetch(
-      `${context.baseUrl}/emr/fhir/Bundle/Patient/${patientId}`,
-      { method: 'GET', headers: context.authHeaders }
-    );
+    const res = await fetch(`${context.baseUrl}/emr/fhir/Bundle/Patient/${patientId}`, {
+      method: 'GET',
+      headers: context.authHeaders,
+    });
 
     assert.equal(res.status, 200);
     assert.equal(
       res.headers.get('content-type')?.startsWith('application/fhir+json'),
       true,
-      'Content-Type must be application/fhir+json'
+      'Content-Type must be application/fhir+json',
     );
 
     const body = await res.json();
@@ -59,14 +59,10 @@ describe('E2E FHIR R4 Export Subsystem', () => {
     assert.ok(Array.isArray(body.entry));
     assert.equal(body.total, body.entry.length);
 
-    const types = new Set<string>(
-      body.entry.map((e: any) => e.resource?.resourceType)
-    );
+    const types = new Set<string>(body.entry.map((e: any) => e.resource?.resourceType));
     assert.ok(types.has('Patient'), 'Bundle must include a Patient resource');
 
-    const patient = body.entry.find(
-      (e: any) => e.resource?.resourceType === 'Patient'
-    )?.resource;
+    const patient = body.entry.find((e: any) => e.resource?.resourceType === 'Patient')?.resource;
     assert.equal(patient.id, patientId);
     assert.ok(Array.isArray(patient.identifier));
     assert.ok(Array.isArray(patient.name));
@@ -75,7 +71,7 @@ describe('E2E FHIR R4 Export Subsystem', () => {
   it('returns a searchset Bundle with only Patient when resourceType=Patient', async () => {
     const res = await fetch(
       `${context.baseUrl}/emr/fhir/Bundle/Patient/${patientId}?resourceType=Patient`,
-      { method: 'GET', headers: context.authHeaders }
+      { method: 'GET', headers: context.authHeaders },
     );
 
     assert.equal(res.status, 200);
@@ -92,7 +88,7 @@ describe('E2E FHIR R4 Export Subsystem', () => {
 
     const empty = await fetch(
       `${context.baseUrl}/emr/fhir/Bundle/Patient/${patientId}?resourceType=Encounter&dateFrom=${longAgoFrom}&dateTo=${longAgoTo}`,
-      { method: 'GET', headers: context.authHeaders }
+      { method: 'GET', headers: context.authHeaders },
     );
     assert.equal(empty.status, 200);
     const emptyBody = await empty.json();
@@ -102,17 +98,17 @@ describe('E2E FHIR R4 Export Subsystem', () => {
   });
 
   it('rejects _format=xml with 406 Not Acceptable', async () => {
-    const res = await fetch(
-      `${context.baseUrl}/emr/fhir/Bundle/Patient/${patientId}?_format=xml`,
-      { method: 'GET', headers: context.authHeaders }
-    );
+    const res = await fetch(`${context.baseUrl}/emr/fhir/Bundle/Patient/${patientId}?_format=xml`, {
+      method: 'GET',
+      headers: context.authHeaders,
+    });
     assert.equal(res.status, 406);
   });
 
   it('rejects malformed date parameters with 400 Bad Request', async () => {
     const res = await fetch(
       `${context.baseUrl}/emr/fhir/Bundle/Patient/${patientId}?dateFrom=not-a-date`,
-      { method: 'GET', headers: context.authHeaders }
+      { method: 'GET', headers: context.authHeaders },
     );
     assert.equal(res.status, 400);
   });
@@ -120,7 +116,7 @@ describe('E2E FHIR R4 Export Subsystem', () => {
   it('returns 404 for non-existent patient', async () => {
     const res = await fetch(
       `${context.baseUrl}/emr/fhir/Bundle/Patient/00000000-0000-0000-0000-000000000000`,
-      { method: 'GET', headers: context.authHeaders }
+      { method: 'GET', headers: context.authHeaders },
     );
     assert.equal(res.status, 404);
   });
@@ -129,13 +125,13 @@ describe('E2E FHIR R4 Export Subsystem', () => {
     if (!otherTenantPatientId) {
       return;
     }
-    const res = await fetch(
-      `${context.baseUrl}/emr/fhir/Bundle/Patient/${otherTenantPatientId}`,
-      { method: 'GET', headers: context.authHeaders }
-    );
+    const res = await fetch(`${context.baseUrl}/emr/fhir/Bundle/Patient/${otherTenantPatientId}`, {
+      method: 'GET',
+      headers: context.authHeaders,
+    });
     assert.ok(
       res.status === 403 || res.status === 404,
-      `Cross-tenant access should be denied (got ${res.status})`
+      `Cross-tenant access should be denied (got ${res.status})`,
     );
   });
 
@@ -144,13 +140,13 @@ describe('E2E FHIR R4 Export Subsystem', () => {
       where: {
         tenantId: context.tenantId,
         action: 'emr.fhir.export',
-        entityId: patientId
-      }
+        entityId: patientId,
+      },
     });
 
     const res = await fetch(
       `${context.baseUrl}/emr/fhir/Bundle/Patient/${patientId}?resourceType=Patient`,
-      { method: 'GET', headers: context.authHeaders }
+      { method: 'GET', headers: context.authHeaders },
     );
     assert.equal(res.status, 200);
 
@@ -158,23 +154,19 @@ describe('E2E FHIR R4 Export Subsystem', () => {
       where: {
         tenantId: context.tenantId,
         action: 'emr.fhir.export',
-        entityId: patientId
-      }
+        entityId: patientId,
+      },
     });
 
-    assert.equal(
-      after,
-      before + 1,
-      'A single audit log entry must be recorded per export'
-    );
+    assert.equal(after, before + 1, 'A single audit log entry must be recorded per export');
 
     const latest = await context.prisma.auditLog.findFirst({
       where: {
         tenantId: context.tenantId,
         action: 'emr.fhir.export',
-        entityId: patientId
+        entityId: patientId,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
     assert.ok(latest);
     assert.equal(latest!.entityType, 'patient');

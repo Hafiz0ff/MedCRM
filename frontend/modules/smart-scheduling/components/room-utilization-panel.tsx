@@ -1,7 +1,7 @@
 'use client';
 
-import { useRoomUtilization } from '../hooks/use-scheduling';
 import { DoorOpen } from 'lucide-react';
+import { useRoomUtilization } from '../hooks/use-scheduling';
 
 interface RoomUtilizationPanelProps {
   branchId: string;
@@ -37,8 +37,12 @@ export function RoomUtilizationPanel({ branchId, selectedDate }: RoomUtilization
               return (
                 <div className="room-util-item" key={room.roomId}>
                   <div className="room-util-info">
-                    <strong>{room.roomName} ({room.roomCode})</strong>
-                    <span>Записей: {room.totalAppointments} · {room.totalMinutesBooked} мин</span>
+                    <strong>
+                      {room.roomName} ({room.roomCode})
+                    </strong>
+                    <span>
+                      Записей: {room.totalAppointments} · {room.totalMinutesBooked} мин
+                    </span>
                   </div>
                   <div className="room-util-bar-wrap">
                     <div className="room-util-bar-bg">

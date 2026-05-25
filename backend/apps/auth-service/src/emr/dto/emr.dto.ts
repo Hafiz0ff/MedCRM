@@ -36,23 +36,31 @@ export const SaveEncounterSchema = z.object({
   departmentId: z.string().uuid().optional().nullable(),
   encounterType: z.string().min(1).max(60),
   startedAt: z.string().datetime(),
-  compositions: z.array(z.object({
-    templateId: z.string().uuid().optional().nullable(),
-    compositionType: z.string().min(1).max(60),
-    title: z.string().min(1).max(255),
-    sections: z.array(z.object({
-      sectionCode: z.string().min(1).max(120),
-      sectionName: z.string().min(1).max(255),
-      sortOrder: z.number().int(),
-      elements: z.array(z.object({
-        fieldCode: z.string().min(1).max(120),
-        fieldType: z.string().min(1).max(60),
-        fieldValueJson: z.any(),
-        unit: z.string().max(40).optional().nullable(),
-        terminologyCode: z.string().max(120).optional().nullable(),
-      })),
-    })),
-  })).optional(),
+  compositions: z
+    .array(
+      z.object({
+        templateId: z.string().uuid().optional().nullable(),
+        compositionType: z.string().min(1).max(60),
+        title: z.string().min(1).max(255),
+        sections: z.array(
+          z.object({
+            sectionCode: z.string().min(1).max(120),
+            sectionName: z.string().min(1).max(255),
+            sortOrder: z.number().int(),
+            elements: z.array(
+              z.object({
+                fieldCode: z.string().min(1).max(120),
+                fieldType: z.string().min(1).max(60),
+                fieldValueJson: z.any(),
+                unit: z.string().max(40).optional().nullable(),
+                terminologyCode: z.string().max(120).optional().nullable(),
+              }),
+            ),
+          }),
+        ),
+      }),
+    )
+    .optional(),
 });
 export type SaveEncounterDto = z.infer<typeof SaveEncounterSchema>;
 
@@ -88,19 +96,30 @@ export type AssignDiagnosisDto = z.infer<typeof AssignDiagnosisSchema>;
 
 export const CreatePrescriptionSchema = z.object({
   diagnosisId: z.string().uuid().optional().nullable(),
-  prescriptionType: z.enum(['MEDICATION', 'LAB_ORDER', 'PROCEDURE', 'IMAGING', 'REFERRAL', 'FOLLOW_UP']),
+  prescriptionType: z.enum([
+    'MEDICATION',
+    'LAB_ORDER',
+    'PROCEDURE',
+    'IMAGING',
+    'REFERRAL',
+    'FOLLOW_UP',
+  ]),
   notes: z.string().optional().nullable(),
-  items: z.array(z.object({
-    itemCode: z.string().min(1).max(120),
-    itemName: z.string().min(1).max(255),
-    dosage: z.string().max(120).optional().nullable(),
-    frequency: z.string().max(120).optional().nullable(),
-    duration: z.string().max(120).optional().nullable(),
-    route: z.string().max(120).optional().nullable(),
-    quantity: z.number().optional().nullable(),
-    instructions: z.string().optional().nullable(),
-    linkedServiceId: z.string().uuid().optional().nullable(),
-  })).min(1),
+  items: z
+    .array(
+      z.object({
+        itemCode: z.string().min(1).max(120),
+        itemName: z.string().min(1).max(255),
+        dosage: z.string().max(120).optional().nullable(),
+        frequency: z.string().max(120).optional().nullable(),
+        duration: z.string().max(120).optional().nullable(),
+        route: z.string().max(120).optional().nullable(),
+        quantity: z.number().optional().nullable(),
+        instructions: z.string().optional().nullable(),
+        linkedServiceId: z.string().uuid().optional().nullable(),
+      }),
+    )
+    .min(1),
 });
 export type CreatePrescriptionDto = z.infer<typeof CreatePrescriptionSchema>;
 

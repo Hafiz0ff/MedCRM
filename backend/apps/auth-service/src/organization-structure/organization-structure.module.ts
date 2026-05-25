@@ -1,18 +1,17 @@
 import { Module } from '@nestjs/common';
-import { DirectoriesController } from './controllers/directories.controller';
 import { BranchesController } from './controllers/branches.controller';
 import { DepartmentsController } from './controllers/departments.controller';
+import { DirectoriesController } from './controllers/directories.controller';
 import { EmployeesController } from './controllers/employees.controller';
-import { RoomsController } from './controllers/rooms.controller';
 import { EquipmentController } from './controllers/equipment.controller';
+import { RoomsController } from './controllers/rooms.controller';
 import { SchedulesController } from './controllers/schedules.controller';
-
-import { DirectoriesService } from './services/directories.service';
 import { BranchesService } from './services/branches.service';
 import { DepartmentsService } from './services/departments.service';
+import { DirectoriesService } from './services/directories.service';
 import { EmployeesService } from './services/employees.service';
-import { RoomsService } from './services/rooms.service';
 import { EquipmentService } from './services/equipment.service';
+import { RoomsService } from './services/rooms.service';
 import { SchedulesService } from './services/schedules.service';
 
 @Module({
@@ -23,7 +22,7 @@ import { SchedulesService } from './services/schedules.service';
     EmployeesController,
     RoomsController,
     EquipmentController,
-    SchedulesController
+    SchedulesController,
   ],
   providers: [
     DirectoriesService,
@@ -32,7 +31,7 @@ import { SchedulesService } from './services/schedules.service';
     EmployeesService,
     RoomsService,
     EquipmentService,
-    SchedulesService
-  ]
+    SchedulesService,
+  ],
 })
 export class OrganizationStructureModule {}

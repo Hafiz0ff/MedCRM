@@ -1,5 +1,5 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import { createRateLimitMiddleware } from './rate-limit.middleware';
 
 function makeReq(ip: string, path: string) {
@@ -21,7 +21,7 @@ function makeRes() {
     json(body: unknown) {
       this.body = body;
       return this;
-    }
+    },
   } as any;
 }
 
@@ -55,7 +55,6 @@ describe('createRateLimitMiddleware', () => {
     assert.equal(body.error.message, 'Too many requests');
     assert.equal(body.error.details.policy, 'auth');
     assert.equal(body.error.details.limit, 1);
-
   });
 
   it('uses forwarded IP when gateway is behind a proxy', () => {

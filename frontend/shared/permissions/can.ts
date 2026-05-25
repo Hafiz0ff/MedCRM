@@ -5,6 +5,8 @@ export function can(bootstrap: BootstrapPayload, permission: string): boolean {
 }
 
 export function moduleEnabled(bootstrap: BootstrapPayload, moduleCode: string): boolean {
-  return bootstrap.enabledModules.includes(moduleCode) || bootstrap.featureFlags[`${moduleCode}.enabled`] === true;
+  return (
+    bootstrap.enabledModules.includes(moduleCode) ||
+    bootstrap.featureFlags[`${moduleCode}.enabled`] === true
+  );
 }
-

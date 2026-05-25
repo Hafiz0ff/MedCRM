@@ -6,13 +6,48 @@
     "backend",
     "frontend"
   ],
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "backend:dev:auth": "npm --workspace backend run start:dev:auth",
     "backend:dev:gateway": "npm --workspace backend run start:dev:gateway",
     "frontend:dev": "npm --workspace frontend run dev",
     "prisma:generate": "npm --workspace backend run prisma:generate",
     "prisma:migrate": "npm --workspace backend run prisma:migrate",
-    "prisma:seed": "npm --workspace backend run prisma:seed"
+    "prisma:seed": "npm --workspace backend run prisma:seed",
+    "prepare": "husky",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "npm --workspace backend run typecheck && npm --workspace frontend run typecheck",
+    "verify": "npm run lint && npm run format:check && npm run typecheck && npm --workspace backend run test:gateway && for f in backend/apps/auth-service/src/test/*.e2e-spec.ts; do TS_NODE_PROJECT=backend/tsconfig.json node -r ts-node/register -r tsconfig-paths/register --test \"$f\" || exit 1; done"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix --max-warnings=0",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml,css}": [
+      "prettier --write"
+    ],
+    "backend/prisma/schema.prisma": [
+      "npx --workspace backend prisma format"
+    ]
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
+    "@eslint/js": "^9.3.0",
+    "eslint": "^9.3.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-promise": "^6.1.1",
+    "eslint-plugin-unicorn": "^53.0.0",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.5",
+    "prettier": "^3.2.5",
+    "prettier-plugin-prisma": "^5.0.0",
+    "typescript-eslint": "^8.0.0"
   }
 }
-

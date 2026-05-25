@@ -5,6 +5,6 @@ import { BusinessIntelligenceService } from './bi.service';
 @Module({
   controllers: [BusinessIntelligenceController],
   providers: [BusinessIntelligenceService],
-  exports: [BusinessIntelligenceService]
+  exports: [BusinessIntelligenceService],
 })
 export class BusinessIntelligenceModule {}

@@ -40,18 +40,20 @@ const publicDomainPrefixes = [
   ['services', '/services', true],
   ['slots', '/slots', true],
   ['system', '/system', true],
-  ['waiting-list', '/waiting-list', true]
+  ['waiting-list', '/waiting-list', true],
 ] satisfies Array<[string, string, boolean]>;
 
-export const publicRoutes: GatewayRouteConfig[] = publicDomainPrefixes.map(([name, upstreamPrefix, requiresAuth]) => ({
-  kind: 'public',
-  gatewayPrefix: `/api/v1/${name}`,
-  upstreamPrefix,
-  targetEnv: authTarget,
-  rateLimitPolicy: name === 'auth' ? 'auth' : 'public',
-  requiresAuth,
-  description: `Public v1 proxy for ${upstreamPrefix}`
-}));
+export const publicRoutes: GatewayRouteConfig[] = publicDomainPrefixes.map(
+  ([name, upstreamPrefix, requiresAuth]) => ({
+    kind: 'public',
+    gatewayPrefix: `/api/v1/${name}`,
+    upstreamPrefix,
+    targetEnv: authTarget,
+    rateLimitPolicy: name === 'auth' ? 'auth' : 'public',
+    requiresAuth,
+    description: `Public v1 proxy for ${upstreamPrefix}`,
+  }),
+);
 
 const compatibilityPrefixes = [
   '/auth',
@@ -66,7 +68,7 @@ const compatibilityPrefixes = [
   '/waiting-list',
   '/resource-buffers',
   '/online-booking',
-  '/rooms'
+  '/rooms',
 ];
 
 export const compatibilityRoutes: GatewayRouteConfig[] = compatibilityPrefixes.map((prefix) => ({
@@ -76,7 +78,7 @@ export const compatibilityRoutes: GatewayRouteConfig[] = compatibilityPrefixes.m
   targetEnv: authTarget,
   rateLimitPolicy: prefix === '/auth' ? 'auth' : 'public',
   requiresAuth: prefix !== '/auth',
-  description: `Backward-compatible unversioned proxy for ${prefix}`
+  description: `Backward-compatible unversioned proxy for ${prefix}`,
 }));
 
 export const internalRoutes: GatewayRouteConfig[] = [
@@ -87,7 +89,7 @@ export const internalRoutes: GatewayRouteConfig[] = [
     targetEnv: internalTarget,
     rateLimitPolicy: 'internal',
     requiresAuth: true,
-    description: 'Internal auth service contract'
+    description: 'Internal auth service contract',
   },
   {
     kind: 'internal',
@@ -96,7 +98,7 @@ export const internalRoutes: GatewayRouteConfig[] = [
     targetEnv: internalTarget,
     rateLimitPolicy: 'internal',
     requiresAuth: false,
-    description: 'Internal auth-service health proxy'
+    description: 'Internal auth-service health proxy',
   },
   {
     kind: 'internal',
@@ -105,7 +107,7 @@ export const internalRoutes: GatewayRouteConfig[] = [
     targetEnv: internalTarget,
     rateLimitPolicy: 'internal',
     requiresAuth: false,
-    description: 'Internal auth-service Swagger UI proxy'
+    description: 'Internal auth-service Swagger UI proxy',
   },
   {
     kind: 'internal',
@@ -114,8 +116,8 @@ export const internalRoutes: GatewayRouteConfig[] = [
     targetEnv: internalTarget,
     rateLimitPolicy: 'internal',
     requiresAuth: false,
-    description: 'Internal auth-service OpenAPI JSON proxy'
-  }
+    description: 'Internal auth-service OpenAPI JSON proxy',
+  },
 ];
 
 export const websocketRoutes: GatewayRouteConfig[] = [
@@ -126,7 +128,7 @@ export const websocketRoutes: GatewayRouteConfig[] = [
     targetEnv: authTarget,
     rateLimitPolicy: 'websocket',
     requiresAuth: true,
-    description: 'Socket.IO transport proxy'
+    description: 'Socket.IO transport proxy',
   },
   {
     kind: 'websocket',
@@ -135,13 +137,13 @@ export const websocketRoutes: GatewayRouteConfig[] = [
     targetEnv: authTarget,
     rateLimitPolicy: 'websocket',
     requiresAuth: true,
-    description: 'Direct realtime namespace proxy'
-  }
+    description: 'Direct realtime namespace proxy',
+  },
 ];
 
 export const gatewayRoutes = [
   ...publicRoutes,
   ...compatibilityRoutes,
   ...internalRoutes,
-  ...websocketRoutes
+  ...websocketRoutes,
 ];

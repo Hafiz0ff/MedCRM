@@ -11,7 +11,7 @@
     "start:prod:api-gateway": "node dist/apps/api-gateway/main.js",
     "start:prod:auth-service": "node dist/apps/auth-service/main.js",
     "test:gateway": "tsx --test apps/api-gateway/src/*.spec.ts",
-    "test:e2e": "node -r ts-node/register -r tsconfig-paths/register --test --test-concurrency=1 apps/auth-service/src/test/*.e2e-spec.ts",
+    "test:e2e": "for f in apps/auth-service/src/test/*.e2e-spec.ts; do TS_NODE_PROJECT=tsconfig.json node -r ts-node/register -r tsconfig-paths/register --test \"$f\" || exit 1; done",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",

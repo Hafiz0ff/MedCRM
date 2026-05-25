@@ -14,9 +14,12 @@ export function useAppointments(branchId?: string, date: Date = new Date()) {
   const params = new URLSearchParams({
     dateFrom: startOfDay.toISOString(),
     dateTo: endOfDay.toISOString(),
-    ...(branchId ? { branchId } : {})
+    ...(branchId ? { branchId } : {}),
   });
-  return useQuery({ queryKey: ['appointments', branchId, startOfDay.toISOString()], queryFn: () => apiFetch<ListResponse<Appointment>>(`/appointments?${params}`) });
+  return useQuery({
+    queryKey: ['appointments', branchId, startOfDay.toISOString()],
+    queryFn: () => apiFetch<ListResponse<Appointment>>(`/appointments?${params}`),
+  });
 }
 
 export function useServices() {
@@ -30,12 +33,19 @@ export function useDoctors() {
 export function useCreateAppointment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { branchId: string; patientId: string; employeeId: string; serviceId?: string; startAt: string; endAt: string; notes?: string }) =>
-      apiFetch<Appointment>('/appointments', { method: 'POST', body: JSON.stringify(input) }),
+    mutationFn: (input: {
+      branchId: string;
+      patientId: string;
+      employeeId: string;
+      serviceId?: string;
+      startAt: string;
+      endAt: string;
+      notes?: string;
+    }) => apiFetch<Appointment>('/appointments', { method: 'POST', body: JSON.stringify(input) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['reception-dashboard'] });
-    }
+    },
   });
 }
 
@@ -43,25 +53,39 @@ export function useTransitionAppointment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'confirm' | 'check-in' | 'cancel' }) =>
-      apiFetch<Appointment>(`/appointments/${id}/${action}`, { method: 'POST', body: JSON.stringify({ reason: action }) }),
+      apiFetch<Appointment>(`/appointments/${id}/${action}`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: action }),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['appointments-week'] });
       queryClient.invalidateQueries({ queryKey: ['reception-dashboard'] });
-    }
+    },
   });
 }
 
 export function useReschedule() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, newStartAt, newEndAt }: { id: string; newStartAt: string; newEndAt: string }) =>
-      apiFetch<Appointment>(`/appointments/${id}/reschedule`, { method: 'POST', body: JSON.stringify({ newStartAt, newEndAt }) }),
+    mutationFn: ({
+      id,
+      newStartAt,
+      newEndAt,
+    }: {
+      id: string;
+      newStartAt: string;
+      newEndAt: string;
+    }) =>
+      apiFetch<Appointment>(`/appointments/${id}/reschedule`, {
+        method: 'POST',
+        body: JSON.stringify({ newStartAt, newEndAt }),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['appointments-week'] });
       queryClient.invalidateQueries({ queryKey: ['reception-dashboard'] });
-    }
+    },
   });
 }
 
@@ -73,25 +97,34 @@ export function useWeekAppointments(branchId?: string, startDate: Date = new Dat
   const params = new URLSearchParams({
     dateFrom: startOfWeek.toISOString(),
     dateTo: endOfWeek.toISOString(),
-    ...(branchId ? { branchId } : {})
+    ...(branchId ? { branchId } : {}),
   });
   return useQuery({
     queryKey: ['appointments-week', branchId, startOfWeek.toISOString()],
-    queryFn: () => apiFetch<ListResponse<Appointment>>(`/appointments?${params}`)
+    queryFn: () => apiFetch<ListResponse<Appointment>>(`/appointments?${params}`),
   });
 }
 
-export function useWeekAvailability(branchId: string, employeeId?: string, serviceId?: string, startDate?: string) {
+export function useWeekAvailability(
+  branchId: string,
+  employeeId?: string,
+  serviceId?: string,
+  startDate?: string,
+) {
   const params = new URLSearchParams({
     branchId,
     ...(employeeId ? { employeeId } : {}),
     ...(serviceId ? { serviceId } : {}),
-    ...(startDate ? { startDate } : { startDate: new Date().toISOString().split('T')[0] })
+    ...(startDate ? { startDate } : { startDate: new Date().toISOString().split('T')[0] }),
   });
   return useQuery({
     queryKey: ['week-availability', branchId, employeeId, serviceId, startDate],
-    queryFn: () => apiFetch<{ startDate: string; days: Array<{ date: string; slots: string[]; slotsCount: number }> }>(`/availability/week?${params}`),
-    enabled: !!branchId
+    queryFn: () =>
+      apiFetch<{
+        startDate: string;
+        days: Array<{ date: string; slots: string[]; slotsCount: number }>;
+      }>(`/availability/week?${params}`),
+    enabled: !!branchId,
   });
 }
 
@@ -99,8 +132,18 @@ export function useRoomUtilization(branchId: string, dateFrom: string, dateTo: s
   const params = new URLSearchParams({ branchId, dateFrom, dateTo });
   return useQuery({
     queryKey: ['room-utilization', branchId, dateFrom, dateTo],
-    queryFn: () => apiFetch<Array<{ roomId: string; roomName: string; roomCode: string; totalAppointments: number; totalMinutesBooked: number; totalMinutesAvailable: number; utilizationPercent: number }>>(`/rooms/utilization?${params}`),
-    enabled: !!branchId && !!dateFrom && !!dateTo
+    queryFn: () =>
+      apiFetch<
+        Array<{
+          roomId: string;
+          roomName: string;
+          roomCode: string;
+          totalAppointments: number;
+          totalMinutesBooked: number;
+          totalMinutesAvailable: number;
+          utilizationPercent: number;
+        }>
+      >(`/rooms/utilization?${params}`),
+    enabled: !!branchId && !!dateFrom && !!dateTo,
   });
 }
-

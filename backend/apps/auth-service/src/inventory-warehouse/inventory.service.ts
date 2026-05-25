@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '@core/database/prisma.service';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
 import {
   CreateWarehouseDto,
@@ -7,7 +7,7 @@ import {
   ProcurementDeliveryDto,
   TransferRequestDto,
   BomTemplateDto,
-  InventoryAuditDto
+  InventoryAuditDto,
 } from './dto/inventory.dto';
 
 @Injectable()
@@ -30,7 +30,7 @@ export class InventoryService {
         code: dto.code,
         name: dto.name,
         responsibleEmployeeId: dto.responsibleEmployeeId,
-      }
+      },
     });
   }
 
@@ -38,12 +38,12 @@ export class InventoryService {
     const warehouses = await this.prisma.warehouse.findMany({
       where: { tenantId, isActive: true },
       include: {
-        childWarehouses: true
-      }
+        childWarehouses: true,
+      },
     });
 
     // Build root-level hierarchy
-    return warehouses.filter(w => !w.parentWarehouseId);
+    return warehouses.filter((w) => !w.parentWarehouseId);
   }
 
   // 2. Nomenclature Management
@@ -62,8 +62,8 @@ export class InventoryService {
         requiresExpirationTracking: dto.requiresExpirationTracking,
         minimumStockLevel: new Decimal(dto.minimumStockLevel),
         reorderLevel: new Decimal(dto.reorderLevel),
-        defaultSupplierId: dto.defaultSupplierId
-      }
+        defaultSupplierId: dto.defaultSupplierId,
+      },
     });
   }
 
@@ -86,8 +86,8 @@ export class InventoryService {
         orderStatus: 'RECEIVED',
         totalAmount: new Decimal(totalAmount),
         orderedBy: userId,
-        receivedAt: new Date()
-      }
+        receivedAt: new Date(),
+      },
     });
 
     // Process each item
@@ -104,12 +104,19 @@ export class InventoryService {
           productionDate: item.productionDate ? new Date(item.productionDate) : null,
           purchasePrice: new Decimal(item.purchasePrice),
           currentQuantity: new Decimal(item.quantity),
-          warehouseId: dto.warehouseId
-        }
+          warehouseId: dto.warehouseId,
+        },
       });
 
       // 2. Upsert balance snapshot
-      await this.upsertBalance(tenantId, dto.warehouseId, item.itemId, batch.id, item.quantity, 'INCREMENT');
+      await this.upsertBalance(
+        tenantId,
+        dto.warehouseId,
+        item.itemId,
+        batch.id,
+        item.quantity,
+        'INCREMENT',
+      );
 
       // 3. Log ledger transaction
       await this.prisma.inventoryTransaction.create({
@@ -125,8 +132,8 @@ export class InventoryService {
           sourceEntityType: 'PURCHASE_ORDER',
           sourceEntityId: po.id,
           referenceNumber: po.id,
-          performedBy: userId
-        }
+          performedBy: userId,
+        },
       });
 
       // 4. Trigger alert monitoring check
@@ -138,7 +145,9 @@ export class InventoryService {
 
   // 4. Inventory Transfers
   async transferStock(tenantId: string, userId: string, dto: TransferRequestDto) {
-    this.logger.log(`Transferring items from: ${dto.sourceWarehouseId} to: ${dto.destinationWarehouseId}`);
+    this.logger.log(
+      `Transferring items from: ${dto.sourceWarehouseId} to: ${dto.destinationWarehouseId}`,
+    );
 
     // Create the transfer record
     const transfer = await this.prisma.inventoryTransfer.create({
@@ -149,8 +158,8 @@ export class InventoryService {
         transferStatus: 'COMPLETED',
         requestedBy: userId,
         approvedBy: userId,
-        transferredAt: new Date()
-      }
+        transferredAt: new Date(),
+      },
     });
 
     for (const item of dto.items) {
@@ -160,13 +169,15 @@ export class InventoryService {
           tenantId,
           warehouseId: dto.sourceWarehouseId,
           itemId: item.itemId,
-          batchId: item.batchId || null
+          batchId: item.batchId || null,
         },
-        include: { batch: true }
+        include: { batch: true },
       });
 
       if (!balance || Number(balance.availableQuantity) < item.quantity) {
-        throw new BadRequestException(`Insufficient stock for item ${item.itemId} at source warehouse.`);
+        throw new BadRequestException(
+          `Insufficient stock for item ${item.itemId} at source warehouse.`,
+        );
       }
 
       // 1. Decrement source balance
@@ -174,16 +185,16 @@ export class InventoryService {
         where: { id: balance.id },
         data: {
           availableQuantity: { decrement: new Decimal(item.quantity) },
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       if (balance.batchId) {
         await this.prisma.inventoryBatch.update({
           where: { id: balance.batchId },
           data: {
-            currentQuantity: { decrement: new Decimal(item.quantity) }
-          }
+            currentQuantity: { decrement: new Decimal(item.quantity) },
+          },
         });
       }
 
@@ -197,11 +208,13 @@ export class InventoryService {
           transactionType: 'TRANSFER_OUT',
           quantity: new Decimal(item.quantity),
           unitPrice: balance.batch?.purchasePrice || null,
-          totalAmount: balance.batch ? new Decimal(Number(balance.batch.purchasePrice) * item.quantity) : null,
+          totalAmount: balance.batch
+            ? new Decimal(Number(balance.batch.purchasePrice) * item.quantity)
+            : null,
           sourceEntityType: 'TRANSFER',
           sourceEntityId: transfer.id,
-          performedBy: userId
-        }
+          performedBy: userId,
+        },
       });
 
       // 2. Increment destination batch/balance
@@ -214,8 +227,8 @@ export class InventoryService {
             tenantId,
             warehouseId: dto.destinationWarehouseId,
             itemId: item.itemId,
-            batchNumber: balance.batch.batchNumber
-          }
+            batchNumber: balance.batch.batchNumber,
+          },
         });
 
         if (!destBatch) {
@@ -230,22 +243,29 @@ export class InventoryService {
               productionDate: balance.batch.productionDate,
               purchasePrice: balance.batch.purchasePrice,
               currentQuantity: new Decimal(item.quantity),
-              warehouseId: dto.destinationWarehouseId
-            }
+              warehouseId: dto.destinationWarehouseId,
+            },
           });
         } else {
           await this.prisma.inventoryBatch.update({
             where: { id: destBatch.id },
             data: {
-              currentQuantity: { increment: new Decimal(item.quantity) }
-            }
+              currentQuantity: { increment: new Decimal(item.quantity) },
+            },
           });
         }
         destBatchId = destBatch.id;
       }
 
       // Upsert destination balance
-      await this.upsertBalance(tenantId, dto.destinationWarehouseId, item.itemId, destBatchId, item.quantity, 'INCREMENT');
+      await this.upsertBalance(
+        tenantId,
+        dto.destinationWarehouseId,
+        item.itemId,
+        destBatchId,
+        item.quantity,
+        'INCREMENT',
+      );
 
       // Log destination transaction
       await this.prisma.inventoryTransaction.create({
@@ -257,11 +277,13 @@ export class InventoryService {
           transactionType: 'TRANSFER_IN',
           quantity: new Decimal(item.quantity),
           unitPrice: balance.batch?.purchasePrice || null,
-          totalAmount: balance.batch ? new Decimal(Number(balance.batch.purchasePrice) * item.quantity) : null,
+          totalAmount: balance.batch
+            ? new Decimal(Number(balance.batch.purchasePrice) * item.quantity)
+            : null,
           sourceEntityType: 'TRANSFER',
           sourceEntityId: transfer.id,
-          performedBy: userId
-        }
+          performedBy: userId,
+        },
       });
 
       // Monitor stock alerts for both
@@ -277,13 +299,15 @@ export class InventoryService {
     tenantId: string,
     appointmentId: string,
     encounterId: string,
-    roomId?: string
+    roomId?: string,
   ) {
-    this.logger.log(`EMR auto write-off triggered for appt: ${appointmentId}, encounter: ${encounterId}`);
+    this.logger.log(
+      `EMR auto write-off triggered for appt: ${appointmentId}, encounter: ${encounterId}`,
+    );
 
     const appointment = await this.prisma.appointment.findUnique({
       where: { id: appointmentId },
-      include: { service: true }
+      include: { service: true },
     });
 
     if (!appointment || !appointment.serviceId) {
@@ -296,11 +320,11 @@ export class InventoryService {
       where: {
         tenantId,
         serviceId: appointment.serviceId,
-        isActive: true
+        isActive: true,
       },
       include: {
-        bomItems: true
-      }
+        bomItems: true,
+      },
     });
 
     if (!bomTemplate) {
@@ -316,13 +340,13 @@ export class InventoryService {
         encounterId,
         employeeId: appointment.employeeId,
         warehouseId: roomId ? roomId : appointment.branchId, // temporary placeholder
-        consumptionStatus: 'PENDING'
-      }
+        consumptionStatus: 'PENDING',
+      },
     });
 
     // 1. Determine primary write-off warehouse
     let targetWarehouse = await this.prisma.warehouse.findFirst({
-      where: { tenantId, roomId: roomId || undefined, isActive: true }
+      where: { tenantId, roomId: roomId || undefined, isActive: true },
     });
 
     let usedBranchFallback = false;
@@ -330,7 +354,12 @@ export class InventoryService {
     if (!targetWarehouse) {
       // Fallback directly to Branch warehouse
       targetWarehouse = await this.prisma.warehouse.findFirst({
-        where: { tenantId, branchId: appointment.branchId, warehouseType: 'BRANCH', isActive: true }
+        where: {
+          tenantId,
+          branchId: appointment.branchId,
+          warehouseType: 'BRANCH',
+          isActive: true,
+        },
       });
       usedBranchFallback = true;
     }
@@ -339,7 +368,7 @@ export class InventoryService {
       this.logger.error(`No suitable warehouse found for write-off (neither room nor branch)`);
       await this.prisma.inventoryConsumption.update({
         where: { id: consumption.id },
-        data: { consumptionStatus: 'FAILED' }
+        data: { consumptionStatus: 'FAILED' },
       });
       return;
     }
@@ -347,7 +376,7 @@ export class InventoryService {
     // Update warehouseId in consumption log
     await this.prisma.inventoryConsumption.update({
       where: { id: consumption.id },
-      data: { warehouseId: targetWarehouse.id }
+      data: { warehouseId: targetWarehouse.id },
     });
 
     // Loop through BOM ingredients
@@ -361,13 +390,10 @@ export class InventoryService {
           tenantId,
           warehouseId: targetWarehouse.id,
           itemId: bomItem.inventoryItemId,
-          availableQuantity: { gt: 0 }
+          availableQuantity: { gt: 0 },
         },
         include: { batch: true },
-        orderBy: [
-          { batch: { expirationDate: 'asc' } },
-          { updatedAt: 'asc' }
-        ]
+        orderBy: [{ batch: { expirationDate: 'asc' } }, { updatedAt: 'asc' }],
       });
 
       let totalStock = balances.reduce((sum, b) => sum + Number(b.availableQuantity), 0);
@@ -375,7 +401,12 @@ export class InventoryService {
       // 2. Perform BRANCH fallback if ROOM stock is depleted
       if (totalStock < requiredQty && !usedBranchFallback && roomId) {
         const branchWarehouse = await this.prisma.warehouse.findFirst({
-          where: { tenantId, branchId: appointment.branchId, warehouseType: 'BRANCH', isActive: true }
+          where: {
+            tenantId,
+            branchId: appointment.branchId,
+            warehouseType: 'BRANCH',
+            isActive: true,
+          },
         });
 
         if (branchWarehouse && branchWarehouse.id !== targetWarehouse.id) {
@@ -384,16 +415,16 @@ export class InventoryService {
               tenantId,
               warehouseId: branchWarehouse.id,
               itemId: bomItem.inventoryItemId,
-              availableQuantity: { gt: 0 }
+              availableQuantity: { gt: 0 },
             },
             include: { batch: true },
-            orderBy: [
-              { batch: { expirationDate: 'asc' } },
-              { updatedAt: 'asc' }
-            ]
+            orderBy: [{ batch: { expirationDate: 'asc' } }, { updatedAt: 'asc' }],
           });
 
-          const branchTotal = branchBalances.reduce((sum, b) => sum + Number(b.availableQuantity), 0);
+          const branchTotal = branchBalances.reduce(
+            (sum, b) => sum + Number(b.availableQuantity),
+            0,
+          );
           if (branchTotal > 0) {
             balances = branchBalances;
             targetWarehouse = branchWarehouse;
@@ -406,7 +437,7 @@ export class InventoryService {
               roomId, // alert on Room level
               bomItem.inventoryItemId,
               'WARNING',
-              'ACTIVE'
+              'ACTIVE',
             );
           }
         }
@@ -424,8 +455,8 @@ export class InventoryService {
           where: { id: bal.id },
           data: {
             availableQuantity: { decrement: new Decimal(deduct) },
-            updatedAt: new Date()
-          }
+            updatedAt: new Date(),
+          },
         });
 
         // Decrement batch copy
@@ -433,8 +464,8 @@ export class InventoryService {
           await this.prisma.inventoryBatch.update({
             where: { id: bal.batchId },
             data: {
-              currentQuantity: { decrement: new Decimal(deduct) }
-            }
+              currentQuantity: { decrement: new Decimal(deduct) },
+            },
           });
         }
 
@@ -451,8 +482,8 @@ export class InventoryService {
             totalAmount: bal.batch ? new Decimal(Number(bal.batch.purchasePrice) * deduct) : null,
             sourceEntityType: 'ENCOUNTER',
             sourceEntityId: encounterId,
-            performedBy: appointment.employeeId // Performed by Doctor
-          }
+            performedBy: appointment.employeeId, // Performed by Doctor
+          },
         });
 
         remainingNeeded -= deduct;
@@ -460,23 +491,29 @@ export class InventoryService {
 
       // 4. Critical out of stock alert trigger
       if (remainingNeeded > 0) {
-        this.logger.error(`Stockout for item ${bomItem.inventoryItemId} during EMR signature. Missed quantity: ${remainingNeeded}`);
+        this.logger.error(
+          `Stockout for item ${bomItem.inventoryItemId} during EMR signature. Missed quantity: ${remainingNeeded}`,
+        );
         await this.createStockAlert(
           tenantId,
           targetWarehouse.id,
           bomItem.inventoryItemId,
           'CRITICAL',
-          'ACTIVE'
+          'ACTIVE',
         );
       }
 
       // Monitor thresholds
-      await this.checkStockThresholdsAndAlert(tenantId, targetWarehouse.id, bomItem.inventoryItemId);
+      await this.checkStockThresholdsAndAlert(
+        tenantId,
+        targetWarehouse.id,
+        bomItem.inventoryItemId,
+      );
     }
 
     await this.prisma.inventoryConsumption.update({
       where: { id: consumption.id },
-      data: { consumptionStatus: 'COMPLETED' }
+      data: { consumptionStatus: 'COMPLETED' },
     });
   }
 
@@ -491,8 +528,8 @@ export class InventoryService {
         auditStatus: 'COMPLETED',
         startedBy: userId,
         completedBy: userId,
-        completedAt: new Date()
-      }
+        completedAt: new Date(),
+      },
     });
 
     for (const item of dto.items) {
@@ -502,9 +539,9 @@ export class InventoryService {
           tenantId,
           warehouseId: dto.warehouseId,
           itemId: item.itemId,
-          batchId: item.batchId || null
+          batchId: item.batchId || null,
         },
-        include: { batch: true }
+        include: { batch: true },
       });
 
       const expected = balance ? Number(balance.availableQuantity) : 0;
@@ -518,20 +555,27 @@ export class InventoryService {
           batchId: item.batchId || null,
           expectedQuantity: new Decimal(expected),
           countedQuantity: new Decimal(item.countedQuantity),
-          discrepancyQuantity: new Decimal(discrepancy)
-        }
+          discrepancyQuantity: new Decimal(discrepancy),
+        },
       });
 
       // 2. Adjust Balance
-      await this.upsertBalance(tenantId, dto.warehouseId, item.itemId, item.batchId || null, item.countedQuantity, 'SET');
+      await this.upsertBalance(
+        tenantId,
+        dto.warehouseId,
+        item.itemId,
+        item.batchId || null,
+        item.countedQuantity,
+        'SET',
+      );
 
       // Update batch if tracked
       if (item.batchId) {
         await this.prisma.inventoryBatch.update({
           where: { id: item.batchId },
           data: {
-            currentQuantity: new Decimal(item.countedQuantity)
-          }
+            currentQuantity: new Decimal(item.countedQuantity),
+          },
         });
       }
 
@@ -546,8 +590,8 @@ export class InventoryService {
             transactionType: 'INVENTORY_ADJUSTMENT',
             quantity: new Decimal(discrepancy),
             unitPrice: balance?.batch?.purchasePrice || null,
-            performedBy: userId
-          }
+            performedBy: userId,
+          },
         });
       }
 
@@ -564,7 +608,7 @@ export class InventoryService {
     // Deactivate previous versions
     await this.prisma.serviceBomTemplate.updateMany({
       where: { tenantId, serviceId: dto.serviceId, isActive: true },
-      data: { isActive: false }
+      data: { isActive: false },
     });
 
     return this.prisma.serviceBomTemplate.create({
@@ -575,17 +619,17 @@ export class InventoryService {
         isActive: true,
         createdBy: userId,
         bomItems: {
-          create: dto.items.map(item => ({
+          create: dto.items.map((item) => ({
             inventoryItemId: item.inventoryItemId,
             quantity: new Decimal(item.quantity),
             unitOfMeasure: item.unitOfMeasure,
-            isMandatory: item.isMandatory
-          }))
-        }
+            isMandatory: item.isMandatory,
+          })),
+        },
       },
       include: {
-        bomItems: true
-      }
+        bomItems: true,
+      },
     });
   }
 
@@ -595,11 +639,11 @@ export class InventoryService {
     warehouseId: string,
     itemId: string,
     alertLevel: 'WARNING' | 'CRITICAL',
-    alertStatus: 'ACTIVE' | 'RESOLVED'
+    alertStatus: 'ACTIVE' | 'RESOLVED',
   ) {
     // Find current stock
     const balances = await this.prisma.inventoryBalance.findMany({
-      where: { tenantId, warehouseId, itemId }
+      where: { tenantId, warehouseId, itemId },
     });
     const currentQuantity = balances.reduce((sum, b) => sum + Number(b.availableQuantity), 0);
 
@@ -610,15 +654,15 @@ export class InventoryService {
         itemId,
         currentQuantity: new Decimal(currentQuantity),
         alertLevel,
-        alertStatus
-      }
+        alertStatus,
+      },
     });
   }
 
   async checkStockThresholdsAndAlert(tenantId: string, warehouseId: string, itemId: string) {
     // Total stock in this warehouse
     const balances = await this.prisma.inventoryBalance.findMany({
-      where: { tenantId, warehouseId, itemId }
+      where: { tenantId, warehouseId, itemId },
     });
     const totalQty = balances.reduce((sum, b) => sum + Number(b.availableQuantity), 0);
 
@@ -628,16 +672,16 @@ export class InventoryService {
         tenantId_warehouseId_itemId: {
           tenantId,
           warehouseId,
-          itemId
-        }
-      }
+          itemId,
+        },
+      },
     });
 
     const item = await this.prisma.inventoryItem.findUnique({
-      where: { id: itemId }
+      where: { id: itemId },
     });
 
-    const minQty = rule ? Number(rule.minimumQuantity) : (item ? Number(item.minimumStockLevel) : 0);
+    const minQty = rule ? Number(rule.minimumQuantity) : item ? Number(item.minimumStockLevel) : 0;
     const critQty = rule ? Number(rule.criticalQuantity) : 0;
 
     // Evaluate
@@ -649,8 +693,8 @@ export class InventoryService {
           itemId,
           currentQuantity: new Decimal(totalQty),
           alertLevel: 'CRITICAL',
-          alertStatus: 'ACTIVE'
-        }
+          alertStatus: 'ACTIVE',
+        },
       });
     } else if (totalQty <= minQty && totalQty > critQty) {
       await this.prisma.stockAlert.create({
@@ -660,8 +704,8 @@ export class InventoryService {
           itemId,
           currentQuantity: new Decimal(totalQty),
           alertLevel: 'WARNING',
-          alertStatus: 'ACTIVE'
-        }
+          alertStatus: 'ACTIVE',
+        },
       });
     } else if (totalQty === 0) {
       await this.prisma.stockAlert.create({
@@ -671,8 +715,8 @@ export class InventoryService {
           itemId,
           currentQuantity: new Decimal(totalQty),
           alertLevel: 'CRITICAL',
-          alertStatus: 'ACTIVE'
-        }
+          alertStatus: 'ACTIVE',
+        },
       });
     }
   }
@@ -681,13 +725,13 @@ export class InventoryService {
     return this.prisma.inventoryBalance.findMany({
       where: {
         tenantId,
-        ...(warehouseId ? { warehouseId } : {})
+        ...(warehouseId ? { warehouseId } : {}),
       },
       include: {
         item: true,
         batch: true,
-        warehouse: true
-      }
+        warehouse: true,
+      },
     });
   }
 
@@ -696,8 +740,8 @@ export class InventoryService {
       where: { tenantId, alertStatus: 'ACTIVE' },
       include: {
         item: true,
-        warehouse: true
-      }
+        warehouse: true,
+      },
     });
   }
 
@@ -707,27 +751,26 @@ export class InventoryService {
     itemId: string,
     batchId: string | null,
     quantity: number,
-    action: 'INCREMENT' | 'SET'
+    action: 'INCREMENT' | 'SET',
   ) {
     const existing = await this.prisma.inventoryBalance.findFirst({
       where: {
         tenantId,
         warehouseId,
         itemId,
-        batchId: batchId || null
-      }
+        batchId: batchId || null,
+      },
     });
 
     if (existing) {
-      const newQty = action === 'INCREMENT'
-        ? Number(existing.availableQuantity) + quantity
-        : quantity;
+      const newQty =
+        action === 'INCREMENT' ? Number(existing.availableQuantity) + quantity : quantity;
       return this.prisma.inventoryBalance.update({
         where: { id: existing.id },
         data: {
           availableQuantity: new Decimal(newQty),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
     } else {
       return this.prisma.inventoryBalance.create({
@@ -737,8 +780,8 @@ export class InventoryService {
           itemId,
           batchId: batchId || null,
           availableQuantity: new Decimal(quantity),
-          reservedQuantity: new Decimal(0)
-        }
+          reservedQuantity: new Decimal(0),
+        },
       });
     }
   }

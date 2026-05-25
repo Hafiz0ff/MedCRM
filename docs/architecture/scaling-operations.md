@@ -28,24 +28,24 @@ Data Services
 
 ## 2. Горизонтальное масштабирование
 
-| Компонент | Стратегия |
-|---|---|
-| Frontend | Multiple replicas, CDN/static cache |
-| API Gateway | Stateless replicas, HPA по CPU/RPS |
-| Core API | Stateless replicas, HPA по latency/RPS |
-| WebSocket | Replicas + Redis adapter |
-| Notifications | Worker replicas по queue depth |
-| Integrations | Worker replicas по queue depth и retry volume |
-| Analytics | Отдельные workers и ClickHouse ingestion |
+| Компонент     | Стратегия                                     |
+| ------------- | --------------------------------------------- |
+| Frontend      | Multiple replicas, CDN/static cache           |
+| API Gateway   | Stateless replicas, HPA по CPU/RPS            |
+| Core API      | Stateless replicas, HPA по latency/RPS        |
+| WebSocket     | Replicas + Redis adapter                      |
+| Notifications | Worker replicas по queue depth                |
+| Integrations  | Worker replicas по queue depth и retry volume |
+| Analytics     | Отдельные workers и ClickHouse ingestion      |
 
 ## 3. Вертикальное/кластерное масштабирование
 
-| Компонент | Стратегия |
-|---|---|
-| PostgreSQL | Read replicas, connection pooler, backup/restore |
-| Redis | Redis Sentinel/Cluster по мере роста |
-| ClickHouse | Sharding/replication для аналитики |
-| Object Storage | S3-compatible lifecycle policies |
+| Компонент      | Стратегия                                        |
+| -------------- | ------------------------------------------------ |
+| PostgreSQL     | Read replicas, connection pooler, backup/restore |
+| Redis          | Redis Sentinel/Cluster по мере роста             |
+| ClickHouse     | Sharding/replication для аналитики               |
+| Object Storage | S3-compatible lifecycle policies                 |
 
 ## 4. Observability
 
@@ -132,4 +132,3 @@ FHIR-ready подход:
 - версии mapping contracts фиксируются;
 - входящие сообщения валидируются и логируются;
 - обработка должна быть идемпотентной.
-

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
-import { getBootstrap } from '@/shared/api/server-api';
 import { DashboardView } from './dashboard-view';
+import { getBootstrap } from '@/shared/api/server-api';
 
 export default async function DashboardPage() {
   const bootstrap = await getBootstrap();

@@ -1,8 +1,8 @@
+import { REDIS_CLIENT } from '@core/cache/redis.module';
+import { PrismaService } from '@core/database/prisma.service';
 import { Inject, Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Queue, Worker, Job } from 'bullmq';
 import Redis from 'ioredis';
-import { REDIS_CLIENT } from '@core/cache/redis.module';
-import { PrismaService } from '@core/database/prisma.service';
 
 export const APPOINTMENT_REMINDERS_QUEUE = 'appointment-reminders';
 
@@ -17,7 +17,7 @@ export class RemindersService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
   ) {}
 
   onModuleInit(): void {
@@ -31,7 +31,7 @@ export class RemindersService implements OnModuleInit, OnModuleDestroy {
       async (job: Job) => {
         await this.processReminder(job);
       },
-      { connection: this.workerConnection, concurrency: 5 }
+      { connection: this.workerConnection, concurrency: 5 },
     );
 
     this.worker.on('completed', (job) => {
@@ -63,7 +63,7 @@ export class RemindersService implements OnModuleInit, OnModuleDestroy {
     await this.queue.add(
       'appointment.reminder.24h',
       { appointmentId },
-      { jobId: `${appointmentId}-24h`, delay, removeOnComplete: true, removeOnFail: 1000 }
+      { jobId: `${appointmentId}-24h`, delay, removeOnComplete: true, removeOnFail: 1000 },
     );
   }
 
@@ -71,7 +71,7 @@ export class RemindersService implements OnModuleInit, OnModuleDestroy {
     const { appointmentId } = job.data;
     const appointment = await this.prisma.appointment.findUnique({
       where: { id: appointmentId },
-      include: { patient: { include: { contacts: true } }, service: true, branch: true }
+      include: { patient: { include: { contacts: true } }, service: true, branch: true },
     });
 
     if (!appointment || ['CANCELLED', 'COMPLETED', 'NO_SHOW'].includes(appointment.status)) {
@@ -87,10 +87,12 @@ export class RemindersService implements OnModuleInit, OnModuleDestroy {
         notificationType: 'REMINDER_24H',
         channel: 'SMS',
         status: 'SENT',
-        sentAt: new Date()
-      }
+        sentAt: new Date(),
+      },
     });
 
-    this.logger.log(`Reminder sent for appointment ${appointment.appointmentNumber} — patient ${appointment.patient.fullName}`);
+    this.logger.log(
+      `Reminder sent for appointment ${appointment.appointmentNumber} — patient ${appointment.patient.fullName}`,
+    );
   }
 }

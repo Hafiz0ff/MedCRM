@@ -1,20 +1,7 @@
 'use client';
 
+import { ChevronRight, Loader2, Lock, Plus, ShieldCheck, Trash2, Users, X } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import {
-  ChevronRight,
-  Loader2,
-  Lock,
-  Plus,
-  ShieldCheck,
-  Trash2,
-  Users,
-  X
-} from 'lucide-react';
-import { BootstrapPayload } from '@/shared/types/bootstrap';
-import { can } from '@/shared/permissions/can';
-import { useToast } from '@/shared/ui/toast';
-import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 import {
   RoleSummary,
   TenantUserSummary,
@@ -26,8 +13,12 @@ import {
   useRoles,
   useSetRolePermissions,
   useTenantUsers,
-  useUserRoles
+  useUserRoles,
 } from '../hooks/use-system-admin';
+import { can } from '@/shared/permissions/can';
+import { BootstrapPayload } from '@/shared/types/bootstrap';
+import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
+import { useToast } from '@/shared/ui/toast';
 
 type Mode = 'roles' | 'users';
 
@@ -94,11 +85,7 @@ export function RbacTab({ bootstrap }: { bootstrap: BootstrapPayload }) {
             onError={(msg) => toast('error', 'Ошибка', msg)}
           />
         ) : (
-          <UsersList
-            users={users}
-            selectedUserId={selectedUserId}
-            onSelect={setSelectedUserId}
-          />
+          <UsersList users={users} selectedUserId={selectedUserId} onSelect={setSelectedUserId} />
         )}
       </aside>
 
@@ -130,7 +117,7 @@ function RolesList({
   onSelect,
   canManage,
   onCreated,
-  onError
+  onError,
 }: {
   roles: RoleSummary[];
   selectedRoleId: string | null;
@@ -148,7 +135,11 @@ function RolesList({
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     createRole.mutate(
-      { code: code.trim().toUpperCase(), name: name.trim(), description: description.trim() || null },
+      {
+        code: code.trim().toUpperCase(),
+        name: name.trim(),
+        description: description.trim() || null,
+      },
       {
         onSuccess: (created) => {
           setShowForm(false);
@@ -157,8 +148,8 @@ function RolesList({
           setDescription('');
           onCreated(created);
         },
-        onError: (err) => onError(err.message)
-      }
+        onError: (err) => onError(err.message),
+      },
     );
   };
 
@@ -250,7 +241,7 @@ function RoleEditor({
   role,
   permissions,
   canManage,
-  onClose
+  onClose,
 }: {
   role: RoleSummary | null;
   permissions: Array<{
@@ -323,10 +314,10 @@ function RoleEditor({
             'Права обновлены',
             result.revokedSessionCount > 0
               ? `Сессии затронутых сотрудников (${result.revokedSessionCount}) принудительно сброшены`
-              : 'Изменения сохранены'
+              : 'Изменения сохранены',
           ),
-        onError: (err) => toast('error', 'Не удалось сохранить', err.message)
-      }
+        onError: (err) => toast('error', 'Не удалось сохранить', err.message),
+      },
     );
   };
 
@@ -340,7 +331,7 @@ function RoleEditor({
       onError: (err) => {
         toast('error', 'Невозможно удалить', err.message);
         setConfirmDelete(false);
-      }
+      },
     });
   };
 
@@ -382,7 +373,8 @@ function RoleEditor({
 
       {role.isSystem ? (
         <div className="settings-callout">
-          <Lock size={14} /> Системную роль нельзя редактировать. Создайте копию, если нужны изменения.
+          <Lock size={14} /> Системную роль нельзя редактировать. Создайте копию, если нужны
+          изменения.
         </div>
       ) : null}
 
@@ -401,7 +393,10 @@ function RoleEditor({
                   disabled={!canEdit}
                   aria-pressed={allSelected}
                 >
-                  <span className={`settings-checkbox${allSelected ? ' is-on' : ''}`} aria-hidden="true" />
+                  <span
+                    className={`settings-checkbox${allSelected ? ' is-on' : ''}`}
+                    aria-hidden="true"
+                  />
                   {moduleName}
                   <small className="muted">
                     {codes.filter((c) => selected.has(c)).length}/{codes.length}
@@ -421,7 +416,9 @@ function RoleEditor({
                       <span className="rbac-permission-body">
                         <strong>{perm.name}</strong>
                         <code className="muted">{perm.code}</code>
-                        {perm.description ? <small className="muted">{perm.description}</small> : null}
+                        {perm.description ? (
+                          <small className="muted">{perm.description}</small>
+                        ) : null}
                       </span>
                     </label>
                   </li>
@@ -462,7 +459,7 @@ function RoleEditor({
 function UsersList({
   users,
   selectedUserId,
-  onSelect
+  onSelect,
 }: {
   users: TenantUserSummary[];
   selectedUserId: string | null;
@@ -499,7 +496,9 @@ function UsersList({
                 </strong>
                 <small className="muted">
                   {user.email}
-                  {user.primaryRole ? <span className="settings-pill is-info">{user.primaryRole}</span> : null}
+                  {user.primaryRole ? (
+                    <span className="settings-pill is-info">{user.primaryRole}</span>
+                  ) : null}
                   <span className="muted">{user.activeAssignmentCount} назначений</span>
                 </small>
               </div>
@@ -524,7 +523,7 @@ function UserEditor({
   roles,
   bootstrap,
   canManage,
-  onClose
+  onClose,
 }: {
   user: TenantUserSummary | null;
   roles: RoleSummary[];
@@ -544,8 +543,8 @@ function UserEditor({
         key: `${entry.id}-${index}`,
         branchId: entry.branchId,
         roleId: entry.roleId,
-        isPrimary: entry.isPrimary
-      }))
+        isPrimary: entry.isPrimary,
+      })),
     );
   }, [userRolesQuery.data]);
 
@@ -559,13 +558,16 @@ function UserEditor({
   }
 
   const branches = bootstrap.branches;
-  const dirty = JSON.stringify(draft.map(({ branchId, roleId, isPrimary }) => ({ branchId, roleId, isPrimary }))) !==
+  const dirty =
+    JSON.stringify(
+      draft.map(({ branchId, roleId, isPrimary }) => ({ branchId, roleId, isPrimary })),
+    ) !==
     JSON.stringify(
       (userRolesQuery.data?.assignments ?? []).map((a) => ({
         branchId: a.branchId,
         roleId: a.roleId,
-        isPrimary: a.isPrimary
-      }))
+        isPrimary: a.isPrimary,
+      })),
     );
 
   const addRow = () => {
@@ -575,8 +577,8 @@ function UserEditor({
         key: `new-${Date.now()}-${prev.length}`,
         branchId: branches[0]?.id ?? '',
         roleId: roles.find((r) => !r.isSystem)?.id ?? roles[0]?.id ?? '',
-        isPrimary: prev.length === 0
-      }
+        isPrimary: prev.length === 0,
+      },
     ]);
   };
 
@@ -592,7 +594,11 @@ function UserEditor({
     assignRoles.mutate(
       {
         userId: user.id,
-        assignments: draft.map(({ branchId, roleId, isPrimary }) => ({ branchId, roleId, isPrimary }))
+        assignments: draft.map(({ branchId, roleId, isPrimary }) => ({
+          branchId,
+          roleId,
+          isPrimary,
+        })),
       },
       {
         onSuccess: (result) =>
@@ -601,10 +607,10 @@ function UserEditor({
             'Роли обновлены',
             result.revokedSessionCount > 0
               ? `Сессии сотрудника (${result.revokedSessionCount}) принудительно сброшены`
-              : 'Изменения сохранены'
+              : 'Изменения сохранены',
           ),
-        onError: (err) => toast('error', 'Не удалось сохранить', err.message)
-      }
+        onError: (err) => toast('error', 'Не удалось сохранить', err.message),
+      },
     );
   };
 
@@ -670,9 +676,9 @@ function UserEditor({
                             r.key === row.key
                               ? { ...r, isPrimary: event.target.checked }
                               : event.target.checked
-                              ? { ...r, isPrimary: false }
-                              : r
-                          )
+                                ? { ...r, isPrimary: false }
+                                : r,
+                          ),
                         )
                       }
                       disabled={!canManage}
@@ -694,7 +700,12 @@ function UserEditor({
           </div>
 
           <div className="rbac-editor-footer">
-            <button type="button" className="secondary-button" onClick={addRow} disabled={!canManage}>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={addRow}
+              disabled={!canManage}
+            >
               <Plus size={14} /> Добавить назначение
             </button>
             <button

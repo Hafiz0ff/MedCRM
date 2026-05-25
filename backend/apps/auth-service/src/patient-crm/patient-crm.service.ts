@@ -1,12 +1,11 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
-import { Prisma } from '@prisma/client';
 import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
-import { REDIS_CLIENT } from '@core/cache/redis.module';
-import { CreatePatientDto, PatientListQuery, UpdatePatientDto, CreateContactDto, UpdateContactDto, MergePatientsDto, PatientStatusTransitionDto } from './dto/patient.schemas';
 import {
   CrmTagDto,
   FamilyGroupDto,
@@ -14,15 +13,24 @@ import {
   PatientLegalDocumentDto,
   PatientNoteDto,
   PatientTimelineEventDto,
-  PatientLeadDto
+  PatientLeadDto,
 } from './dto/patient-crm.dto';
+import {
+  CreatePatientDto,
+  PatientListQuery,
+  UpdatePatientDto,
+  CreateContactDto,
+  UpdateContactDto,
+  MergePatientsDto,
+  PatientStatusTransitionDto,
+} from './dto/patient.schemas';
 
 @Injectable()
 export class PatientCrmService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditLoggerService,
-    @Inject(REDIS_CLIENT) private readonly redis: Redis
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
   async list(user: AuthenticatedUser, query: PatientListQuery) {
@@ -35,13 +43,13 @@ export class PatientCrmService {
           registrationBranch: true,
           tags: { include: { tag: true } },
           metrics: true,
-          invoices: { where: { status: { in: ['DRAFT', 'PENDING_PAYMENT'] } } }
+          invoices: { where: { status: { in: ['DRAFT', 'PENDING_PAYMENT'] } } },
         },
         orderBy: { createdAt: 'desc' },
         skip: (query.page - 1) * query.pageSize,
-        take: query.pageSize
+        take: query.pageSize,
       }),
-      this.prisma.patient.count({ where })
+      this.prisma.patient.count({ where }),
     ]);
     return { items, total, page: query.page, pageSize: query.pageSize };
   }
@@ -50,7 +58,7 @@ export class PatientCrmService {
     const result = await this.list(user, query);
     return {
       ...result,
-      duplicateCandidates: query.q ? await this.findDuplicateCandidates(user, query.q) : []
+      duplicateCandidates: query.q ? await this.findDuplicateCandidates(user, query.q) : [],
     };
   }
 
@@ -76,11 +84,13 @@ export class PatientCrmService {
         contacts: {
           create: [
             ...(dto.phone ? [this.contactCreate(user.tenantId, 'PHONE', dto.phone, true)] : []),
-            ...(dto.email ? [this.contactCreate(user.tenantId, 'EMAIL', dto.email, !dto.phone)] : [])
-          ]
-        }
+            ...(dto.email
+              ? [this.contactCreate(user.tenantId, 'EMAIL', dto.email, !dto.phone)]
+              : []),
+          ],
+        },
       },
-      include: { contacts: true, registrationBranch: true }
+      include: { contacts: true, registrationBranch: true },
     });
 
     await this.audit.log({
@@ -90,15 +100,23 @@ export class PatientCrmService {
       action: 'patient.created',
       entityType: 'patient',
       entityId: patient.id,
-      newValuesJson: patient
+      newValuesJson: patient,
     });
     return patient;
   }
 
   async get(user: AuthenticatedUser, id: string) {
     const patient = await this.prisma.patient.findFirst({
-      where: { id, tenantId: user.tenantId, OR: [{ registrationBranchId: null }, { registrationBranchId: { in: user.branchIds } }] },
-      include: { contacts: true, registrationBranch: true, appointments: { orderBy: { startAt: 'desc' }, take: 5, include: { service: true } } }
+      where: {
+        id,
+        tenantId: user.tenantId,
+        OR: [{ registrationBranchId: null }, { registrationBranchId: { in: user.branchIds } }],
+      },
+      include: {
+        contacts: true,
+        registrationBranch: true,
+        appointments: { orderBy: { startAt: 'desc' }, take: 5, include: { service: true } },
+      },
     });
     if (!patient) throw new NotFoundException('Patient not found');
     await this.audit.log({
@@ -107,7 +125,7 @@ export class PatientCrmService {
       userId: user.userId,
       action: 'patient.viewed',
       entityType: 'patient',
-      entityId: patient.id
+      entityId: patient.id,
     });
     return patient;
   }
@@ -123,13 +141,16 @@ export class PatientCrmService {
         firstName: dto.firstName,
         lastName: dto.lastName,
         middleName: dto.middleName,
-        fullName: dto.firstName || dto.lastName || dto.middleName ? this.fullName({ ...current, ...dto }) : undefined,
+        fullName:
+          dto.firstName || dto.lastName || dto.middleName
+            ? this.fullName({ ...current, ...dto })
+            : undefined,
         birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
         gender: dto.gender,
         status: dto.status,
-        registrationBranchId: branchId
+        registrationBranchId: branchId,
       },
-      include: { contacts: true, registrationBranch: true }
+      include: { contacts: true, registrationBranch: true },
     });
 
     await this.audit.log({
@@ -140,7 +161,7 @@ export class PatientCrmService {
       entityType: 'patient',
       entityId: patient.id,
       oldValuesJson: current,
-      newValuesJson: patient
+      newValuesJson: patient,
     });
     return patient;
   }
@@ -156,7 +177,7 @@ export class PatientCrmService {
         {
           OR: query.branchId
             ? [{ registrationBranchId: query.branchId }]
-            : [{ registrationBranchId: null }, { registrationBranchId: { in: user.branchIds } }]
+            : [{ registrationBranchId: null }, { registrationBranchId: { in: user.branchIds } }],
         },
         ...(query.q
           ? [
@@ -164,12 +185,16 @@ export class PatientCrmService {
                 OR: [
                   { fullName: { contains: query.q, mode: 'insensitive' as const } },
                   { patientCode: { contains: query.q, mode: 'insensitive' as const } },
-                  { contacts: { some: { value: { contains: query.q, mode: 'insensitive' as const } } } }
-                ]
-              }
+                  {
+                    contacts: {
+                      some: { value: { contains: query.q, mode: 'insensitive' as const } },
+                    },
+                  },
+                ],
+              },
             ]
-          : [])
-      ]
+          : []),
+      ],
     };
   }
 
@@ -181,15 +206,30 @@ export class PatientCrmService {
         tenantId: user.tenantId,
         OR: [
           { fullName: { contains: q, mode: 'insensitive' } },
-          { contacts: { some: { normalizedValueHash: hash } } }
-        ]
+          { contacts: { some: { normalizedValueHash: hash } } },
+        ],
       },
       include: { contacts: true },
-      take: 5
+      take: 5,
     });
   }
 
   private async nextPatientCode(tenantId: string): Promise<string> {
+    const exists = await this.redis.exists(`tenant:${tenantId}:patient_seq`);
+    if (!exists) {
+      const lastPatient = await this.prisma.patient.findFirst({
+        where: { tenantId },
+        orderBy: { patientCode: 'desc' },
+      });
+      let seq = 0;
+      if (lastPatient) {
+        const match = lastPatient.patientCode.match(/\d+/);
+        if (match) {
+          seq = parseInt(match[0], 10);
+        }
+      }
+      await this.redis.set(`tenant:${tenantId}:patient_seq`, seq);
+    }
     const seq = await this.redis.incr(`tenant:${tenantId}:patient_seq`);
     return `P-${String(seq).padStart(6, '0')}`;
   }
@@ -207,7 +247,11 @@ export class PatientCrmService {
     return createHash('sha256').update(value).digest('hex');
   }
 
-  private fullName(input: { firstName?: string; lastName?: string; middleName?: string | null }): string {
+  private fullName(input: {
+    firstName?: string;
+    lastName?: string;
+    middleName?: string | null;
+  }): string {
     return [input.lastName, input.firstName, input.middleName].filter(Boolean).join(' ');
   }
 
@@ -221,7 +265,7 @@ export class PatientCrmService {
   async listTags(user: AuthenticatedUser) {
     return this.prisma.crmTag.findMany({
       where: { tenantId: user.tenantId },
-      orderBy: { code: 'asc' }
+      orderBy: { code: 'asc' },
     });
   }
 
@@ -231,14 +275,16 @@ export class PatientCrmService {
         tenantId: user.tenantId,
         code: dto.code,
         name: dto.name,
-        color: dto.color
-      }
+        color: dto.color,
+      },
     });
   }
 
   async assignTag(user: AuthenticatedUser, patientId: string, tagId: string) {
     const patient = await this.get(user, patientId);
-    const tag = await this.prisma.crmTag.findFirst({ where: { id: tagId, tenantId: user.tenantId } });
+    const tag = await this.prisma.crmTag.findFirst({
+      where: { id: tagId, tenantId: user.tenantId },
+    });
     if (!tag) throw new NotFoundException('Tag not found');
 
     const pt = await this.prisma.patientTag.upsert({
@@ -248,15 +294,15 @@ export class PatientCrmService {
         tenantId: user.tenantId,
         patientId,
         tagId,
-        assignedBy: user.userId
-      }
+        assignedBy: user.userId,
+      },
     });
 
     await this.addTimelineEvent(user, patientId, {
       eventType: 'TAG_ASSIGNED',
       eventSource: 'SYSTEM',
       title: `Присвоен тег: ${tag.name}`,
-      metadataJson: { tagId, tagCode: tag.code }
+      metadataJson: { tagId, tagCode: tag.code },
     });
 
     return pt;
@@ -265,7 +311,7 @@ export class PatientCrmService {
   async removeTag(user: AuthenticatedUser, patientId: string, tagId: string) {
     await this.get(user, patientId);
     await this.prisma.patientTag.delete({
-      where: { patientId_tagId: { patientId, tagId } }
+      where: { patientId_tagId: { patientId, tagId } },
     });
     return { success: true };
   }
@@ -280,12 +326,12 @@ export class PatientCrmService {
           include: {
             members: {
               include: {
-                patient: true
-              }
-            }
-          }
-        }
-      }
+                patient: true,
+              },
+            },
+          },
+        },
+      },
     });
     return membership ? membership.familyGroup : null;
   }
@@ -297,15 +343,17 @@ export class PatientCrmService {
         familyName: dto.familyName,
         primaryContactPatientId: dto.primaryContactPatientId,
         sharedBalanceEnabled: dto.sharedBalanceEnabled,
-        sharedDiscountEnabled: dto.sharedDiscountEnabled
-      }
+        sharedDiscountEnabled: dto.sharedDiscountEnabled,
+      },
     });
   }
 
   async addFamilyMember(user: AuthenticatedUser, dto: FamilyMemberDto) {
     await this.get(user, dto.patientId);
 
-    const fg = await this.prisma.familyGroup.findFirst({ where: { id: dto.familyGroupId, tenantId: user.tenantId } });
+    const fg = await this.prisma.familyGroup.findFirst({
+      where: { id: dto.familyGroupId, tenantId: user.tenantId },
+    });
     if (!fg) throw new NotFoundException('Family group not found');
 
     return this.prisma.familyMember.create({
@@ -315,14 +363,14 @@ export class PatientCrmService {
         patientId: dto.patientId,
         relationType: dto.relationType,
         isPrimaryContact: dto.isPrimaryContact,
-        canReceiveNotifications: dto.canReceiveNotifications
-      }
+        canReceiveNotifications: dto.canReceiveNotifications,
+      },
     });
   }
 
   async removeFamilyMember(user: AuthenticatedUser, memberId: string) {
     const member = await this.prisma.familyMember.findFirst({
-      where: { id: memberId, tenantId: user.tenantId }
+      where: { id: memberId, tenantId: user.tenantId },
     });
     if (!member) throw new NotFoundException('Family member not found');
 
@@ -336,16 +384,20 @@ export class PatientCrmService {
     return this.prisma.patientLegalDocument.findMany({
       where: { tenantId: user.tenantId, patientId },
       include: { documentType: true, branch: true, signedByUser: true },
-      orderBy: { signedAt: 'desc' }
+      orderBy: { signedAt: 'desc' },
     });
   }
 
-  async signLegalDocument(user: AuthenticatedUser, patientId: string, dto: PatientLegalDocumentDto) {
+  async signLegalDocument(
+    user: AuthenticatedUser,
+    patientId: string,
+    dto: PatientLegalDocumentDto,
+  ) {
     await this.get(user, patientId);
     if (dto.branchId) this.assertBranchAccess(user, dto.branchId);
 
     const docType = await this.prisma.legalDocumentType.findUnique({
-      where: { id: dto.documentTypeId }
+      where: { id: dto.documentTypeId },
     });
     if (!docType) throw new NotFoundException('Document type not found');
 
@@ -361,8 +413,8 @@ export class PatientCrmService {
         retentionUntil: dto.retentionUntil ? new Date(dto.retentionUntil) : null,
         status: dto.status,
         signedByUserId: user.userId,
-        branchId: dto.branchId ?? user.branchIds[0]
-      }
+        branchId: dto.branchId ?? user.branchIds[0],
+      },
     });
 
     await this.addTimelineEvent(user, patientId, {
@@ -370,7 +422,7 @@ export class PatientCrmService {
       eventSource: 'SYSTEM',
       title: `Подписан документ: ${docType.name}`,
       description: dto.documentNumber ? `Номер документа: ${dto.documentNumber}` : undefined,
-      metadataJson: { documentId: signedDoc.id }
+      metadataJson: { documentId: signedDoc.id },
     });
 
     await this.audit.log({
@@ -380,7 +432,7 @@ export class PatientCrmService {
       action: 'patient.document.signed',
       entityType: 'patient_legal_document',
       entityId: signedDoc.id,
-      newValuesJson: signedDoc
+      newValuesJson: signedDoc,
     });
 
     return signedDoc;
@@ -389,7 +441,7 @@ export class PatientCrmService {
   async listTemplates(user: AuthenticatedUser) {
     return this.prisma.legalDocumentTemplate.findMany({
       where: { OR: [{ tenantId: null }, { tenantId: user.tenantId }] },
-      include: { documentType: true }
+      include: { documentType: true },
     });
   }
 
@@ -398,7 +450,7 @@ export class PatientCrmService {
     await this.get(user, patientId);
     return this.prisma.patientTimelineEvent.findMany({
       where: { tenantId: user.tenantId, patientId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -410,8 +462,8 @@ export class PatientCrmService {
         patientId,
         note: dto.note,
         visibility: dto.visibility,
-        createdBy: user.userId
-      }
+        createdBy: user.userId,
+      },
     });
 
     await this.addTimelineEvent(user, patientId, {
@@ -419,7 +471,7 @@ export class PatientCrmService {
       eventSource: 'STAFF',
       title: 'Добавлена заметка',
       description: dto.note.length > 60 ? dto.note.slice(0, 60) + '...' : dto.note,
-      metadataJson: { noteId: note.id }
+      metadataJson: { noteId: note.id },
     });
 
     return note;
@@ -435,8 +487,8 @@ export class PatientCrmService {
         title: dto.title,
         description: dto.description,
         metadataJson: dto.metadataJson ?? undefined,
-        createdBy: user.userId
-      }
+        createdBy: user.userId,
+      },
     });
   }
 
@@ -444,7 +496,7 @@ export class PatientCrmService {
   async getMetrics(user: AuthenticatedUser, patientId: string) {
     await this.get(user, patientId);
     return this.prisma.patientCrmMetric.findUnique({
-      where: { patientId }
+      where: { patientId },
     });
   }
 
@@ -462,8 +514,8 @@ export class PatientCrmService {
         utmCampaign: dto.utmCampaign,
         utmContent: dto.utmContent,
         utmTerm: dto.utmTerm,
-        conversionAt: dto.conversionAt ? new Date(dto.conversionAt) : null
-      }
+        conversionAt: dto.conversionAt ? new Date(dto.conversionAt) : null,
+      },
     });
   }
 
@@ -475,7 +527,7 @@ export class PatientCrmService {
     if (dto.isPrimary) {
       await this.prisma.patientContact.updateMany({
         where: { tenantId: user.tenantId, patientId, isPrimary: true },
-        data: { isPrimary: false }
+        data: { isPrimary: false },
       });
     }
 
@@ -486,31 +538,36 @@ export class PatientCrmService {
         type: dto.type,
         value: dto.value,
         normalizedValueHash: hash,
-        isPrimary: dto.isPrimary ?? false
-      }
+        isPrimary: dto.isPrimary ?? false,
+      },
     });
 
     await this.addTimelineEvent(user, patientId, {
       eventType: 'CONTACT_ADDED',
       eventSource: 'SYSTEM',
       title: `Добавлен контакт: ${dto.type}`,
-      description: dto.value
+      description: dto.value,
     });
 
     return contact;
   }
 
-  async updateContact(user: AuthenticatedUser, patientId: string, contactId: string, dto: UpdateContactDto) {
+  async updateContact(
+    user: AuthenticatedUser,
+    patientId: string,
+    contactId: string,
+    dto: UpdateContactDto,
+  ) {
     await this.get(user, patientId);
     const contact = await this.prisma.patientContact.findFirst({
-      where: { id: contactId, patientId, tenantId: user.tenantId }
+      where: { id: contactId, patientId, tenantId: user.tenantId },
     });
     if (!contact) throw new NotFoundException('Contact not found');
 
     if (dto.isPrimary) {
       await this.prisma.patientContact.updateMany({
         where: { tenantId: user.tenantId, patientId, isPrimary: true },
-        data: { isPrimary: false }
+        data: { isPrimary: false },
       });
     }
 
@@ -523,15 +580,15 @@ export class PatientCrmService {
         type: dto.type,
         value: dto.value,
         normalizedValueHash: hash,
-        isPrimary: dto.isPrimary
-      }
+        isPrimary: dto.isPrimary,
+      },
     });
 
     await this.addTimelineEvent(user, patientId, {
       eventType: 'CONTACT_UPDATED',
       eventSource: 'SYSTEM',
       title: `Обновлен контакт: ${updated.type}`,
-      description: updated.value
+      description: updated.value,
     });
 
     return updated;
@@ -540,19 +597,19 @@ export class PatientCrmService {
   async deleteContact(user: AuthenticatedUser, patientId: string, contactId: string) {
     await this.get(user, patientId);
     const contact = await this.prisma.patientContact.findFirst({
-      where: { id: contactId, patientId, tenantId: user.tenantId }
+      where: { id: contactId, patientId, tenantId: user.tenantId },
     });
     if (!contact) throw new NotFoundException('Contact not found');
 
     await this.prisma.patientContact.delete({
-      where: { id: contactId }
+      where: { id: contactId },
     });
 
     await this.addTimelineEvent(user, patientId, {
       eventType: 'CONTACT_DELETED',
       eventSource: 'SYSTEM',
       title: `Удален контакт: ${contact.type}`,
-      description: contact.value
+      description: contact.value,
     });
 
     return { success: true };
@@ -562,14 +619,14 @@ export class PatientCrmService {
     const current = await this.get(user, patientId);
     const updated = await this.prisma.patient.update({
       where: { id: patientId },
-      data: { status: dto.status }
+      data: { status: dto.status },
     });
 
     await this.addTimelineEvent(user, patientId, {
       eventType: 'STATUS_CHANGED',
       eventSource: 'SYSTEM',
       title: `Статус изменен: ${dto.status}`,
-      description: `Предыдущий статус: ${current.status}`
+      description: `Предыдущий статус: ${current.status}`,
     });
 
     await this.audit.log({
@@ -580,7 +637,7 @@ export class PatientCrmService {
       entityType: 'patient',
       entityId: patientId,
       oldValuesJson: { status: current.status },
-      newValuesJson: { status: dto.status }
+      newValuesJson: { status: dto.status },
     });
 
     return updated;
@@ -597,32 +654,32 @@ export class PatientCrmService {
     await this.prisma.$transaction(async (tx) => {
       await tx.appointment.updateMany({
         where: { tenantId: user.tenantId, patientId: dto.secondaryPatientId },
-        data: { patientId: dto.primaryPatientId }
+        data: { patientId: dto.primaryPatientId },
       });
 
       await tx.patientContact.updateMany({
         where: { tenantId: user.tenantId, patientId: dto.secondaryPatientId },
-        data: { patientId: dto.primaryPatientId, isPrimary: false }
+        data: { patientId: dto.primaryPatientId, isPrimary: false },
       });
 
       await tx.patientNote.updateMany({
         where: { tenantId: user.tenantId, patientId: dto.secondaryPatientId },
-        data: { patientId: dto.primaryPatientId }
+        data: { patientId: dto.primaryPatientId },
       });
 
       await tx.invoice.updateMany({
         where: { tenantId: user.tenantId, patientId: dto.secondaryPatientId },
-        data: { patientId: dto.primaryPatientId }
+        data: { patientId: dto.primaryPatientId },
       });
 
       await tx.patientTimelineEvent.updateMany({
         where: { tenantId: user.tenantId, patientId: dto.secondaryPatientId },
-        data: { patientId: dto.primaryPatientId }
+        data: { patientId: dto.primaryPatientId },
       });
 
       await tx.patient.update({
         where: { id: dto.secondaryPatientId },
-        data: { status: 'ARCHIVED', archivedAt: new Date() }
+        data: { status: 'ARCHIVED', archivedAt: new Date() },
       });
 
       await tx.patientTimelineEvent.create({
@@ -633,8 +690,8 @@ export class PatientCrmService {
           eventSource: 'SYSTEM',
           title: `Пациент объединен с ${secondary.fullName}`,
           description: `Данные из карточки ${secondary.patientCode} были перенесены сюда.`,
-          createdBy: user.userId
-        }
+          createdBy: user.userId,
+        },
       });
     });
 
@@ -646,7 +703,7 @@ export class PatientCrmService {
       entityType: 'patient',
       entityId: dto.primaryPatientId,
       oldValuesJson: { secondaryPatientId: dto.secondaryPatientId },
-      newValuesJson: { primaryPatientId: dto.primaryPatientId }
+      newValuesJson: { primaryPatientId: dto.primaryPatientId },
     });
 
     return { success: true };
@@ -654,23 +711,24 @@ export class PatientCrmService {
 
   async recalculateMetrics(tenantId: string, patientId: string) {
     const appointments = await this.prisma.appointment.findMany({
-      where: { tenantId, patientId }
+      where: { tenantId, patientId },
     });
 
-    const completed = appointments.filter(a => a.status === 'COMPLETED');
-    const cancellations = appointments.filter(a => a.status === 'CANCELLED').length;
-    const missed = appointments.filter(a => a.status === 'NO_SHOW').length;
+    const completed = appointments.filter((a) => a.status === 'COMPLETED');
+    const cancellations = appointments.filter((a) => a.status === 'CANCELLED').length;
+    const missed = appointments.filter((a) => a.status === 'NO_SHOW').length;
     const totalVisits = completed.length;
 
     const invoices = await this.prisma.invoice.findMany({
-      where: { tenantId, patientId, status: 'PAID' }
+      where: { tenantId, patientId, status: 'PAID' },
     });
     const totalRevenue = invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
     const averageCheck = totalVisits > 0 ? totalRevenue / totalVisits : 0;
 
-    const lastVisit = completed.length > 0
-      ? new Date(Math.max(...completed.map(c => c.startAt.getTime())))
-      : null;
+    const lastVisit =
+      completed.length > 0
+        ? new Date(Math.max(...completed.map((c) => c.startAt.getTime())))
+        : null;
 
     await this.prisma.patientCrmMetric.upsert({
       where: { patientId },
@@ -681,7 +739,7 @@ export class PatientCrmService {
         averageCheck: new Prisma.Decimal(averageCheck),
         missedAppointments: missed,
         cancellations,
-        lastVisitAt: lastVisit
+        lastVisitAt: lastVisit,
       },
       create: {
         tenantId,
@@ -692,8 +750,8 @@ export class PatientCrmService {
         averageCheck: new Prisma.Decimal(averageCheck),
         missedAppointments: missed,
         cancellations,
-        lastVisitAt: lastVisit
-      }
+        lastVisitAt: lastVisit,
+      },
     });
   }
 }

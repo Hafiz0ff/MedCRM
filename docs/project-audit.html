@@ -1,428 +1,470 @@
 <!doctype html>
 <html lang="ru">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MedCRM: аудит реализованного состояния проекта</title>
-  <style>
-    :root {
-      --bg: #f6f8fb;
-      --surface: #ffffff;
-      --surface-2: #eef3f8;
-      --text: #172033;
-      --muted: #5d6980;
-      --border: #d9e1ea;
-      --brand: #0f766e;
-      --brand-dark: #115e59;
-      --warn: #a16207;
-      --danger: #b91c1c;
-      --info: #1d4ed8;
-      --ok: #15803d;
-      --code: #0f172a;
-      --shadow: 0 16px 50px rgba(15, 23, 42, 0.08);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.6;
-    }
-
-    a {
-      color: var(--brand-dark);
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-
-    .page {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 32px 20px 72px;
-    }
-
-    .hero {
-      background: linear-gradient(135deg, #0f766e, #164e63);
-      color: #fff;
-      border-radius: 12px;
-      padding: 34px;
-      box-shadow: var(--shadow);
-    }
-
-    .hero h1 {
-      margin: 0 0 12px;
-      font-size: clamp(30px, 5vw, 52px);
-      line-height: 1.05;
-      letter-spacing: 0;
-    }
-
-    .hero p {
-      max-width: 860px;
-      margin: 0;
-      color: rgba(255, 255, 255, 0.88);
-      font-size: 17px;
-    }
-
-    .meta-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 22px;
-    }
-
-    .meta-card {
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      border-radius: 8px;
-      padding: 14px;
-    }
-
-    .meta-card span {
-      display: block;
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .meta-card strong {
-      display: block;
-      margin-top: 5px;
-      font-size: 18px;
-    }
-
-    .toc {
-      margin: 24px 0;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .toc a {
-      display: block;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 14px;
-      color: var(--text);
-    }
-
-    section {
-      margin-top: 26px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 26px;
-      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.04);
-    }
-
-    h2 {
-      margin: 0 0 14px;
-      font-size: 26px;
-      line-height: 1.2;
-    }
-
-    h3 {
-      margin: 24px 0 10px;
-      font-size: 19px;
-    }
-
-    h4 {
-      margin: 18px 0 8px;
-      font-size: 16px;
-    }
-
-    p {
-      margin: 0 0 12px;
-    }
-
-    ul {
-      margin: 0 0 14px 22px;
-      padding: 0;
-    }
-
-    li {
-      margin: 4px 0;
-    }
-
-    code {
-      color: var(--code);
-      background: #edf2f7;
-      border: 1px solid #dbe4ee;
-      border-radius: 5px;
-      padding: 1px 5px;
-      font-size: 0.92em;
-    }
-
-    pre {
-      overflow: auto;
-      background: #0f172a;
-      color: #dbeafe;
-      border-radius: 8px;
-      padding: 16px;
-      line-height: 1.45;
-      font-size: 13px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 12px 0 18px;
-      font-size: 14px;
-    }
-
-    th,
-    td {
-      border: 1px solid var(--border);
-      padding: 9px 10px;
-      vertical-align: top;
-      text-align: left;
-    }
-
-    th {
-      background: var(--surface-2);
-      color: #253249;
-      font-weight: 700;
-    }
-
-    .pill-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin: 12px 0 4px;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border-radius: 999px;
-      padding: 5px 10px;
-      background: #eef7f5;
-      color: var(--brand-dark);
-      border: 1px solid #b7ddd8;
-      font-size: 13px;
-      font-weight: 650;
-    }
-
-    .status {
-      display: inline-flex;
-      border-radius: 999px;
-      padding: 3px 9px;
-      font-size: 12px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .done {
-      background: #dcfce7;
-      color: var(--ok);
-    }
-
-    .partial {
-      background: #fef3c7;
-      color: var(--warn);
-    }
-
-    .risk {
-      background: #fee2e2;
-      color: var(--danger);
-    }
-
-    .planned {
-      background: #dbeafe;
-      color: var(--info);
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .note {
-      border-left: 4px solid var(--brand);
-      background: #ecfdf5;
-      padding: 13px 15px;
-      border-radius: 8px;
-      margin: 14px 0;
-    }
-
-    .warning {
-      border-left: 4px solid var(--warn);
-      background: #fffbeb;
-      padding: 13px 15px;
-      border-radius: 8px;
-      margin: 14px 0;
-    }
-
-    .danger-note {
-      border-left: 4px solid var(--danger);
-      background: #fef2f2;
-      padding: 13px 15px;
-      border-radius: 8px;
-      margin: 14px 0;
-    }
-
-    .small {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    @media (max-width: 860px) {
-      .meta-grid,
-      .toc,
-      .grid-2 {
-        grid-template-columns: 1fr;
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MedCRM: аудит реализованного состояния проекта</title>
+    <style>
+      :root {
+        --bg: #f6f8fb;
+        --surface: #ffffff;
+        --surface-2: #eef3f8;
+        --text: #172033;
+        --muted: #5d6980;
+        --border: #d9e1ea;
+        --brand: #0f766e;
+        --brand-dark: #115e59;
+        --warn: #a16207;
+        --danger: #b91c1c;
+        --info: #1d4ed8;
+        --ok: #15803d;
+        --code: #0f172a;
+        --shadow: 0 16px 50px rgba(15, 23, 42, 0.08);
       }
 
-      section,
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        line-height: 1.6;
+      }
+
+      a {
+        color: var(--brand-dark);
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 32px 20px 72px;
+      }
+
       .hero {
-        padding: 20px;
+        background: linear-gradient(135deg, #0f766e, #164e63);
+        color: #fff;
+        border-radius: 12px;
+        padding: 34px;
+        box-shadow: var(--shadow);
       }
-    }
-  </style>
-</head>
-<body>
-  <main class="page">
-    <header class="hero">
-      <h1>MedCRM: аудит реализованного состояния проекта</h1>
-      <p>
-        Документ фиксирует текущее фактическое состояние репозитория на диске, чтобы ИИ-архитектор мог
-        формировать следующие ТЗ на основе уже реализованных модулей, границ домена, API, UI, инфраструктуры и известных ограничений.
-      </p>
-      <div class="meta-grid">
-        <div class="meta-card">
-          <span>Дата аудита</span>
-          <strong>2026-05-24</strong>
-        </div>
-        <div class="meta-card">
-          <span>Репозиторий</span>
-          <strong>MedCRM</strong>
-        </div>
-        <div class="meta-card">
-          <span>Backend endpoints</span>
-          <strong>180 декораторов</strong>
-        </div>
-        <div class="meta-card">
-          <span>Prisma models</span>
-          <strong>147 моделей</strong>
-        </div>
-      </div>
-    </header>
 
-    <nav class="toc" aria-label="Содержание">
-      <a href="#summary">1. Сводка</a>
-      <a href="#structure">2. Структура проекта</a>
-      <a href="#architecture">3. Архитектура runtime</a>
-      <a href="#backend">4. Backend-модули</a>
-      <a href="#frontend">5. Frontend</a>
-      <a href="#database">6. База данных</a>
-      <a href="#seed">7. Seed/demo data</a>
-      <a href="#security">8. Безопасность</a>
-      <a href="#infra">9. Инфраструктура</a>
-      <a href="#api">10. Карта API</a>
-      <a href="#gaps">11. Ограничения и риски</a>
-      <a href="#next">12. Следующие ТЗ</a>
-    </nav>
+      .hero h1 {
+        margin: 0 0 12px;
+        font-size: clamp(30px, 5vw, 52px);
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
 
-    <section id="summary">
-      <h2>1. Сводка</h2>
-      <p>
-        Проект является SaaS CRM/MIS платформой для частных клиник. Реализован монорепозиторий npm workspaces
-        с backend на NestJS, frontend на Next.js App Router, Prisma/PostgreSQL, Redis, Socket.IO и Docker Compose.
-        Архитектурный стиль: модульный монолит с подготовкой к выносу доменов в сервисы.
-      </p>
-      <div class="note">
-        Основной пользовательский MVP уже покрывает поток: вход в систему, просмотр bootstrap контекста,
-        работа с пациентами, создание записи, отображение записи в расписании и на dashboard регистратуры,
-        realtime-инвалидация через Socket.IO.
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Область</th>
-            <th>Фактический статус</th>
-            <th>Комментарий</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Auth/RBAC</td>
-            <td><span class="status done">Реализовано</span></td>
-            <td>JWT access/refresh, refresh cookie, сессии, RBAC guard, branch-aware permissions, TOTP MFA API.</td>
-          </tr>
-          <tr>
-            <td>Patient CRM</td>
-            <td><span class="status done">Реализовано расширенно</span></td>
-            <td>CRUD, поиск, дубли, контакты, теги, семья, документы, notes, timeline, leads, metrics.</td>
-          </tr>
-          <tr>
-            <td>Smart Scheduling</td>
-            <td><span class="status done">Реализовано расширенно</span></td>
-            <td>Записи, статусы, availability, конфликты, ресурсы, лист ожидания, public slots, online booking.</td>
-          </tr>
-          <tr>
-            <td>Receptionist Workplace</td>
-            <td><span class="status done">Реализовано backend + UI MVP</span></td>
-            <td>Today board, queue, check-in, status transitions, calls, invoices, fast booking, realtime.</td>
-          </tr>
-          <tr>
-            <td>Organization Structure</td>
-            <td><span class="status done">Backend реализован</span></td>
-            <td>Филиалы, отделения, сотрудники, должности, кабинеты, оборудование, графики и исключения.</td>
-          </tr>
-          <tr>
-            <td>EMR/EHR</td>
-            <td><span class="status partial">Backend реализован, UI нет</span></td>
-            <td>Медкарты, episodes, encounters, подпись, amendment, диагнозы, рецепты, шаблоны, FHIR export.</td>
-          </tr>
-          <tr>
-            <td>Finance/Billing</td>
-            <td><span class="status partial">Backend реализован, UI нет</span></td>
-            <td>Смены кассира, оплаты, refunds, wallets, payroll, subscription limits, gateway webhooks.</td>
-          </tr>
-          <tr>
-            <td>Communications</td>
-            <td><span class="status partial">Backend реализован, UI нет</span></td>
-            <td>Inbox, messages, templates, rules, campaigns, preferences, SMS/Telegram/chatbot webhooks.</td>
-          </tr>
-          <tr>
-            <td>Integration Gateway</td>
-            <td><span class="status partial">Backend реализован, UI нет</span></td>
-            <td>Webhooks, lab orders/results, file metadata/download URL, telephony, devices, FHIR reports.</td>
-          </tr>
-          <tr>
-            <td>Business Intelligence</td>
-            <td><span class="status partial">Backend реализован, UI нет</span></td>
-            <td>DWH sync, financial/marketing/operations/doctor dashboards, scheduled reports, realtime cache.</td>
-          </tr>
-          <tr>
-            <td>Inventory/Warehouse</td>
-            <td><span class="status risk">Backend есть, module registry не включен</span></td>
-            <td>Код и права есть, но seed не добавляет system module `inventory-warehouse` в `tenant_modules`.</td>
-          </tr>
-          <tr>
-            <td>Тесты</td>
-            <td><span class="status risk">Не обнаружены</span></td>
-            <td>В репозитории нет `*.spec.*` или `*.test.*` файлов.</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+      .hero p {
+        max-width: 860px;
+        margin: 0;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 17px;
+      }
 
-    <section id="structure">
-      <h2>2. Структура проекта</h2>
-      <p>Проект организован как npm workspace с пакетами `backend` и `frontend`.</p>
-      <pre><code>MedCRM/
+      .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 22px;
+      }
+
+      .meta-card {
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 8px;
+        padding: 14px;
+      }
+
+      .meta-card span {
+        display: block;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .meta-card strong {
+        display: block;
+        margin-top: 5px;
+        font-size: 18px;
+      }
+
+      .toc {
+        margin: 24px 0;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .toc a {
+        display: block;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 14px;
+        color: var(--text);
+      }
+
+      section {
+        margin-top: 26px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 26px;
+        box-shadow: 0 8px 28px rgba(15, 23, 42, 0.04);
+      }
+
+      h2 {
+        margin: 0 0 14px;
+        font-size: 26px;
+        line-height: 1.2;
+      }
+
+      h3 {
+        margin: 24px 0 10px;
+        font-size: 19px;
+      }
+
+      h4 {
+        margin: 18px 0 8px;
+        font-size: 16px;
+      }
+
+      p {
+        margin: 0 0 12px;
+      }
+
+      ul {
+        margin: 0 0 14px 22px;
+        padding: 0;
+      }
+
+      li {
+        margin: 4px 0;
+      }
+
+      code {
+        color: var(--code);
+        background: #edf2f7;
+        border: 1px solid #dbe4ee;
+        border-radius: 5px;
+        padding: 1px 5px;
+        font-size: 0.92em;
+      }
+
+      pre {
+        overflow: auto;
+        background: #0f172a;
+        color: #dbeafe;
+        border-radius: 8px;
+        padding: 16px;
+        line-height: 1.45;
+        font-size: 13px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0 18px;
+        font-size: 14px;
+      }
+
+      th,
+      td {
+        border: 1px solid var(--border);
+        padding: 9px 10px;
+        vertical-align: top;
+        text-align: left;
+      }
+
+      th {
+        background: var(--surface-2);
+        color: #253249;
+        font-weight: 700;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 12px 0 4px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 5px 10px;
+        background: #eef7f5;
+        color: var(--brand-dark);
+        border: 1px solid #b7ddd8;
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .status {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 3px 9px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .done {
+        background: #dcfce7;
+        color: var(--ok);
+      }
+
+      .partial {
+        background: #fef3c7;
+        color: var(--warn);
+      }
+
+      .risk {
+        background: #fee2e2;
+        color: var(--danger);
+      }
+
+      .planned {
+        background: #dbeafe;
+        color: var(--info);
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .note {
+        border-left: 4px solid var(--brand);
+        background: #ecfdf5;
+        padding: 13px 15px;
+        border-radius: 8px;
+        margin: 14px 0;
+      }
+
+      .warning {
+        border-left: 4px solid var(--warn);
+        background: #fffbeb;
+        padding: 13px 15px;
+        border-radius: 8px;
+        margin: 14px 0;
+      }
+
+      .danger-note {
+        border-left: 4px solid var(--danger);
+        background: #fef2f2;
+        padding: 13px 15px;
+        border-radius: 8px;
+        margin: 14px 0;
+      }
+
+      .small {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 860px) {
+        .meta-grid,
+        .toc,
+        .grid-2 {
+          grid-template-columns: 1fr;
+        }
+
+        section,
+        .hero {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <h1>MedCRM: аудит реализованного состояния проекта</h1>
+        <p>
+          Документ фиксирует текущее фактическое состояние репозитория на диске, чтобы ИИ-архитектор
+          мог формировать следующие ТЗ на основе уже реализованных модулей, границ домена, API, UI,
+          инфраструктуры и известных ограничений.
+        </p>
+        <div class="meta-grid">
+          <div class="meta-card">
+            <span>Дата аудита</span>
+            <strong>2026-05-24</strong>
+          </div>
+          <div class="meta-card">
+            <span>Репозиторий</span>
+            <strong>MedCRM</strong>
+          </div>
+          <div class="meta-card">
+            <span>Backend endpoints</span>
+            <strong>180 декораторов</strong>
+          </div>
+          <div class="meta-card">
+            <span>Prisma models</span>
+            <strong>147 моделей</strong>
+          </div>
+        </div>
+      </header>
+
+      <nav class="toc" aria-label="Содержание">
+        <a href="#summary">1. Сводка</a>
+        <a href="#structure">2. Структура проекта</a>
+        <a href="#architecture">3. Архитектура runtime</a>
+        <a href="#backend">4. Backend-модули</a>
+        <a href="#frontend">5. Frontend</a>
+        <a href="#database">6. База данных</a>
+        <a href="#seed">7. Seed/demo data</a>
+        <a href="#security">8. Безопасность</a>
+        <a href="#infra">9. Инфраструктура</a>
+        <a href="#api">10. Карта API</a>
+        <a href="#gaps">11. Ограничения и риски</a>
+        <a href="#next">12. Следующие ТЗ</a>
+      </nav>
+
+      <section id="summary">
+        <h2>1. Сводка</h2>
+        <p>
+          Проект является SaaS CRM/MIS платформой для частных клиник. Реализован монорепозиторий npm
+          workspaces с backend на NestJS, frontend на Next.js App Router, Prisma/PostgreSQL, Redis,
+          Socket.IO и Docker Compose. Архитектурный стиль: модульный монолит с подготовкой к выносу
+          доменов в сервисы.
+        </p>
+        <div class="note">
+          Основной пользовательский MVP уже покрывает поток: вход в систему, просмотр bootstrap
+          контекста, работа с пациентами, создание записи, отображение записи в расписании и на
+          dashboard регистратуры, realtime-инвалидация через Socket.IO.
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Область</th>
+              <th>Фактический статус</th>
+              <th>Комментарий</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Auth/RBAC</td>
+              <td><span class="status done">Реализовано</span></td>
+              <td>
+                JWT access/refresh, refresh cookie, сессии, RBAC guard, branch-aware permissions,
+                TOTP MFA API.
+              </td>
+            </tr>
+            <tr>
+              <td>Patient CRM</td>
+              <td><span class="status done">Реализовано расширенно</span></td>
+              <td>
+                CRUD, поиск, дубли, контакты, теги, семья, документы, notes, timeline, leads,
+                metrics.
+              </td>
+            </tr>
+            <tr>
+              <td>Smart Scheduling</td>
+              <td><span class="status done">Реализовано расширенно</span></td>
+              <td>
+                Записи, статусы, availability, конфликты, ресурсы, лист ожидания, public slots,
+                online booking.
+              </td>
+            </tr>
+            <tr>
+              <td>Receptionist Workplace</td>
+              <td><span class="status done">Реализовано backend + UI MVP</span></td>
+              <td>
+                Today board, queue, check-in, status transitions, calls, invoices, fast booking,
+                realtime.
+              </td>
+            </tr>
+            <tr>
+              <td>Organization Structure</td>
+              <td><span class="status done">Backend реализован</span></td>
+              <td>
+                Филиалы, отделения, сотрудники, должности, кабинеты, оборудование, графики и
+                исключения.
+              </td>
+            </tr>
+            <tr>
+              <td>EMR/EHR</td>
+              <td><span class="status partial">Backend реализован, UI нет</span></td>
+              <td>
+                Медкарты, episodes, encounters, подпись, amendment, диагнозы, рецепты, шаблоны, FHIR
+                export.
+              </td>
+            </tr>
+            <tr>
+              <td>Finance/Billing</td>
+              <td><span class="status partial">Backend реализован, UI нет</span></td>
+              <td>
+                Смены кассира, оплаты, refunds, wallets, payroll, subscription limits, gateway
+                webhooks.
+              </td>
+            </tr>
+            <tr>
+              <td>Communications</td>
+              <td><span class="status partial">Backend реализован, UI нет</span></td>
+              <td>
+                Inbox, messages, templates, rules, campaigns, preferences, SMS/Telegram/chatbot
+                webhooks.
+              </td>
+            </tr>
+            <tr>
+              <td>Integration Gateway</td>
+              <td><span class="status partial">Backend реализован, UI нет</span></td>
+              <td>
+                Webhooks, lab orders/results, file metadata/download URL, telephony, devices, FHIR
+                reports.
+              </td>
+            </tr>
+            <tr>
+              <td>Business Intelligence</td>
+              <td><span class="status partial">Backend реализован, UI нет</span></td>
+              <td>
+                DWH sync, financial/marketing/operations/doctor dashboards, scheduled reports,
+                realtime cache.
+              </td>
+            </tr>
+            <tr>
+              <td>Inventory/Warehouse</td>
+              <td><span class="status risk">Backend есть, module registry не включен</span></td>
+              <td>
+                Код и права есть, но seed не добавляет system module `inventory-warehouse` в
+                `tenant_modules`.
+              </td>
+            </tr>
+            <tr>
+              <td>Тесты</td>
+              <td><span class="status risk">Не обнаружены</span></td>
+              <td>В репозитории нет `*.spec.*` или `*.test.*` файлов.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="structure">
+        <h2>2. Структура проекта</h2>
+        <p>Проект организован как npm workspace с пакетами `backend` и `frontend`.</p>
+        <pre><code>MedCRM/
 ├── backend/
 │   ├── apps/
 │   │   ├── api-gateway/
@@ -449,825 +491,1182 @@
 ├── package.json
 └── .env.example</code></pre>
 
-      <h3>Корневые npm scripts</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Script</th>
-            <th>Назначение</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td><code>backend:dev:auth</code></td><td>Запуск NestJS `auth-service` в watch mode.</td></tr>
-          <tr><td><code>backend:dev:gateway</code></td><td>Запуск NestJS `api-gateway` в watch mode.</td></tr>
-          <tr><td><code>frontend:dev</code></td><td>Запуск Next.js frontend на порту 3002.</td></tr>
-          <tr><td><code>prisma:generate</code></td><td>Генерация Prisma Client в backend workspace.</td></tr>
-          <tr><td><code>prisma:migrate</code></td><td>Применение Prisma migrations.</td></tr>
-          <tr><td><code>prisma:seed</code></td><td>Заполнение demo tenant и справочников.</td></tr>
-        </tbody>
-      </table>
+        <h3>Корневые npm scripts</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Script</th>
+              <th>Назначение</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>backend:dev:auth</code></td>
+              <td>Запуск NestJS `auth-service` в watch mode.</td>
+            </tr>
+            <tr>
+              <td><code>backend:dev:gateway</code></td>
+              <td>Запуск NestJS `api-gateway` в watch mode.</td>
+            </tr>
+            <tr>
+              <td><code>frontend:dev</code></td>
+              <td>Запуск Next.js frontend на порту 3002.</td>
+            </tr>
+            <tr>
+              <td><code>prisma:generate</code></td>
+              <td>Генерация Prisma Client в backend workspace.</td>
+            </tr>
+            <tr>
+              <td><code>prisma:migrate</code></td>
+              <td>Применение Prisma migrations.</td>
+            </tr>
+            <tr>
+              <td><code>prisma:seed</code></td>
+              <td>Заполнение demo tenant и справочников.</td>
+            </tr>
+          </tbody>
+        </table>
 
-      <h3>Документация в репозитории</h3>
-      <ul>
-        <li><code>README.md</code> описывает MVP flow, stack и команды запуска.</li>
-        <li><code>docs/architecture/README.md</code> задает базовую модульную архитектуру.</li>
-        <li><code>docs/architecture/auth-rbac.md</code> описывает auth/RBAC и branch-level permissions.</li>
-        <li><code>docs/architecture/organization-structure.md</code> описывает оргструктуру клиники.</li>
-        <li><code>docs/architecture/patient-crm-core.md</code> описывает Patient CRM Core.</li>
-        <li><code>docs/architecture/smart-scheduling.md</code> описывает Smart Scheduling.</li>
-        <li><code>docs/architecture/receptionist-workplace.md</code> описывает АРМ регистратора.</li>
-        <li><code>docs/architecture/modularity-tenancy-db.md</code> описывает multi-tenancy и DB модель.</li>
-        <li><code>docs/design/medcrm-ui-design-tz.html</code> содержит дизайн-ТЗ UI.</li>
-      </ul>
-    </section>
+        <h3>Документация в репозитории</h3>
+        <ul>
+          <li><code>README.md</code> описывает MVP flow, stack и команды запуска.</li>
+          <li><code>docs/architecture/README.md</code> задает базовую модульную архитектуру.</li>
+          <li>
+            <code>docs/architecture/auth-rbac.md</code> описывает auth/RBAC и branch-level
+            permissions.
+          </li>
+          <li>
+            <code>docs/architecture/organization-structure.md</code> описывает оргструктуру клиники.
+          </li>
+          <li><code>docs/architecture/patient-crm-core.md</code> описывает Patient CRM Core.</li>
+          <li><code>docs/architecture/smart-scheduling.md</code> описывает Smart Scheduling.</li>
+          <li>
+            <code>docs/architecture/receptionist-workplace.md</code> описывает АРМ регистратора.
+          </li>
+          <li>
+            <code>docs/architecture/modularity-tenancy-db.md</code> описывает multi-tenancy и DB
+            модель.
+          </li>
+          <li><code>docs/design/medcrm-ui-design-tz.html</code> содержит дизайн-ТЗ UI.</li>
+        </ul>
+      </section>
 
-    <section id="architecture">
-      <h2>3. Архитектура runtime</h2>
-      <h3>Backend applications</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Приложение</th>
-            <th>Порт</th>
-            <th>Назначение</th>
-            <th>Фактическое покрытие</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>api-gateway</code></td>
-            <td>3000</td>
-            <td>Публичный proxy entrypoint.</td>
-            <td>Proxy для `/auth`, `/patients`, `/appointments`, `/availability`, `/slots`, `/services`, `/doctors`, `/reception`, `/socket.io`.</td>
-          </tr>
-          <tr>
-            <td><code>auth-service</code></td>
-            <td>3001</td>
-            <td>Фактический backend-доменный runtime.</td>
-            <td>Содержит auth и все бизнес-модули: CRM, scheduling, reception, org, EMR, finance, communications, integrations, analytics, inventory.</td>
-          </tr>
-          <tr>
-            <td><code>frontend</code></td>
-            <td>3002</td>
-            <td>Next.js App Router UI.</td>
-            <td>Login, protected shell, dashboard, patients, patient details, schedule, reception board.</td>
-          </tr>
-        </tbody>
-      </table>
+      <section id="architecture">
+        <h2>3. Архитектура runtime</h2>
+        <h3>Backend applications</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Приложение</th>
+              <th>Порт</th>
+              <th>Назначение</th>
+              <th>Фактическое покрытие</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>api-gateway</code></td>
+              <td>3000</td>
+              <td>Публичный proxy entrypoint.</td>
+              <td>
+                Proxy для `/auth`, `/patients`, `/appointments`, `/availability`, `/slots`,
+                `/services`, `/doctors`, `/reception`, `/socket.io`.
+              </td>
+            </tr>
+            <tr>
+              <td><code>auth-service</code></td>
+              <td>3001</td>
+              <td>Фактический backend-доменный runtime.</td>
+              <td>
+                Содержит auth и все бизнес-модули: CRM, scheduling, reception, org, EMR, finance,
+                communications, integrations, analytics, inventory.
+              </td>
+            </tr>
+            <tr>
+              <td><code>frontend</code></td>
+              <td>3002</td>
+              <td>Next.js App Router UI.</td>
+              <td>
+                Login, protected shell, dashboard, patients, patient details, schedule, reception
+                board.
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-      <h3>Core modules backend</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Core package</th>
-            <th>Реализовано</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>core/database</code></td>
-            <td>PrismaService с lifecycle hooks для connect/disconnect.</td>
-          </tr>
-          <tr>
-            <td><code>core/cache</code></td>
-            <td>RedisModule с ioredis client provider.</td>
-          </tr>
-          <tr>
-            <td><code>core/audit</code></td>
-            <td>AuditLoggerService пишет события в `audit_logs` и сохраняет requestId из tenant context.</td>
-          </tr>
-          <tr>
-            <td><code>core/tenancy</code></td>
-            <td>AsyncLocalStorage context, middleware для requestId/tenant/branch headers, service доступа к context.</td>
-          </tr>
-          <tr>
-            <td><code>core/security</code></td>
-            <td>Decorators `RequirePermissions`, `RequireModule`, `CurrentUser`, JWT payload types.</td>
-          </tr>
-          <tr>
-            <td><code>core/realtime</code></td>
-            <td>Socket.IO Redis adapter для масштабируемого realtime.</td>
-          </tr>
-          <tr>
-            <td><code>core/events</code></td>
-            <td>In-process EventEmitter based event bus с publish/subscribe.</td>
-          </tr>
-        </tbody>
-      </table>
+        <h3>Core modules backend</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Core package</th>
+              <th>Реализовано</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>core/database</code></td>
+              <td>PrismaService с lifecycle hooks для connect/disconnect.</td>
+            </tr>
+            <tr>
+              <td><code>core/cache</code></td>
+              <td>RedisModule с ioredis client provider.</td>
+            </tr>
+            <tr>
+              <td><code>core/audit</code></td>
+              <td>
+                AuditLoggerService пишет события в `audit_logs` и сохраняет requestId из tenant
+                context.
+              </td>
+            </tr>
+            <tr>
+              <td><code>core/tenancy</code></td>
+              <td>
+                AsyncLocalStorage context, middleware для requestId/tenant/branch headers, service
+                доступа к context.
+              </td>
+            </tr>
+            <tr>
+              <td><code>core/security</code></td>
+              <td>
+                Decorators `RequirePermissions`, `RequireModule`, `CurrentUser`, JWT payload types.
+              </td>
+            </tr>
+            <tr>
+              <td><code>core/realtime</code></td>
+              <td>Socket.IO Redis adapter для масштабируемого realtime.</td>
+            </tr>
+            <tr>
+              <td><code>core/events</code></td>
+              <td>In-process EventEmitter based event bus с publish/subscribe.</td>
+            </tr>
+          </tbody>
+        </table>
 
-      <div class="warning">
-        В `auth-service` все доменные модули подключены в одном NestJS runtime. Это соответствует modular monolith,
-        но gateway пока проксирует только MVP-набор путей. Новые backend endpoints доступны напрямую через `auth-service`,
-        но не все доступны через публичный `api-gateway`.
-      </div>
-    </section>
-
-    <section id="backend">
-      <h2>4. Backend-модули</h2>
-      <p>
-        Все бизнес-контроллеры, кроме health и login/refresh, используют JWT/RBAC/module guards.
-        Модульность реализована через Nest modules и Prisma tenant-owned таблицы.
-      </p>
-
-      <h3>4.1 Auth / RBAC</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Компонент</th>
-            <th>Что реализовано</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Login</td>
-            <td>Поиск tenant по `tenantCode`, user по tenant+email, argon2 verify, audit success/failed.</td>
-          </tr>
-          <tr>
-            <td>Tokens</td>
-            <td>JWT access token, JWT refresh token, refresh token hash в БД, fingerprint rotation.</td>
-          </tr>
-          <tr>
-            <td>Sessions</td>
-            <td>`user_sessions`, Redis metadata/fingerprint/revoked keys, logout revokes session.</td>
-          </tr>
-          <tr>
-            <td>Bootstrap</td>
-            <td>Tenant, enabledModules, permissions, branches, featureFlags для frontend shell.</td>
-          </tr>
-          <tr>
-            <td>Branch-aware RBAC</td>
-            <td>Permissions строятся по active `user_branch_roles`, role permissions и enabled tenant modules.</td>
-          </tr>
-          <tr>
-            <td>MFA</td>
-            <td>TOTP secret generation, enable/confirm/disable, MFA pending token, verify flow.</td>
-          </tr>
-          <tr>
-            <td>Guards</td>
-            <td>`JwtAuthGuard`, `RbacGuard`, `ModuleEnabledGuard`; read-only mode при `TenantSubscription.SUSPENDED`.</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h3>4.2 Patient CRM</h3>
-      <p>Модуль `patient-crm` уже вышел за рамки базового CRUD.</p>
-      <ul>
-        <li>Список пациентов с пагинацией, поиском и branch-aware фильтрацией.</li>
-        <li>Создание пациента с генерацией `patientCode`, `fullName`, primary phone contact и hash нормализованного телефона.</li>
-        <li>Обновление CRM-профиля, статуса, контактов и audit logging.</li>
-        <li>Поиск и baseline duplicate candidates по ФИО/телефону/коду.</li>
-        <li>CRM tags: list/create/assign/remove.</li>
-        <li>Family groups и family members.</li>
-        <li>Legal document templates и signed patient legal documents.</li>
-        <li>Patient timeline, notes, metrics, lead tracking.</li>
-      </ul>
-
-      <h3>4.3 Organization Structure</h3>
-      <ul>
-        <li>CRUD branches, departments, rooms, equipment.</li>
-        <li>CRUD employees и employee positions.</li>
-        <li>Room assignments для сотрудников.</li>
-        <li>Directories: specialties, positions, room types, equipment categories.</li>
-        <li>Working schedules и schedule exceptions для branch/employee/room/equipment сущностей.</li>
-        <li>Проверки tenant/branch access в сервисах.</li>
-      </ul>
-
-      <h3>4.4 Smart Scheduling</h3>
-      <ul>
-        <li>Список записей по фильтрам дат, branch, patient, employee.</li>
-        <li>Создание appointment с генерацией номера, проверкой пациента и конфликтов.</li>
-        <li>Проверка пересечений по врачу, кабинетам, оборудованию и buffer windows.</li>
-        <li>Резервирование ресурсов в `appointment_resources` и временных слотов в `appointment_reservations`.</li>
-        <li>Статусные переходы: confirm, check-in, cancel, generic update.</li>
-        <li>Status history и audit events.</li>
-        <li>Availability endpoint, services endpoint, doctors endpoint.</li>
-        <li>Waiting list CRUD и matching при освобождении слота.</li>
-        <li>Resource buffers CRUD.</li>
-        <li>Public slots, online booking reserve/confirm.</li>
-        <li>Socket.IO события `appointment.created`, `appointment.updated`, `appointment.checked_in`, `dashboard.updated`.</li>
-      </ul>
-
-      <h3>4.5 Receptionist Workplace</h3>
-      <ul>
-        <li>Dashboard на дату и филиал с группировкой appointments по статусам.</li>
-        <li>Recalculate dashboard cache.</li>
-        <li>Check-in workflow с созданием queue ticket.</li>
-        <li>Visit state transitions, включая `COMPLETED_PENDING_PAYMENT` и авто-создание invoice.</li>
-        <li>Queue read/update.</li>
-        <li>Incoming calls и поиск call history.</li>
-        <li>Invoices list/create/pay.</li>
-        <li>Fast booking orchestration: patient lookup/create + appointment create.</li>
-      </ul>
-
-      <h3>4.6 EMR/EHR</h3>
-      <ul>
-        <li>Get/create и update medical record по patient.</li>
-        <li>Episodes of care create/update/list.</li>
-        <li>Encounter draft create/update с compositions, sections и clinical elements.</li>
-        <li>Подписание encounter с digital signature record.</li>
-        <li>Amend signed encounter и versions history.</li>
-        <li>Diagnosis assignment и ICD-10 dictionary search.</li>
-        <li>Prescriptions и prescription items.</li>
-        <li>Clinical templates list/create.</li>
-        <li>FHIR export для Patient, Encounter, Observation.</li>
-      </ul>
-
-      <h3>4.7 Finance / Billing</h3>
-      <ul>
-        <li>Открытие/закрытие смены кассира, active shift.</li>
-        <li>Прием платежей по invoice и перерасчет paid/due/status.</li>
-        <li>Refunds с изменением invoice/payment balances.</li>
-        <li>Patient wallet top-up и wallet balance retrieval.</li>
-        <li>Payroll calculation по правилам и фактическим invoice items.</li>
-        <li>Payroll rules CRUD на уровне create.</li>
-        <li>Subscription plans, tenant subscriptions, usage metrics, limit checks.</li>
-        <li>Payment gateway webhook processing.</li>
-      </ul>
-
-      <h3>4.8 Communications</h3>
-      <ul>
-        <li>Conversation inbox и message history.</li>
-        <li>Inbound message handling и outbound replies.</li>
-        <li>Conversation assignment to operator.</li>
-        <li>Message templates create/update/list.</li>
-        <li>Notification rules и delayed queue processing.</li>
-        <li>Campaign create/execute.</li>
-        <li>Communication preferences.</li>
-        <li>Chatbot keyword flow, Telegram/SMS/chatbot webhook endpoints.</li>
-        <li>Failover hook к waiting list после отмены записи.</li>
-      </ul>
-
-      <h3>4.9 Integration Gateway</h3>
-      <ul>
-        <li>Universal integration transaction logging.</li>
-        <li>Provider/type webhooks.</li>
-        <li>Lab orders create и LIS result submit webhook.</li>
-        <li>Clinical observations from lab results.</li>
-        <li>File metadata registry и expiring download URL contract.</li>
-        <li>Telephony webhook processing и call event logging.</li>
-        <li>Medical device measurements.</li>
-        <li>FHIR DiagnosticReport и Observation export.</li>
-      </ul>
-
-      <h3>4.10 Business Intelligence</h3>
-      <ul>
-        <li>OLTP to DWH sync for appointments, payments, marketing facts.</li>
-        <li>Financial board: revenue, profit, expenses, refunds, average check, debt.</li>
-        <li>Marketing analytics: funnel metrics, CAC, ROI, LTV.</li>
-        <li>Operational metrics: room utilization, no-show, cancellation, retention.</li>
-        <li>Doctor KPIs.</li>
-        <li>Scheduled reports create/generate.</li>
-        <li>Realtime metric cache get/update.</li>
-      </ul>
-
-      <h3>4.11 Inventory / Warehouse</h3>
-      <ul>
-        <li>Warehouse create и tree.</li>
-        <li>Inventory item create.</li>
-        <li>Procurement delivery с batches, balances и transactions.</li>
-        <li>Stock transfer flow.</li>
-        <li>Service BOM templates и automatic material write-off.</li>
-        <li>Inventory audit с discrepancy handling.</li>
-        <li>Stock thresholds и stock alerts.</li>
-        <li>Balances и alerts endpoints.</li>
-      </ul>
-      <div class="danger-note">
-        Важно: `InventoryModule` подключен в `AppModule`, permissions для inventory есть в seed, но `modules` array в seed
-        не содержит system module `inventory-warehouse`. Из-за `@RequireModule('inventory-warehouse')` endpoints будут заблокированы
-        `ModuleEnabledGuard`, если модуль не включить вручную в `system_modules` и `tenant_modules`.
-      </div>
-    </section>
-
-    <section id="frontend">
-      <h2>5. Frontend</h2>
-      <p>
-        Frontend реализован на Next.js 16 App Router и покрывает только операционный MVP.
-        Расширенные backend-модули пока не имеют отдельных UI-экранов.
-      </p>
-
-      <h3>Реализованные маршруты</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Route</th>
-            <th>Компонент</th>
-            <th>Функциональность</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>/</code></td>
-            <td><code>frontend/app/page.tsx</code></td>
-            <td>Redirect на `/dashboard`.</td>
-          </tr>
-          <tr>
-            <td><code>/auth/login</code></td>
-            <td><code>LoginForm</code></td>
-            <td>Вход по tenantCode/email/password, запись access token в cookie, redirect на dashboard.</td>
-          </tr>
-          <tr>
-            <td><code>/(protected)/layout</code></td>
-            <td><code>ProtectedLayout</code></td>
-            <td>Server-side bootstrap, redirect на login, sidebar, topbar, QueryProvider.</td>
-          </tr>
-          <tr>
-            <td><code>/dashboard</code></td>
-            <td><code>DashboardPage</code></td>
-            <td>Операционные карточки, demo metrics, tenant/modules/permissions summary.</td>
-          </tr>
-          <tr>
-            <td><code>/patients</code></td>
-            <td><code>PatientsPage</code></td>
-            <td>Поиск, таблица пациентов, duplicate warning, создание пациента.</td>
-          </tr>
-          <tr>
-            <td><code>/patients/[id]</code></td>
-            <td><code>PatientDetails</code></td>
-            <td>Профиль пациента, контакты, CRM status update, placeholder timeline.</td>
-          </tr>
-          <tr>
-            <td><code>/schedule</code></td>
-            <td><code>CalendarPage</code></td>
-            <td>Дневной календарь, список записей, создание appointment, quick status actions, realtime refresh.</td>
-          </tr>
-          <tr>
-            <td><code>/reception</code></td>
-            <td><code>ReceptionBoard</code></td>
-            <td>Today board, drag/drop статусы, queue panel, realtime refresh.</td>
-          </tr>
-          <tr>
-            <td><code>/api/health</code></td>
-            <td><code>route.ts</code></td>
-            <td>Healthcheck для Docker Compose frontend service.</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h3>Shared frontend infrastructure</h3>
-      <ul>
-        <li><code>shared/api/client-api.ts</code> читает access token из cookie и выполняет authenticated fetch к `NEXT_PUBLIC_API_URL`.</li>
-        <li><code>shared/api/server-api.ts</code> получает bootstrap на сервере через `INTERNAL_API_URL` или public API URL.</li>
-        <li><code>shared/realtime/socket.ts</code> создает Socket.IO client namespace `/realtime`.</li>
-        <li><code>shared/permissions/can.ts</code> проверяет permission и enabled module из bootstrap.</li>
-        <li><code>shared/ui/status.ts</code> содержит labels/tones для appointment и patient статусов.</li>
-        <li><code>shared/query/query-provider.tsx</code> оборачивает TanStack Query provider.</li>
-      </ul>
-
-      <h3>Sidebar</h3>
-      <p>
-        Sidebar отображает только модули, доступные в bootstrap permissions: dashboard, reception, schedule, patients.
-        Финансы, коммуникации, BI и настройки помечены как "Скоро" и ведут на dashboard.
-      </p>
-
-      <h3>Frontend hooks</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Hook</th>
-            <th>API</th>
-            <th>Назначение</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td><code>usePatients</code></td><td><code>GET /patients</code> или <code>GET /patients/search</code></td><td>Список и поиск пациентов.</td></tr>
-          <tr><td><code>usePatient</code></td><td><code>GET /patients/:id</code></td><td>Детальная карточка пациента.</td></tr>
-          <tr><td><code>useCreatePatient</code></td><td><code>POST /patients</code></td><td>Создание пациента и invalidation списка.</td></tr>
-          <tr><td><code>useUpdatePatient</code></td><td><code>PATCH /patients/:id</code></td><td>Optimistic update карточки пациента.</td></tr>
-          <tr><td><code>useAppointments</code></td><td><code>GET /appointments</code></td><td>Записи за текущий день.</td></tr>
-          <tr><td><code>useCreateAppointment</code></td><td><code>POST /appointments</code></td><td>Создание записи.</td></tr>
-          <tr><td><code>useTransitionAppointment</code></td><td><code>POST /appointments/:id/{confirm|check-in|cancel}</code></td><td>Быстрые статусные действия.</td></tr>
-          <tr><td><code>useReceptionDashboard</code></td><td><code>GET /reception/dashboard</code></td><td>Today board и queue.</td></tr>
-          <tr><td><code>useReceptionTransition</code></td><td><code>POST/PATCH appointments</code></td><td>Изменение статуса из board.</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section id="database">
-      <h2>6. База данных</h2>
-      <p>
-        Prisma schema является главным источником доменной модели. В файле `backend/prisma/schema.prisma`
-        зафиксировано 147 моделей и более 3000 строк схемы. Есть две миграции: initial baseline и vertical slice.
-      </p>
-
-      <h3>Группы моделей</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Группа</th>
-            <th>Ключевые модели</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Tenancy / RBAC</td>
-            <td><code>Tenant</code>, <code>Branch</code>, <code>SystemModule</code>, <code>TenantModule</code>, <code>User</code>, <code>Role</code>, <code>Permission</code>, <code>UserBranchRole</code>, <code>UserSession</code>, <code>User2faSettings</code>, <code>AuditLog</code>.</td>
-          </tr>
-          <tr>
-            <td>Patient CRM</td>
-            <td><code>Patient</code>, <code>PatientContact</code>, <code>PatientAddress</code>, <code>PatientLead</code>, <code>PatientCrmMetric</code>, <code>CrmTag</code>, <code>PatientTag</code>, <code>FamilyGroup</code>, <code>FamilyMember</code>, <code>LegalDocumentType</code>, <code>PatientLegalDocument</code>, <code>PatientTimelineEvent</code>, <code>PatientNote</code>.</td>
-          </tr>
-          <tr>
-            <td>Organization</td>
-            <td><code>Department</code>, <code>Specialty</code>, <code>Position</code>, <code>Employee</code>, <code>EmployeePosition</code>, <code>RoomType</code>, <code>Room</code>, <code>EquipmentCategory</code>, <code>Equipment</code>, <code>WorkingSchedule</code>, <code>ScheduleException</code>.</td>
-          </tr>
-          <tr>
-            <td>Scheduling</td>
-            <td><code>Service</code>, <code>Appointment</code>, <code>AppointmentStatusHistory</code>, <code>AppointmentResource</code>, <code>AppointmentReservation</code>, <code>WaitingList</code>, <code>AvailabilityCache</code>, <code>ResourceBuffer</code>, <code>ServiceRequiredResource</code>, <code>AppointmentRecurrenceRule</code>, <code>OnlineBookingToken</code>.</td>
-          </tr>
-          <tr>
-            <td>Reception</td>
-            <td><code>ReceptionistDashboardCache</code>, <code>AppointmentVisitState</code>, <code>VisitQueue</code>, <code>IncomingCall</code>, <code>Invoice</code>, <code>InvoiceItem</code>.</td>
-          </tr>
-          <tr>
-            <td>EMR/EHR</td>
-            <td><code>MedicalRecord</code>, <code>EpisodeOfCare</code>, <code>Encounter</code>, <code>ClinicalComposition</code>, <code>ClinicalSection</code>, <code>ClinicalElement</code>, <code>ClinicalTemplate</code>, <code>DiagnosisDictionary</code>, <code>EncounterDiagnosis</code>, <code>Prescription</code>, <code>LabOrder</code>, <code>MedicalFile</code>, <code>DigitalSignature</code>, <code>EncounterVersion</code>.</td>
-          </tr>
-          <tr>
-            <td>Finance</td>
-            <td><code>Payment</code>, <code>PaymentAllocation</code>, <code>Refund</code>, <code>PaymentGateway</code>, <code>GatewayTransaction</code>, <code>PatientWallet</code>, <code>WalletTransaction</code>, <code>FamilyWallet</code>, <code>PatientDebt</code>, <code>PayrollRule</code>, <code>PayrollCalculation</code>, <code>SubscriptionPlan</code>, <code>TenantSubscription</code>, <code>TenantUsageMetric</code>, <code>CashierShift</code>.</td>
-          </tr>
-          <tr>
-            <td>Communications</td>
-            <td><code>Conversation</code>, <code>ConversationParticipant</code>, <code>Message</code>, <code>CommunicationChannel</code>, <code>SmsProvider</code>, <code>NotificationRule</code>, <code>NotificationsQueue</code>, <code>ChatbotFlow</code>, <code>MessageTemplate</code>, <code>CommunicationCampaign</code>, <code>CommunicationPreference</code>.</td>
-          </tr>
-          <tr>
-            <td>Integrations</td>
-            <td><code>IntegrationProvider</code>, <code>WebhookEvent</code>, <code>IntegrationLog</code>, <code>LaboratoryProvider</code>, <code>LabResult</code>, <code>ClinicalObservation</code>, <code>StorageProvider</code>, <code>File</code>, <code>FileLink</code>, <code>TelephonyProvider</code>, <code>CallEvent</code>, <code>MedicalDevice</code>, <code>DeviceMeasurement</code>, <code>IntegrationMetric</code>.</td>
-          </tr>
-          <tr>
-            <td>BI / DWH</td>
-            <td><code>DwFactAppointment</code>, <code>DwFactPayment</code>, <code>DwFactMarketing</code>, <code>FinancialDailyAggregate</code>, <code>MarketingFunnelMetric</code>, <code>RoomUtilizationMetric</code>, <code>NoShowMetric</code>, <code>RetentionMetric</code>, <code>DoctorKpiMetric</code>, <code>ScheduledReport</code>, <code>GeneratedReport</code>, <code>RealtimeMetricCache</code>.</td>
-          </tr>
-          <tr>
-            <td>Inventory</td>
-            <td><code>Warehouse</code>, <code>InventoryItem</code>, <code>InventoryCategory</code>, <code>InventoryBatch</code>, <code>InventoryTransaction</code>, <code>Supplier</code>, <code>PurchaseOrder</code>, <code>InventoryTransfer</code>, <code>InventoryBalance</code>, <code>InventoryAudit</code>, <code>ServiceBomTemplate</code>, <code>InventoryConsumption</code>, <code>StockAlertRule</code>, <code>StockAlert</code>.</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h3>Multi-tenancy</h3>
-      <ul>
-        <li>Большинство доменных таблиц имеют `tenantId`.</li>
-        <li>Branch-owned данные имеют `branchId` там, где нужно.</li>
-        <li>Уникальные индексы часто scoped по tenant, например `tenantId_code`, `tenantId_email`, `tenantId_patientCode`.</li>
-        <li>RBAC строится через `UserBranchRole`.</li>
-      </ul>
-      <div class="warning">
-        PostgreSQL RLS в текущих миграциях не обнаружен. Tenant isolation выполняется на уровне сервисного кода,
-        DTO/guards и Prisma query filters.
-      </div>
-    </section>
-
-    <section id="seed">
-      <h2>7. Seed/demo data</h2>
-      <p>
-        `backend/prisma/seeds/seed.ts` содержит 2043 строки и заполняет demo tenant, роли, права, справочники,
-        пациентов, записи, EMR, finance, communications, integrations, BI и inventory данные.
-      </p>
-      <table>
-        <thead>
-          <tr>
-            <th>Категория</th>
-            <th>Что создается</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Tenant/Auth</td>
-            <td>`demo-clinic`, main branch, role `CLINIC_OWNER`, admin `admin@demo.clinic` / `Admin123!`, все permissions для owner.</td>
-          </tr>
-          <tr>
-            <td>System modules</td>
-            <td>`auth`, `organization-structure`, `patient-crm`, `smart-scheduling`, `receptionist-workplace`, `communications`, `emr-ehr`, `finance-billing`, `integration-gateway`, `business-intelligence`.</td>
-          </tr>
-          <tr>
-            <td>Organization</td>
-            <td>Specialties, positions, room types, equipment categories, departments, rooms, USI scanner, employee, employee position, room assignment, branch working schedules.</td>
-          </tr>
-          <tr>
-            <td>Patient CRM</td>
-            <td>3 пациента, contacts, адрес, family group, tags, legal documents/templates, metrics, leads, notes, timeline.</td>
-          </tr>
-          <tr>
-            <td>Scheduling/Reception</td>
-            <td>Services, service required resources, resource buffers, waiting list, seeded appointment `A-SEED-001`, queue `Q-999`, incoming call, pending invoice.</td>
-          </tr>
-          <tr>
-            <td>EMR</td>
-            <td>ICD-10 dictionary, cardiology template, medical record, episode, encounter draft, diagnosis, prescription.</td>
-          </tr>
-          <tr>
-            <td>Finance</td>
-            <td>Subscription plans, active Pro subscription, usage metrics, payroll rule, open cashier shift, payment gateway.</td>
-          </tr>
-          <tr>
-            <td>Communications</td>
-            <td>SMS provider, RU/TJ templates, notification rule, chatbot flow, patient communication preferences.</td>
-          </tr>
-          <tr>
-            <td>Integrations</td>
-            <td>LIS provider, storage provider, telephony provider, medical device, lab orders/results, observation, call recording file, call event.</td>
-          </tr>
-          <tr>
-            <td>BI</td>
-            <td>DWH facts, financial aggregates, marketing funnel metrics, operational metrics, doctor KPI, scheduled report, realtime cache.</td>
-          </tr>
-          <tr>
-            <td>Inventory</td>
-            <td>Main/room warehouses, supplier, inventory items, batches, balances, BOM template, stock alert rule.</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section id="security">
-      <h2>8. Безопасность и доступ</h2>
-      <div class="grid-2">
-        <div>
-          <h3>Реализовано</h3>
-          <ul>
-            <li>Argon2 password hashing.</li>
-            <li>JWT access token с `tenant_id`, `branch_ids`, `role_ids`, `permissions`, `session_id`.</li>
-            <li>Refresh token в httpOnly cookie `/auth/refresh`.</li>
-            <li>Refresh token rotation и fingerprint.</li>
-            <li>Redis session cache и revoked marker.</li>
-            <li>RBAC guard по endpoint permissions.</li>
-            <li>ModuleEnabledGuard по `tenant_modules`.</li>
-            <li>Read-only emergency mode при suspended subscription.</li>
-            <li>TOTP MFA API.</li>
-            <li>Helmet, CORS, cookie parser.</li>
-            <li>Audit logging основных действий.</li>
-          </ul>
+        <div class="warning">
+          В `auth-service` все доменные модули подключены в одном NestJS runtime. Это соответствует
+          modular monolith, но gateway пока проксирует только MVP-набор путей. Новые backend
+          endpoints доступны напрямую через `auth-service`, но не все доступны через публичный
+          `api-gateway`.
         </div>
-        <div>
-          <h3>Ограничения</h3>
-          <ul>
-            <li>Нет rate limiting/bruteforce protection.</li>
-            <li>Нет password policy/history/lockout.</li>
-            <li>Нет OAuth/SSO.</li>
-            <li>Нет RLS на уровне PostgreSQL.</li>
-            <li>TenantContextMiddleware подключен как provider, но `AppModule.configure` пустой.</li>
-            <li>MFA secret хранится как `secretHash`, но фактически это base32 secret, а не hash.</li>
-            <li>Access token frontend хранит в JS cookie, а не httpOnly cookie.</li>
-            <li>Gateway Swagger не отражает proxied бизнес API.</li>
-          </ul>
+      </section>
+
+      <section id="backend">
+        <h2>4. Backend-модули</h2>
+        <p>
+          Все бизнес-контроллеры, кроме health и login/refresh, используют JWT/RBAC/module guards.
+          Модульность реализована через Nest modules и Prisma tenant-owned таблицы.
+        </p>
+
+        <h3>4.1 Auth / RBAC</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Компонент</th>
+              <th>Что реализовано</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Login</td>
+              <td>
+                Поиск tenant по `tenantCode`, user по tenant+email, argon2 verify, audit
+                success/failed.
+              </td>
+            </tr>
+            <tr>
+              <td>Tokens</td>
+              <td>
+                JWT access token, JWT refresh token, refresh token hash в БД, fingerprint rotation.
+              </td>
+            </tr>
+            <tr>
+              <td>Sessions</td>
+              <td>
+                `user_sessions`, Redis metadata/fingerprint/revoked keys, logout revokes session.
+              </td>
+            </tr>
+            <tr>
+              <td>Bootstrap</td>
+              <td>
+                Tenant, enabledModules, permissions, branches, featureFlags для frontend shell.
+              </td>
+            </tr>
+            <tr>
+              <td>Branch-aware RBAC</td>
+              <td>
+                Permissions строятся по active `user_branch_roles`, role permissions и enabled
+                tenant modules.
+              </td>
+            </tr>
+            <tr>
+              <td>MFA</td>
+              <td>
+                TOTP secret generation, enable/confirm/disable, MFA pending token, verify flow.
+              </td>
+            </tr>
+            <tr>
+              <td>Guards</td>
+              <td>
+                `JwtAuthGuard`, `RbacGuard`, `ModuleEnabledGuard`; read-only mode при
+                `TenantSubscription.SUSPENDED`.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>4.2 Patient CRM</h3>
+        <p>Модуль `patient-crm` уже вышел за рамки базового CRUD.</p>
+        <ul>
+          <li>Список пациентов с пагинацией, поиском и branch-aware фильтрацией.</li>
+          <li>
+            Создание пациента с генерацией `patientCode`, `fullName`, primary phone contact и hash
+            нормализованного телефона.
+          </li>
+          <li>Обновление CRM-профиля, статуса, контактов и audit logging.</li>
+          <li>Поиск и baseline duplicate candidates по ФИО/телефону/коду.</li>
+          <li>CRM tags: list/create/assign/remove.</li>
+          <li>Family groups и family members.</li>
+          <li>Legal document templates и signed patient legal documents.</li>
+          <li>Patient timeline, notes, metrics, lead tracking.</li>
+        </ul>
+
+        <h3>4.3 Organization Structure</h3>
+        <ul>
+          <li>CRUD branches, departments, rooms, equipment.</li>
+          <li>CRUD employees и employee positions.</li>
+          <li>Room assignments для сотрудников.</li>
+          <li>Directories: specialties, positions, room types, equipment categories.</li>
+          <li>
+            Working schedules и schedule exceptions для branch/employee/room/equipment сущностей.
+          </li>
+          <li>Проверки tenant/branch access в сервисах.</li>
+        </ul>
+
+        <h3>4.4 Smart Scheduling</h3>
+        <ul>
+          <li>Список записей по фильтрам дат, branch, patient, employee.</li>
+          <li>Создание appointment с генерацией номера, проверкой пациента и конфликтов.</li>
+          <li>Проверка пересечений по врачу, кабинетам, оборудованию и buffer windows.</li>
+          <li>
+            Резервирование ресурсов в `appointment_resources` и временных слотов в
+            `appointment_reservations`.
+          </li>
+          <li>Статусные переходы: confirm, check-in, cancel, generic update.</li>
+          <li>Status history и audit events.</li>
+          <li>Availability endpoint, services endpoint, doctors endpoint.</li>
+          <li>Waiting list CRUD и matching при освобождении слота.</li>
+          <li>Resource buffers CRUD.</li>
+          <li>Public slots, online booking reserve/confirm.</li>
+          <li>
+            Socket.IO события `appointment.created`, `appointment.updated`,
+            `appointment.checked_in`, `dashboard.updated`.
+          </li>
+        </ul>
+
+        <h3>4.5 Receptionist Workplace</h3>
+        <ul>
+          <li>Dashboard на дату и филиал с группировкой appointments по статусам.</li>
+          <li>Recalculate dashboard cache.</li>
+          <li>Check-in workflow с созданием queue ticket.</li>
+          <li>
+            Visit state transitions, включая `COMPLETED_PENDING_PAYMENT` и авто-создание invoice.
+          </li>
+          <li>Queue read/update.</li>
+          <li>Incoming calls и поиск call history.</li>
+          <li>Invoices list/create/pay.</li>
+          <li>Fast booking orchestration: patient lookup/create + appointment create.</li>
+        </ul>
+
+        <h3>4.6 EMR/EHR</h3>
+        <ul>
+          <li>Get/create и update medical record по patient.</li>
+          <li>Episodes of care create/update/list.</li>
+          <li>Encounter draft create/update с compositions, sections и clinical elements.</li>
+          <li>Подписание encounter с digital signature record.</li>
+          <li>Amend signed encounter и versions history.</li>
+          <li>Diagnosis assignment и ICD-10 dictionary search.</li>
+          <li>Prescriptions и prescription items.</li>
+          <li>Clinical templates list/create.</li>
+          <li>FHIR export для Patient, Encounter, Observation.</li>
+        </ul>
+
+        <h3>4.7 Finance / Billing</h3>
+        <ul>
+          <li>Открытие/закрытие смены кассира, active shift.</li>
+          <li>Прием платежей по invoice и перерасчет paid/due/status.</li>
+          <li>Refunds с изменением invoice/payment balances.</li>
+          <li>Patient wallet top-up и wallet balance retrieval.</li>
+          <li>Payroll calculation по правилам и фактическим invoice items.</li>
+          <li>Payroll rules CRUD на уровне create.</li>
+          <li>Subscription plans, tenant subscriptions, usage metrics, limit checks.</li>
+          <li>Payment gateway webhook processing.</li>
+        </ul>
+
+        <h3>4.8 Communications</h3>
+        <ul>
+          <li>Conversation inbox и message history.</li>
+          <li>Inbound message handling и outbound replies.</li>
+          <li>Conversation assignment to operator.</li>
+          <li>Message templates create/update/list.</li>
+          <li>Notification rules и delayed queue processing.</li>
+          <li>Campaign create/execute.</li>
+          <li>Communication preferences.</li>
+          <li>Chatbot keyword flow, Telegram/SMS/chatbot webhook endpoints.</li>
+          <li>Failover hook к waiting list после отмены записи.</li>
+        </ul>
+
+        <h3>4.9 Integration Gateway</h3>
+        <ul>
+          <li>Universal integration transaction logging.</li>
+          <li>Provider/type webhooks.</li>
+          <li>Lab orders create и LIS result submit webhook.</li>
+          <li>Clinical observations from lab results.</li>
+          <li>File metadata registry и expiring download URL contract.</li>
+          <li>Telephony webhook processing и call event logging.</li>
+          <li>Medical device measurements.</li>
+          <li>FHIR DiagnosticReport и Observation export.</li>
+        </ul>
+
+        <h3>4.10 Business Intelligence</h3>
+        <ul>
+          <li>OLTP to DWH sync for appointments, payments, marketing facts.</li>
+          <li>Financial board: revenue, profit, expenses, refunds, average check, debt.</li>
+          <li>Marketing analytics: funnel metrics, CAC, ROI, LTV.</li>
+          <li>Operational metrics: room utilization, no-show, cancellation, retention.</li>
+          <li>Doctor KPIs.</li>
+          <li>Scheduled reports create/generate.</li>
+          <li>Realtime metric cache get/update.</li>
+        </ul>
+
+        <h3>4.11 Inventory / Warehouse</h3>
+        <ul>
+          <li>Warehouse create и tree.</li>
+          <li>Inventory item create.</li>
+          <li>Procurement delivery с batches, balances и transactions.</li>
+          <li>Stock transfer flow.</li>
+          <li>Service BOM templates и automatic material write-off.</li>
+          <li>Inventory audit с discrepancy handling.</li>
+          <li>Stock thresholds и stock alerts.</li>
+          <li>Balances и alerts endpoints.</li>
+        </ul>
+        <div class="danger-note">
+          Важно: `InventoryModule` подключен в `AppModule`, permissions для inventory есть в seed,
+          но `modules` array в seed не содержит system module `inventory-warehouse`. Из-за
+          `@RequireModule('inventory-warehouse')` endpoints будут заблокированы
+          `ModuleEnabledGuard`, если модуль не включить вручную в `system_modules` и
+          `tenant_modules`.
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="infra">
-      <h2>9. Инфраструктура</h2>
-      <h3>Docker Compose services</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Service</th>
-            <th>Image/build</th>
-            <th>Port</th>
-            <th>Назначение</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td><code>postgres</code></td><td><code>postgres:17-alpine</code></td><td>5432</td><td>Основная БД.</td></tr>
-          <tr><td><code>redis</code></td><td><code>redis:7-alpine</code></td><td>6379</td><td>Сессии, realtime adapter, queue foundation.</td></tr>
-          <tr><td><code>minio</code></td><td><code>minio/minio</code></td><td>9000/9001</td><td>S3-compatible object storage foundation.</td></tr>
-          <tr><td><code>auth-service</code></td><td>Backend Dockerfile с `APP_NAME=auth-service`</td><td>3001</td><td>Domain backend, migrations и seed при старте container.</td></tr>
-          <tr><td><code>api-gateway</code></td><td>Backend Dockerfile с `APP_NAME=api-gateway`</td><td>3000</td><td>Public proxy.</td></tr>
-          <tr><td><code>frontend</code></td><td>Next.js standalone Dockerfile</td><td>3002</td><td>UI.</td></tr>
-        </tbody>
-      </table>
+      <section id="frontend">
+        <h2>5. Frontend</h2>
+        <p>
+          Frontend реализован на Next.js 16 App Router и покрывает только операционный MVP.
+          Расширенные backend-модули пока не имеют отдельных UI-экранов.
+        </p>
 
-      <h3>Environment</h3>
-      <ul>
-        <li>Root `.env.example` содержит DB, Redis, MinIO, JWT secrets, ports, API URLs, CORS origins.</li>
-        <li>Backend `.env.example` содержит локальные DB/Redis/JWT/CORS настройки.</li>
-        <li>Frontend `.env.example` содержит public API URL и internal API URL.</li>
-      </ul>
-    </section>
+        <h3>Реализованные маршруты</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Route</th>
+              <th>Компонент</th>
+              <th>Функциональность</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>/</code></td>
+              <td><code>frontend/app/page.tsx</code></td>
+              <td>Redirect на `/dashboard`.</td>
+            </tr>
+            <tr>
+              <td><code>/auth/login</code></td>
+              <td><code>LoginForm</code></td>
+              <td>
+                Вход по tenantCode/email/password, запись access token в cookie, redirect на
+                dashboard.
+              </td>
+            </tr>
+            <tr>
+              <td><code>/(protected)/layout</code></td>
+              <td><code>ProtectedLayout</code></td>
+              <td>Server-side bootstrap, redirect на login, sidebar, topbar, QueryProvider.</td>
+            </tr>
+            <tr>
+              <td><code>/dashboard</code></td>
+              <td><code>DashboardPage</code></td>
+              <td>Операционные карточки, demo metrics, tenant/modules/permissions summary.</td>
+            </tr>
+            <tr>
+              <td><code>/patients</code></td>
+              <td><code>PatientsPage</code></td>
+              <td>Поиск, таблица пациентов, duplicate warning, создание пациента.</td>
+            </tr>
+            <tr>
+              <td><code>/patients/[id]</code></td>
+              <td><code>PatientDetails</code></td>
+              <td>Профиль пациента, контакты, CRM status update, placeholder timeline.</td>
+            </tr>
+            <tr>
+              <td><code>/schedule</code></td>
+              <td><code>CalendarPage</code></td>
+              <td>
+                Дневной календарь, список записей, создание appointment, quick status actions,
+                realtime refresh.
+              </td>
+            </tr>
+            <tr>
+              <td><code>/reception</code></td>
+              <td><code>ReceptionBoard</code></td>
+              <td>Today board, drag/drop статусы, queue panel, realtime refresh.</td>
+            </tr>
+            <tr>
+              <td><code>/api/health</code></td>
+              <td><code>route.ts</code></td>
+              <td>Healthcheck для Docker Compose frontend service.</td>
+            </tr>
+          </tbody>
+        </table>
 
-    <section id="api">
-      <h2>10. Карта API</h2>
-      <p>
-        Ниже сгруппированы реализованные controller endpoints. Число endpoint-декораторов в `auth-service`: 180.
-      </p>
+        <h3>Shared frontend infrastructure</h3>
+        <ul>
+          <li>
+            <code>shared/api/client-api.ts</code> читает access token из cookie и выполняет
+            authenticated fetch к `NEXT_PUBLIC_API_URL`.
+          </li>
+          <li>
+            <code>shared/api/server-api.ts</code> получает bootstrap на сервере через
+            `INTERNAL_API_URL` или public API URL.
+          </li>
+          <li>
+            <code>shared/realtime/socket.ts</code> создает Socket.IO client namespace `/realtime`.
+          </li>
+          <li>
+            <code>shared/permissions/can.ts</code> проверяет permission и enabled module из
+            bootstrap.
+          </li>
+          <li>
+            <code>shared/ui/status.ts</code> содержит labels/tones для appointment и patient
+            статусов.
+          </li>
+          <li><code>shared/query/query-provider.tsx</code> оборачивает TanStack Query provider.</li>
+        </ul>
 
-      <h3>Auth</h3>
-      <div class="pill-row">
-        <span class="pill">POST /auth/login</span>
-        <span class="pill">POST /auth/2fa/verify</span>
-        <span class="pill">POST /auth/2fa/enable</span>
-        <span class="pill">POST /auth/2fa/confirm</span>
-        <span class="pill">POST /auth/2fa/disable</span>
-        <span class="pill">POST /auth/refresh</span>
-        <span class="pill">POST /auth/logout</span>
-        <span class="pill">GET /auth/bootstrap</span>
-      </div>
+        <h3>Sidebar</h3>
+        <p>
+          Sidebar отображает только модули, доступные в bootstrap permissions: dashboard, reception,
+          schedule, patients. Финансы, коммуникации, BI и настройки помечены как "Скоро" и ведут на
+          dashboard.
+        </p>
 
-      <h3>Patient CRM</h3>
-      <div class="pill-row">
-        <span class="pill">GET /patients</span>
-        <span class="pill">POST /patients</span>
-        <span class="pill">GET /patients/search</span>
-        <span class="pill">GET /patients/tags</span>
-        <span class="pill">POST /patients/tags</span>
-        <span class="pill">POST /patients/:id/tags/:tagId</span>
-        <span class="pill">DELETE /patients/:id/tags/:tagId</span>
-        <span class="pill">POST /patients/family</span>
-        <span class="pill">POST /patients/family/members</span>
-        <span class="pill">DELETE /patients/family/members/:memberId</span>
-        <span class="pill">GET /patients/documents/templates</span>
-        <span class="pill">GET /patients/:id</span>
-        <span class="pill">PATCH /patients/:id</span>
-        <span class="pill">GET /patients/:id/family</span>
-        <span class="pill">GET /patients/:id/documents</span>
-        <span class="pill">POST /patients/:id/documents</span>
-        <span class="pill">GET /patients/:id/timeline</span>
-        <span class="pill">POST /patients/:id/notes</span>
-        <span class="pill">GET /patients/:id/metrics</span>
-        <span class="pill">POST /patients/:id/leads</span>
-      </div>
+        <h3>Frontend hooks</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Hook</th>
+              <th>API</th>
+              <th>Назначение</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>usePatients</code></td>
+              <td><code>GET /patients</code> или <code>GET /patients/search</code></td>
+              <td>Список и поиск пациентов.</td>
+            </tr>
+            <tr>
+              <td><code>usePatient</code></td>
+              <td><code>GET /patients/:id</code></td>
+              <td>Детальная карточка пациента.</td>
+            </tr>
+            <tr>
+              <td><code>useCreatePatient</code></td>
+              <td><code>POST /patients</code></td>
+              <td>Создание пациента и invalidation списка.</td>
+            </tr>
+            <tr>
+              <td><code>useUpdatePatient</code></td>
+              <td><code>PATCH /patients/:id</code></td>
+              <td>Optimistic update карточки пациента.</td>
+            </tr>
+            <tr>
+              <td><code>useAppointments</code></td>
+              <td><code>GET /appointments</code></td>
+              <td>Записи за текущий день.</td>
+            </tr>
+            <tr>
+              <td><code>useCreateAppointment</code></td>
+              <td><code>POST /appointments</code></td>
+              <td>Создание записи.</td>
+            </tr>
+            <tr>
+              <td><code>useTransitionAppointment</code></td>
+              <td><code>POST /appointments/:id/{confirm|check-in|cancel}</code></td>
+              <td>Быстрые статусные действия.</td>
+            </tr>
+            <tr>
+              <td><code>useReceptionDashboard</code></td>
+              <td><code>GET /reception/dashboard</code></td>
+              <td>Today board и queue.</td>
+            </tr>
+            <tr>
+              <td><code>useReceptionTransition</code></td>
+              <td><code>POST/PATCH appointments</code></td>
+              <td>Изменение статуса из board.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
 
-      <h3>Scheduling</h3>
-      <div class="pill-row">
-        <span class="pill">GET /appointments</span>
-        <span class="pill">POST /appointments</span>
-        <span class="pill">PATCH /appointments/:id</span>
-        <span class="pill">POST /appointments/:id/confirm</span>
-        <span class="pill">POST /appointments/:id/check-in</span>
-        <span class="pill">POST /appointments/:id/cancel</span>
-        <span class="pill">GET /availability</span>
-        <span class="pill">POST /slots/reserve</span>
-        <span class="pill">GET /services</span>
-        <span class="pill">GET /doctors</span>
-        <span class="pill">GET /waiting-list</span>
-        <span class="pill">POST /waiting-list</span>
-        <span class="pill">PATCH /waiting-list/:id</span>
-        <span class="pill">DELETE /waiting-list/:id</span>
-        <span class="pill">GET /resource-buffers</span>
-        <span class="pill">POST /resource-buffers</span>
-        <span class="pill">DELETE /resource-buffers/:id</span>
-        <span class="pill">GET /availability/public-slots</span>
-        <span class="pill">POST /online-booking/reserve</span>
-        <span class="pill">POST /online-booking/confirm</span>
-      </div>
+      <section id="database">
+        <h2>6. База данных</h2>
+        <p>
+          Prisma schema является главным источником доменной модели. В файле
+          `backend/prisma/schema.prisma` зафиксировано 147 моделей и более 3000 строк схемы. Есть
+          две миграции: initial baseline и vertical slice.
+        </p>
 
-      <h3>Reception</h3>
-      <div class="pill-row">
-        <span class="pill">GET /reception/dashboard</span>
-        <span class="pill">POST /reception/dashboard/recalculate</span>
-        <span class="pill">POST /reception/checkin</span>
-        <span class="pill">POST /reception/visit/:id/status</span>
-        <span class="pill">GET /reception/queue</span>
-        <span class="pill">PATCH /reception/queue/:id</span>
-        <span class="pill">POST /reception/fast-booking</span>
-        <span class="pill">POST /reception/calls/incoming</span>
-        <span class="pill">GET /reception/calls</span>
-        <span class="pill">GET /reception/invoices</span>
-        <span class="pill">POST /reception/invoices</span>
-        <span class="pill">POST /reception/invoices/:id/pay</span>
-      </div>
+        <h3>Группы моделей</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Группа</th>
+              <th>Ключевые модели</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tenancy / RBAC</td>
+              <td>
+                <code>Tenant</code>, <code>Branch</code>, <code>SystemModule</code>,
+                <code>TenantModule</code>, <code>User</code>, <code>Role</code>,
+                <code>Permission</code>, <code>UserBranchRole</code>, <code>UserSession</code>,
+                <code>User2faSettings</code>, <code>AuditLog</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Patient CRM</td>
+              <td>
+                <code>Patient</code>, <code>PatientContact</code>, <code>PatientAddress</code>,
+                <code>PatientLead</code>, <code>PatientCrmMetric</code>, <code>CrmTag</code>,
+                <code>PatientTag</code>, <code>FamilyGroup</code>, <code>FamilyMember</code>,
+                <code>LegalDocumentType</code>, <code>PatientLegalDocument</code>,
+                <code>PatientTimelineEvent</code>, <code>PatientNote</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Organization</td>
+              <td>
+                <code>Department</code>, <code>Specialty</code>, <code>Position</code>,
+                <code>Employee</code>, <code>EmployeePosition</code>, <code>RoomType</code>,
+                <code>Room</code>, <code>EquipmentCategory</code>, <code>Equipment</code>,
+                <code>WorkingSchedule</code>, <code>ScheduleException</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Scheduling</td>
+              <td>
+                <code>Service</code>, <code>Appointment</code>,
+                <code>AppointmentStatusHistory</code>, <code>AppointmentResource</code>,
+                <code>AppointmentReservation</code>, <code>WaitingList</code>,
+                <code>AvailabilityCache</code>, <code>ResourceBuffer</code>,
+                <code>ServiceRequiredResource</code>, <code>AppointmentRecurrenceRule</code>,
+                <code>OnlineBookingToken</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Reception</td>
+              <td>
+                <code>ReceptionistDashboardCache</code>, <code>AppointmentVisitState</code>,
+                <code>VisitQueue</code>, <code>IncomingCall</code>, <code>Invoice</code>,
+                <code>InvoiceItem</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>EMR/EHR</td>
+              <td>
+                <code>MedicalRecord</code>, <code>EpisodeOfCare</code>, <code>Encounter</code>,
+                <code>ClinicalComposition</code>, <code>ClinicalSection</code>,
+                <code>ClinicalElement</code>, <code>ClinicalTemplate</code>,
+                <code>DiagnosisDictionary</code>, <code>EncounterDiagnosis</code>,
+                <code>Prescription</code>, <code>LabOrder</code>, <code>MedicalFile</code>,
+                <code>DigitalSignature</code>, <code>EncounterVersion</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Finance</td>
+              <td>
+                <code>Payment</code>, <code>PaymentAllocation</code>, <code>Refund</code>,
+                <code>PaymentGateway</code>, <code>GatewayTransaction</code>,
+                <code>PatientWallet</code>, <code>WalletTransaction</code>,
+                <code>FamilyWallet</code>, <code>PatientDebt</code>, <code>PayrollRule</code>,
+                <code>PayrollCalculation</code>, <code>SubscriptionPlan</code>,
+                <code>TenantSubscription</code>, <code>TenantUsageMetric</code>,
+                <code>CashierShift</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Communications</td>
+              <td>
+                <code>Conversation</code>, <code>ConversationParticipant</code>,
+                <code>Message</code>, <code>CommunicationChannel</code>, <code>SmsProvider</code>,
+                <code>NotificationRule</code>, <code>NotificationsQueue</code>,
+                <code>ChatbotFlow</code>, <code>MessageTemplate</code>,
+                <code>CommunicationCampaign</code>, <code>CommunicationPreference</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Integrations</td>
+              <td>
+                <code>IntegrationProvider</code>, <code>WebhookEvent</code>,
+                <code>IntegrationLog</code>, <code>LaboratoryProvider</code>,
+                <code>LabResult</code>, <code>ClinicalObservation</code>,
+                <code>StorageProvider</code>, <code>File</code>, <code>FileLink</code>,
+                <code>TelephonyProvider</code>, <code>CallEvent</code>, <code>MedicalDevice</code>,
+                <code>DeviceMeasurement</code>, <code>IntegrationMetric</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>BI / DWH</td>
+              <td>
+                <code>DwFactAppointment</code>, <code>DwFactPayment</code>,
+                <code>DwFactMarketing</code>, <code>FinancialDailyAggregate</code>,
+                <code>MarketingFunnelMetric</code>, <code>RoomUtilizationMetric</code>,
+                <code>NoShowMetric</code>, <code>RetentionMetric</code>,
+                <code>DoctorKpiMetric</code>, <code>ScheduledReport</code>,
+                <code>GeneratedReport</code>, <code>RealtimeMetricCache</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Inventory</td>
+              <td>
+                <code>Warehouse</code>, <code>InventoryItem</code>, <code>InventoryCategory</code>,
+                <code>InventoryBatch</code>, <code>InventoryTransaction</code>,
+                <code>Supplier</code>, <code>PurchaseOrder</code>, <code>InventoryTransfer</code>,
+                <code>InventoryBalance</code>, <code>InventoryAudit</code>,
+                <code>ServiceBomTemplate</code>, <code>InventoryConsumption</code>,
+                <code>StockAlertRule</code>, <code>StockAlert</code>.
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-      <h3>Organization</h3>
-      <div class="pill-row">
-        <span class="pill">GET/POST/PATCH/DELETE /branches</span>
-        <span class="pill">GET/POST/PATCH/DELETE /departments</span>
-        <span class="pill">GET/POST/PATCH/DELETE /employees</span>
-        <span class="pill">GET /employees/:id/positions</span>
-        <span class="pill">POST /employees/positions</span>
-        <span class="pill">DELETE /employees/positions/:id</span>
-        <span class="pill">GET/POST/PATCH/DELETE /rooms</span>
-        <span class="pill">GET /rooms/:id/assignments</span>
-        <span class="pill">POST /rooms/assignments</span>
-        <span class="pill">DELETE /rooms/assignments/:id</span>
-        <span class="pill">GET/POST/PATCH/DELETE /equipment</span>
-        <span class="pill">GET/POST/DELETE /directories/*</span>
-        <span class="pill">GET/POST/PATCH/DELETE /schedules/working</span>
-        <span class="pill">GET/POST/PATCH/DELETE /schedules/exceptions</span>
-      </div>
+        <h3>Multi-tenancy</h3>
+        <ul>
+          <li>Большинство доменных таблиц имеют `tenantId`.</li>
+          <li>Branch-owned данные имеют `branchId` там, где нужно.</li>
+          <li>
+            Уникальные индексы часто scoped по tenant, например `tenantId_code`, `tenantId_email`,
+            `tenantId_patientCode`.
+          </li>
+          <li>RBAC строится через `UserBranchRole`.</li>
+        </ul>
+        <div class="warning">
+          PostgreSQL RLS в текущих миграциях не обнаружен. Tenant isolation выполняется на уровне
+          сервисного кода, DTO/guards и Prisma query filters.
+        </div>
+      </section>
 
-      <h3>EMR, Finance, Communications, Integrations, Analytics, Inventory</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Module</th>
-            <th>Endpoint groups</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>EMR</td>
-            <td><code>/emr/medical-records</code>, <code>/emr/episodes</code>, <code>/emr/encounters</code>, <code>/emr/templates</code>, <code>/emr/diagnoses/search</code>, <code>/emr/fhir/*</code>.</td>
-          </tr>
-          <tr>
-            <td>Finance</td>
-            <td><code>/finance/shifts</code>, <code>/finance/invoices/:id/payments</code>, <code>/finance/invoices/:id/refunds</code>, <code>/finance/wallets</code>, <code>/finance/payroll</code>, <code>/finance/billing</code>, <code>/finance/payments/webhooks</code>.</td>
-          </tr>
-          <tr>
-            <td>Communications</td>
-            <td><code>/communications/conversations</code>, <code>/communications/templates</code>, <code>/communications/rules</code>, <code>/communications/campaigns</code>, <code>/communications/preferences</code>, <code>/communications/webhooks/*</code>.</td>
-          </tr>
-          <tr>
-            <td>Integration</td>
-            <td><code>/integration/webhooks</code>, <code>/integration/lab-orders</code>, <code>/integration/files</code>, <code>/integration/devices/measurements</code>, <code>/integration/fhir/*</code>.</td>
-          </tr>
-          <tr>
-            <td>Analytics</td>
-            <td><code>/analytics/financial</code>, <code>/analytics/marketing</code>, <code>/analytics/operations</code>, <code>/analytics/doctors</code>, <code>/analytics/realtime</code>, <code>/analytics/reports</code>, <code>/analytics/recalculate</code>.</td>
-          </tr>
-          <tr>
-            <td>Inventory</td>
-            <td><code>/inventory/warehouses</code>, <code>/inventory/items</code>, <code>/inventory/procure</code>, <code>/inventory/transfer</code>, <code>/inventory/audit</code>, <code>/inventory/bom</code>, <code>/inventory/balances</code>, <code>/inventory/alerts</code>.</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+      <section id="seed">
+        <h2>7. Seed/demo data</h2>
+        <p>
+          `backend/prisma/seeds/seed.ts` содержит 2043 строки и заполняет demo tenant, роли, права,
+          справочники, пациентов, записи, EMR, finance, communications, integrations, BI и inventory
+          данные.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Категория</th>
+              <th>Что создается</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tenant/Auth</td>
+              <td>
+                `demo-clinic`, main branch, role `CLINIC_OWNER`, admin `admin@demo.clinic` /
+                `Admin123!`, все permissions для owner.
+              </td>
+            </tr>
+            <tr>
+              <td>System modules</td>
+              <td>
+                `auth`, `organization-structure`, `patient-crm`, `smart-scheduling`,
+                `receptionist-workplace`, `communications`, `emr-ehr`, `finance-billing`,
+                `integration-gateway`, `business-intelligence`.
+              </td>
+            </tr>
+            <tr>
+              <td>Organization</td>
+              <td>
+                Specialties, positions, room types, equipment categories, departments, rooms, USI
+                scanner, employee, employee position, room assignment, branch working schedules.
+              </td>
+            </tr>
+            <tr>
+              <td>Patient CRM</td>
+              <td>
+                3 пациента, contacts, адрес, family group, tags, legal documents/templates, metrics,
+                leads, notes, timeline.
+              </td>
+            </tr>
+            <tr>
+              <td>Scheduling/Reception</td>
+              <td>
+                Services, service required resources, resource buffers, waiting list, seeded
+                appointment `A-SEED-001`, queue `Q-999`, incoming call, pending invoice.
+              </td>
+            </tr>
+            <tr>
+              <td>EMR</td>
+              <td>
+                ICD-10 dictionary, cardiology template, medical record, episode, encounter draft,
+                diagnosis, prescription.
+              </td>
+            </tr>
+            <tr>
+              <td>Finance</td>
+              <td>
+                Subscription plans, active Pro subscription, usage metrics, payroll rule, open
+                cashier shift, payment gateway.
+              </td>
+            </tr>
+            <tr>
+              <td>Communications</td>
+              <td>
+                SMS provider, RU/TJ templates, notification rule, chatbot flow, patient
+                communication preferences.
+              </td>
+            </tr>
+            <tr>
+              <td>Integrations</td>
+              <td>
+                LIS provider, storage provider, telephony provider, medical device, lab
+                orders/results, observation, call recording file, call event.
+              </td>
+            </tr>
+            <tr>
+              <td>BI</td>
+              <td>
+                DWH facts, financial aggregates, marketing funnel metrics, operational metrics,
+                doctor KPI, scheduled report, realtime cache.
+              </td>
+            </tr>
+            <tr>
+              <td>Inventory</td>
+              <td>
+                Main/room warehouses, supplier, inventory items, batches, balances, BOM template,
+                stock alert rule.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
 
-    <section id="gaps">
-      <h2>11. Ограничения, несоответствия и риски</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Приоритет</th>
-            <th>Наблюдение</th>
-            <th>Почему важно</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="status risk">High</span></td>
-            <td>Gateway проксирует только MVP endpoints.</td>
-            <td>EMR, finance, communications, integrations, analytics, inventory, organization endpoints не доступны через public gateway без прямого обращения к auth-service.</td>
-          </tr>
-          <tr>
-            <td><span class="status risk">High</span></td>
-            <td>`inventory-warehouse` не добавлен в seed system modules.</td>
-            <td>ModuleEnabledGuard заблокирует inventory API для demo tenant, несмотря на наличие контроллеров и permissions.</td>
-          </tr>
-          <tr>
-            <td><span class="status risk">High</span></td>
-            <td>Нет тестов.</td>
-            <td>При 147 моделях и 180 endpoint-декораторах регрессии в auth, billing, EMR и scheduling сложно контролировать вручную.</td>
-          </tr>
-          <tr>
-            <td><span class="status partial">Medium</span></td>
-            <td>Frontend покрывает только core MVP.</td>
-            <td>Большая часть backend-функциональности пока недоступна конечному пользователю через UI.</td>
-          </tr>
-          <tr>
-            <td><span class="status partial">Medium</span></td>
-            <td>TenantContextMiddleware не применен в `AppModule.configure`.</td>
-            <td>Audit requestId и header tenant context могут не заполняться, если middleware не подключен на маршруты.</td>
-          </tr>
-          <tr>
-            <td><span class="status partial">Medium</span></td>
-            <td>RLS не реализован.</td>
-            <td>Tenant isolation зависит от корректности всех Prisma filters в сервисах.</td>
-          </tr>
-          <tr>
-            <td><span class="status partial">Medium</span></td>
-            <td>Dashboard содержит статические KPI.</td>
-            <td>Операционная панель показывает demo-метрики, не связанные с BI/reception API.</td>
-          </tr>
-          <tr>
-            <td><span class="status partial">Medium</span></td>
-            <td>Access token хранится в JS-readable cookie.</td>
-            <td>Для production лучше пересмотреть cookie/session model и XSS exposure.</td>
-          </tr>
-          <tr>
-            <td><span class="status partial">Low</span></td>
-            <td>Некоторые документы описывают целевой стек шире текущего.</td>
-            <td>В docs упомянуты GraphQL, ClickHouse, Kubernetes, Terraform, Prometheus, Loki, Sentry, но в коде этого пока нет.</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+      <section id="security">
+        <h2>8. Безопасность и доступ</h2>
+        <div class="grid-2">
+          <div>
+            <h3>Реализовано</h3>
+            <ul>
+              <li>Argon2 password hashing.</li>
+              <li>
+                JWT access token с `tenant_id`, `branch_ids`, `role_ids`, `permissions`,
+                `session_id`.
+              </li>
+              <li>Refresh token в httpOnly cookie `/auth/refresh`.</li>
+              <li>Refresh token rotation и fingerprint.</li>
+              <li>Redis session cache и revoked marker.</li>
+              <li>RBAC guard по endpoint permissions.</li>
+              <li>ModuleEnabledGuard по `tenant_modules`.</li>
+              <li>Read-only emergency mode при suspended subscription.</li>
+              <li>TOTP MFA API.</li>
+              <li>Helmet, CORS, cookie parser.</li>
+              <li>Audit logging основных действий.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Ограничения</h3>
+            <ul>
+              <li>Нет rate limiting/bruteforce protection.</li>
+              <li>Нет password policy/history/lockout.</li>
+              <li>Нет OAuth/SSO.</li>
+              <li>Нет RLS на уровне PostgreSQL.</li>
+              <li>
+                TenantContextMiddleware подключен как provider, но `AppModule.configure` пустой.
+              </li>
+              <li>
+                MFA secret хранится как `secretHash`, но фактически это base32 secret, а не hash.
+              </li>
+              <li>Access token frontend хранит в JS cookie, а не httpOnly cookie.</li>
+              <li>Gateway Swagger не отражает proxied бизнес API.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
 
-    <section id="next">
-      <h2>12. Рекомендации для следующих ТЗ</h2>
-      <p>Ниже темы, которые архитекторы могут использовать как входные точки для следующих задач.</p>
-      <ol>
-        <li>Привести `api-gateway` к полной карте backend API или явно разделить public/internal endpoints.</li>
-        <li>Довести module registry: добавить `inventory-warehouse`, проверить зависимости и миграции seed.</li>
-        <li>Сформировать тестовую стратегию: auth/session, scheduling conflicts, reception transitions, finance payments/refunds, EMR signing/amendment.</li>
-        <li>Выделить UI roadmap для backend-модулей без интерфейса: org structure, EMR, finance, communications, analytics, inventory.</li>
-        <li>Усилить multi-tenancy: подключить middleware, добавить RLS или централизованные Prisma guards/scopes.</li>
-        <li>Закрыть production security gaps: rate limits, lockouts, password policy, MFA secret handling, cookie model.</li>
-        <li>Синхронизировать docs/architecture с текущей реализацией и отметить target-only компоненты.</li>
-        <li>Подключить реальные dashboard метрики из reception/analytics вместо статических frontend KPI.</li>
-      </ol>
+      <section id="infra">
+        <h2>9. Инфраструктура</h2>
+        <h3>Docker Compose services</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>Image/build</th>
+              <th>Port</th>
+              <th>Назначение</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>postgres</code></td>
+              <td><code>postgres:17-alpine</code></td>
+              <td>5432</td>
+              <td>Основная БД.</td>
+            </tr>
+            <tr>
+              <td><code>redis</code></td>
+              <td><code>redis:7-alpine</code></td>
+              <td>6379</td>
+              <td>Сессии, realtime adapter, queue foundation.</td>
+            </tr>
+            <tr>
+              <td><code>minio</code></td>
+              <td><code>minio/minio</code></td>
+              <td>9000/9001</td>
+              <td>S3-compatible object storage foundation.</td>
+            </tr>
+            <tr>
+              <td><code>auth-service</code></td>
+              <td>Backend Dockerfile с `APP_NAME=auth-service`</td>
+              <td>3001</td>
+              <td>Domain backend, migrations и seed при старте container.</td>
+            </tr>
+            <tr>
+              <td><code>api-gateway</code></td>
+              <td>Backend Dockerfile с `APP_NAME=api-gateway`</td>
+              <td>3000</td>
+              <td>Public proxy.</td>
+            </tr>
+            <tr>
+              <td><code>frontend</code></td>
+              <td>Next.js standalone Dockerfile</td>
+              <td>3002</td>
+              <td>UI.</td>
+            </tr>
+          </tbody>
+        </table>
 
-      <h3>Готовность для дальнейшего проектирования</h3>
-      <div class="note">
-        Проект имеет достаточную доменную основу для продолжения архитектурного проектирования:
-        данные и backend-контракты уже покрывают большинство ключевых контуров клиники. Главные следующие решения:
-        public gateway/API boundary, UI coverage, тестирование и production hardening.
-      </div>
-      <p class="small">
-        Источники аудита: текущие файлы репозитория `README.md`, `package.json`, `docker-compose.yml`,
-        `backend/apps/**`, `backend/core/**`, `backend/prisma/schema.prisma`, `backend/prisma/seeds/seed.ts`,
-        `frontend/app/**`, `frontend/modules/**`, `frontend/shared/**`, `docs/architecture/**`.
-      </p>
-    </section>
-  </main>
-</body>
+        <h3>Environment</h3>
+        <ul>
+          <li>
+            Root `.env.example` содержит DB, Redis, MinIO, JWT secrets, ports, API URLs, CORS
+            origins.
+          </li>
+          <li>Backend `.env.example` содержит локальные DB/Redis/JWT/CORS настройки.</li>
+          <li>Frontend `.env.example` содержит public API URL и internal API URL.</li>
+        </ul>
+      </section>
+
+      <section id="api">
+        <h2>10. Карта API</h2>
+        <p>
+          Ниже сгруппированы реализованные controller endpoints. Число endpoint-декораторов в
+          `auth-service`: 180.
+        </p>
+
+        <h3>Auth</h3>
+        <div class="pill-row">
+          <span class="pill">POST /auth/login</span>
+          <span class="pill">POST /auth/2fa/verify</span>
+          <span class="pill">POST /auth/2fa/enable</span>
+          <span class="pill">POST /auth/2fa/confirm</span>
+          <span class="pill">POST /auth/2fa/disable</span>
+          <span class="pill">POST /auth/refresh</span>
+          <span class="pill">POST /auth/logout</span>
+          <span class="pill">GET /auth/bootstrap</span>
+        </div>
+
+        <h3>Patient CRM</h3>
+        <div class="pill-row">
+          <span class="pill">GET /patients</span>
+          <span class="pill">POST /patients</span>
+          <span class="pill">GET /patients/search</span>
+          <span class="pill">GET /patients/tags</span>
+          <span class="pill">POST /patients/tags</span>
+          <span class="pill">POST /patients/:id/tags/:tagId</span>
+          <span class="pill">DELETE /patients/:id/tags/:tagId</span>
+          <span class="pill">POST /patients/family</span>
+          <span class="pill">POST /patients/family/members</span>
+          <span class="pill">DELETE /patients/family/members/:memberId</span>
+          <span class="pill">GET /patients/documents/templates</span>
+          <span class="pill">GET /patients/:id</span>
+          <span class="pill">PATCH /patients/:id</span>
+          <span class="pill">GET /patients/:id/family</span>
+          <span class="pill">GET /patients/:id/documents</span>
+          <span class="pill">POST /patients/:id/documents</span>
+          <span class="pill">GET /patients/:id/timeline</span>
+          <span class="pill">POST /patients/:id/notes</span>
+          <span class="pill">GET /patients/:id/metrics</span>
+          <span class="pill">POST /patients/:id/leads</span>
+        </div>
+
+        <h3>Scheduling</h3>
+        <div class="pill-row">
+          <span class="pill">GET /appointments</span>
+          <span class="pill">POST /appointments</span>
+          <span class="pill">PATCH /appointments/:id</span>
+          <span class="pill">POST /appointments/:id/confirm</span>
+          <span class="pill">POST /appointments/:id/check-in</span>
+          <span class="pill">POST /appointments/:id/cancel</span>
+          <span class="pill">GET /availability</span>
+          <span class="pill">POST /slots/reserve</span>
+          <span class="pill">GET /services</span>
+          <span class="pill">GET /doctors</span>
+          <span class="pill">GET /waiting-list</span>
+          <span class="pill">POST /waiting-list</span>
+          <span class="pill">PATCH /waiting-list/:id</span>
+          <span class="pill">DELETE /waiting-list/:id</span>
+          <span class="pill">GET /resource-buffers</span>
+          <span class="pill">POST /resource-buffers</span>
+          <span class="pill">DELETE /resource-buffers/:id</span>
+          <span class="pill">GET /availability/public-slots</span>
+          <span class="pill">POST /online-booking/reserve</span>
+          <span class="pill">POST /online-booking/confirm</span>
+        </div>
+
+        <h3>Reception</h3>
+        <div class="pill-row">
+          <span class="pill">GET /reception/dashboard</span>
+          <span class="pill">POST /reception/dashboard/recalculate</span>
+          <span class="pill">POST /reception/checkin</span>
+          <span class="pill">POST /reception/visit/:id/status</span>
+          <span class="pill">GET /reception/queue</span>
+          <span class="pill">PATCH /reception/queue/:id</span>
+          <span class="pill">POST /reception/fast-booking</span>
+          <span class="pill">POST /reception/calls/incoming</span>
+          <span class="pill">GET /reception/calls</span>
+          <span class="pill">GET /reception/invoices</span>
+          <span class="pill">POST /reception/invoices</span>
+          <span class="pill">POST /reception/invoices/:id/pay</span>
+        </div>
+
+        <h3>Organization</h3>
+        <div class="pill-row">
+          <span class="pill">GET/POST/PATCH/DELETE /branches</span>
+          <span class="pill">GET/POST/PATCH/DELETE /departments</span>
+          <span class="pill">GET/POST/PATCH/DELETE /employees</span>
+          <span class="pill">GET /employees/:id/positions</span>
+          <span class="pill">POST /employees/positions</span>
+          <span class="pill">DELETE /employees/positions/:id</span>
+          <span class="pill">GET/POST/PATCH/DELETE /rooms</span>
+          <span class="pill">GET /rooms/:id/assignments</span>
+          <span class="pill">POST /rooms/assignments</span>
+          <span class="pill">DELETE /rooms/assignments/:id</span>
+          <span class="pill">GET/POST/PATCH/DELETE /equipment</span>
+          <span class="pill">GET/POST/DELETE /directories/*</span>
+          <span class="pill">GET/POST/PATCH/DELETE /schedules/working</span>
+          <span class="pill">GET/POST/PATCH/DELETE /schedules/exceptions</span>
+        </div>
+
+        <h3>EMR, Finance, Communications, Integrations, Analytics, Inventory</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Module</th>
+              <th>Endpoint groups</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>EMR</td>
+              <td>
+                <code>/emr/medical-records</code>, <code>/emr/episodes</code>,
+                <code>/emr/encounters</code>, <code>/emr/templates</code>,
+                <code>/emr/diagnoses/search</code>, <code>/emr/fhir/*</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Finance</td>
+              <td>
+                <code>/finance/shifts</code>, <code>/finance/invoices/:id/payments</code>,
+                <code>/finance/invoices/:id/refunds</code>, <code>/finance/wallets</code>,
+                <code>/finance/payroll</code>, <code>/finance/billing</code>,
+                <code>/finance/payments/webhooks</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Communications</td>
+              <td>
+                <code>/communications/conversations</code>, <code>/communications/templates</code>,
+                <code>/communications/rules</code>, <code>/communications/campaigns</code>,
+                <code>/communications/preferences</code>, <code>/communications/webhooks/*</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Integration</td>
+              <td>
+                <code>/integration/webhooks</code>, <code>/integration/lab-orders</code>,
+                <code>/integration/files</code>, <code>/integration/devices/measurements</code>,
+                <code>/integration/fhir/*</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Analytics</td>
+              <td>
+                <code>/analytics/financial</code>, <code>/analytics/marketing</code>,
+                <code>/analytics/operations</code>, <code>/analytics/doctors</code>,
+                <code>/analytics/realtime</code>, <code>/analytics/reports</code>,
+                <code>/analytics/recalculate</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Inventory</td>
+              <td>
+                <code>/inventory/warehouses</code>, <code>/inventory/items</code>,
+                <code>/inventory/procure</code>, <code>/inventory/transfer</code>,
+                <code>/inventory/audit</code>, <code>/inventory/bom</code>,
+                <code>/inventory/balances</code>, <code>/inventory/alerts</code>.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="gaps">
+        <h2>11. Ограничения, несоответствия и риски</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Приоритет</th>
+              <th>Наблюдение</th>
+              <th>Почему важно</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="status risk">High</span></td>
+              <td>Gateway проксирует только MVP endpoints.</td>
+              <td>
+                EMR, finance, communications, integrations, analytics, inventory, organization
+                endpoints не доступны через public gateway без прямого обращения к auth-service.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="status risk">High</span></td>
+              <td>`inventory-warehouse` не добавлен в seed system modules.</td>
+              <td>
+                ModuleEnabledGuard заблокирует inventory API для demo tenant, несмотря на наличие
+                контроллеров и permissions.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="status risk">High</span></td>
+              <td>Нет тестов.</td>
+              <td>
+                При 147 моделях и 180 endpoint-декораторах регрессии в auth, billing, EMR и
+                scheduling сложно контролировать вручную.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="status partial">Medium</span></td>
+              <td>Frontend покрывает только core MVP.</td>
+              <td>
+                Большая часть backend-функциональности пока недоступна конечному пользователю через
+                UI.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="status partial">Medium</span></td>
+              <td>TenantContextMiddleware не применен в `AppModule.configure`.</td>
+              <td>
+                Audit requestId и header tenant context могут не заполняться, если middleware не
+                подключен на маршруты.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="status partial">Medium</span></td>
+              <td>RLS не реализован.</td>
+              <td>Tenant isolation зависит от корректности всех Prisma filters в сервисах.</td>
+            </tr>
+            <tr>
+              <td><span class="status partial">Medium</span></td>
+              <td>Dashboard содержит статические KPI.</td>
+              <td>Операционная панель показывает demo-метрики, не связанные с BI/reception API.</td>
+            </tr>
+            <tr>
+              <td><span class="status partial">Medium</span></td>
+              <td>Access token хранится в JS-readable cookie.</td>
+              <td>Для production лучше пересмотреть cookie/session model и XSS exposure.</td>
+            </tr>
+            <tr>
+              <td><span class="status partial">Low</span></td>
+              <td>Некоторые документы описывают целевой стек шире текущего.</td>
+              <td>
+                В docs упомянуты GraphQL, ClickHouse, Kubernetes, Terraform, Prometheus, Loki,
+                Sentry, но в коде этого пока нет.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="next">
+        <h2>12. Рекомендации для следующих ТЗ</h2>
+        <p>
+          Ниже темы, которые архитекторы могут использовать как входные точки для следующих задач.
+        </p>
+        <ol>
+          <li>
+            Привести `api-gateway` к полной карте backend API или явно разделить public/internal
+            endpoints.
+          </li>
+          <li>
+            Довести module registry: добавить `inventory-warehouse`, проверить зависимости и
+            миграции seed.
+          </li>
+          <li>
+            Сформировать тестовую стратегию: auth/session, scheduling conflicts, reception
+            transitions, finance payments/refunds, EMR signing/amendment.
+          </li>
+          <li>
+            Выделить UI roadmap для backend-модулей без интерфейса: org structure, EMR, finance,
+            communications, analytics, inventory.
+          </li>
+          <li>
+            Усилить multi-tenancy: подключить middleware, добавить RLS или централизованные Prisma
+            guards/scopes.
+          </li>
+          <li>
+            Закрыть production security gaps: rate limits, lockouts, password policy, MFA secret
+            handling, cookie model.
+          </li>
+          <li>
+            Синхронизировать docs/architecture с текущей реализацией и отметить target-only
+            компоненты.
+          </li>
+          <li>
+            Подключить реальные dashboard метрики из reception/analytics вместо статических frontend
+            KPI.
+          </li>
+        </ol>
+
+        <h3>Готовность для дальнейшего проектирования</h3>
+        <div class="note">
+          Проект имеет достаточную доменную основу для продолжения архитектурного проектирования:
+          данные и backend-контракты уже покрывают большинство ключевых контуров клиники. Главные
+          следующие решения: public gateway/API boundary, UI coverage, тестирование и production
+          hardening.
+        </div>
+        <p class="small">
+          Источники аудита: текущие файлы репозитория `README.md`, `package.json`,
+          `docker-compose.yml`, `backend/apps/**`, `backend/core/**`,
+          `backend/prisma/schema.prisma`, `backend/prisma/seeds/seed.ts`, `frontend/app/**`,
+          `frontend/modules/**`, `frontend/shared/**`, `docs/architecture/**`.
+        </p>
+      </section>
+    </main>
+  </body>
 </html>

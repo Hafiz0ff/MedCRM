@@ -1,5 +1,5 @@
-import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { describe, it, before, after } from 'node:test';
 import { setupE2eTest, teardownE2eTest, TestContext } from './e2e-helper';
 
 describe('E2E Appointments & Smart Scheduling', () => {
@@ -17,17 +17,17 @@ describe('E2E Appointments & Smart Scheduling', () => {
 
     // Retrieve seeded patient, employee, and service
     const patient = await context.prisma.patient.findFirstOrThrow({
-      where: { tenantId: context.tenantId }
+      where: { tenantId: context.tenantId },
     });
     patientId = patient.id;
 
     const employee = await context.prisma.employee.findFirstOrThrow({
-      where: { tenantId: context.tenantId }
+      where: { tenantId: context.tenantId },
     });
     employeeId = employee.id;
 
     const service = await context.prisma.service.findFirstOrThrow({
-      where: { tenantId: context.tenantId, code: 'consultation' }
+      where: { tenantId: context.tenantId, code: 'consultation' },
     });
     serviceId = service.id;
   });
@@ -56,8 +56,8 @@ describe('E2E Appointments & Smart Scheduling', () => {
         endAt: endAt.toISOString(),
         bookingSource: 'ADMIN_PANEL',
         appointmentType: 'CONSULTATION',
-        notes: 'E2E Test Booking'
-      })
+        notes: 'E2E Test Booking',
+      }),
     });
 
     assert.equal(res.status, 201);
@@ -70,7 +70,7 @@ describe('E2E Appointments & Smart Scheduling', () => {
   it('should transition appointment status to IN_PROGRESS', async () => {
     const res = await fetch(`${context.baseUrl}/appointments/${appointmentId}/start`, {
       method: 'POST',
-      headers: context.authHeaders
+      headers: context.authHeaders,
     });
 
     assert.equal(res.status, 201);
@@ -81,7 +81,7 @@ describe('E2E Appointments & Smart Scheduling', () => {
   it('should transition appointment status to COMPLETED', async () => {
     const res = await fetch(`${context.baseUrl}/appointments/${appointmentId}/complete`, {
       method: 'POST',
-      headers: context.authHeaders
+      headers: context.authHeaders,
     });
 
     assert.equal(res.status, 201);
@@ -115,9 +115,9 @@ describe('E2E Appointments & Smart Scheduling', () => {
         recurrence: {
           recurrenceType: 'WEEKLY',
           interval: 1,
-          endDate: endDate.toISOString().slice(0, 10)
-        }
-      })
+          endDate: endDate.toISOString().slice(0, 10),
+        },
+      }),
     });
 
     assert.equal(res.status, 201);
@@ -143,8 +143,8 @@ describe('E2E Appointments & Smart Scheduling', () => {
         preferredTimeTo: '18:00',
         serviceId,
         priority: 'NORMAL',
-        notes: 'Want morning slot'
-      })
+        notes: 'Want morning slot',
+      }),
     });
 
     assert.equal(res.status, 201);

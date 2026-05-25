@@ -17,8 +17,10 @@ export class OpenApiAggregatorService {
     }
 
     try {
-      const authServiceUrl = this.config.get<string>('AUTH_SERVICE_INTERNAL_URL') ?? this.config.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001');
-      
+      const authServiceUrl =
+        this.config.get<string>('AUTH_SERVICE_INTERNAL_URL') ??
+        this.config.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001');
+
       const response = await fetch(`${authServiceUrl}/docs-json`);
       if (!response.ok) {
         throw new Error(`Failed to fetch auth-service OpenAPI spec: ${response.statusText}`);
@@ -32,8 +34,10 @@ export class OpenApiAggregatorService {
         for (const [path, pathItem] of Object.entries(rawSpec.paths)) {
           let rewritten = false;
           // Sort routes so that longer upstreamPrefix matches are checked first
-          const sortedRoutes = [...allPrefixRoutes].sort((a, b) => b.upstreamPrefix.length - a.upstreamPrefix.length);
-          
+          const sortedRoutes = [...allPrefixRoutes].sort(
+            (a, b) => b.upstreamPrefix.length - a.upstreamPrefix.length,
+          );
+
           for (const route of sortedRoutes) {
             if (path === route.upstreamPrefix || path.startsWith(route.upstreamPrefix + '/')) {
               const suffix = path.slice(route.upstreamPrefix.length);
@@ -54,7 +58,8 @@ export class OpenApiAggregatorService {
         openapi: rawSpec.openapi || '3.0.0',
         info: {
           title: 'MedCRM Aggregated API Gateway Documentation',
-          description: 'Unified API Documentation for all MedCRM downstream services routed through the API Gateway.',
+          description:
+            'Unified API Documentation for all MedCRM downstream services routed through the API Gateway.',
           version: '1.0.0',
         },
         servers: [

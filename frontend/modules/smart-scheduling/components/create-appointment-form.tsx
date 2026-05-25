@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { CalendarPlus } from 'lucide-react';
-import { BootstrapPayload } from '@/shared/types/bootstrap';
-import { usePatients } from '@/modules/patient-crm/hooks/use-patients';
+import { useState, useEffect } from 'react';
 import { useCreateAppointment, useDoctors, useServices } from '../hooks/use-scheduling';
+import { usePatients } from '@/modules/patient-crm/hooks/use-patients';
+import { BootstrapPayload } from '@/shared/types/bootstrap';
 import { useToast } from '@/shared/ui/toast';
 
 interface CreateAppointmentFormProps {
@@ -18,7 +18,7 @@ export function CreateAppointmentForm({
   bootstrap,
   prefilledDoctorId,
   prefilledTime,
-  onClearPrefills
+  onClearPrefills,
 }: CreateAppointmentFormProps) {
   const branchId = bootstrap.branches[0]?.id ?? '';
   const [patientQuery, setPatientQuery] = useState('');
@@ -34,7 +34,9 @@ export function CreateAppointmentForm({
 
   const selectedService = services.data?.find((service) => service.id === serviceId);
   const endAt = startAt
-    ? new Date(new Date(startAt).getTime() + (selectedService?.durationMinutes ?? 30) * 60000).toISOString()
+    ? new Date(
+        new Date(startAt).getTime() + (selectedService?.durationMinutes ?? 30) * 60000,
+      ).toISOString()
     : '';
 
   useEffect(() => {
@@ -69,7 +71,7 @@ export function CreateAppointmentForm({
               employeeId,
               serviceId: serviceId || undefined,
               startAt: new Date(startAt).toISOString(),
-              endAt
+              endAt,
             },
             {
               onSuccess: () => {
@@ -83,8 +85,8 @@ export function CreateAppointmentForm({
               },
               onError: (err: any) => {
                 toast('error', 'Ошибка создания', err.message || 'Не удалось создать запись');
-              }
-            }
+              },
+            },
           );
         }}
       >
@@ -95,7 +97,13 @@ export function CreateAppointmentForm({
             placeholder="ФИО, телефон или код"
             value={patientQuery}
             onChange={(event) => setPatientQuery(event.target.value)}
-            style={{ color: 'var(--ink)', padding: '8px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px' }}
+            style={{
+              color: 'var(--ink)',
+              padding: '8px',
+              border: '1px solid var(--border)',
+              borderRadius: '6px',
+              fontSize: '13px',
+            }}
           />
         </div>
         <div className="field">
@@ -104,7 +112,14 @@ export function CreateAppointmentForm({
             id="patientId"
             value={patientId}
             onChange={(event) => setPatientId(event.target.value)}
-            style={{ padding: '8px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px', background: 'var(--surface)', color: 'var(--ink)' }}
+            style={{
+              padding: '8px',
+              border: '1px solid var(--border)',
+              borderRadius: '6px',
+              fontSize: '13px',
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+            }}
             required
           >
             <option value="">Выберите пациента</option>
@@ -121,7 +136,14 @@ export function CreateAppointmentForm({
             id="employeeId"
             value={employeeId}
             onChange={(event) => setEmployeeId(event.target.value)}
-            style={{ padding: '8px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px', background: 'var(--surface)', color: 'var(--ink)' }}
+            style={{
+              padding: '8px',
+              border: '1px solid var(--border)',
+              borderRadius: '6px',
+              fontSize: '13px',
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+            }}
             required
           >
             <option value="">Выберите врача</option>
@@ -138,7 +160,14 @@ export function CreateAppointmentForm({
             id="serviceId"
             value={serviceId}
             onChange={(event) => setServiceId(event.target.value)}
-            style={{ padding: '8px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px', background: 'var(--surface)', color: 'var(--ink)' }}
+            style={{
+              padding: '8px',
+              border: '1px solid var(--border)',
+              borderRadius: '6px',
+              fontSize: '13px',
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+            }}
           >
             <option value="">Без услуги</option>
             {services.data?.map((service) => (
@@ -155,7 +184,13 @@ export function CreateAppointmentForm({
             type="datetime-local"
             value={startAt}
             onChange={(event) => setStartAt(event.target.value)}
-            style={{ color: 'var(--ink)', padding: '8px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px' }}
+            style={{
+              color: 'var(--ink)',
+              padding: '8px',
+              border: '1px solid var(--border)',
+              borderRadius: '6px',
+              fontSize: '13px',
+            }}
             required
           />
         </div>

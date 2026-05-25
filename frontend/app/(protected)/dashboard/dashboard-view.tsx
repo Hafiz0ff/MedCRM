@@ -1,14 +1,17 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Activity, CalendarPlus, ClipboardList, Clock3, Users } from 'lucide-react';
-import { BootstrapPayload } from '@/shared/types/bootstrap';
-import { getRealtimeSocket } from '@/shared/realtime/socket';
-import { formatVisitTime, statusLabel, statusTone } from '@/shared/ui/status';
-import { SkeletonCard, SkeletonTable } from '@/shared/ui/skeleton';
-import { useReceptionDashboard, type ReceptionAppointment } from '@/modules/reception/hooks/use-reception-dashboard';
+import { useEffect } from 'react';
+import {
+  useReceptionDashboard,
+  type ReceptionAppointment,
+} from '@/modules/reception/hooks/use-reception-dashboard';
 import { useRoomUtilization } from '@/modules/smart-scheduling/hooks/use-scheduling';
+import { getRealtimeSocket } from '@/shared/realtime/socket';
+import { BootstrapPayload } from '@/shared/types/bootstrap';
+import { SkeletonCard, SkeletonTable } from '@/shared/ui/skeleton';
+import { formatVisitTime, statusLabel, statusTone } from '@/shared/ui/status';
 
 type DoctorLoad = {
   name: string;
@@ -96,7 +99,9 @@ export function DashboardView({ bootstrap }: { bootstrap: BootstrapPayload }) {
   }
 
   if (dashboard.error || !dashboard.data) {
-    return <div className="content-panel error">Не удалось загрузить данные операционной панели</div>;
+    return (
+      <div className="content-panel error">Не удалось загрузить данные операционной панели</div>
+    );
   }
 
   const { counters, columns, queue } = dashboard.data;
@@ -109,12 +114,32 @@ export function DashboardView({ bootstrap }: { bootstrap: BootstrapPayload }) {
     : 0;
 
   const metrics = [
-    { label: 'Записи сегодня', value: counters.total, hint: `${counters.waiting} в плане`, href: '/schedule' },
-    { label: 'Ожидают', value: counters.checkedIn, hint: `${queue.length} в очереди`, href: '/reception' },
+    {
+      label: 'Записи сегодня',
+      value: counters.total,
+      hint: `${counters.waiting} в плане`,
+      href: '/schedule',
+    },
+    {
+      label: 'Ожидают',
+      value: counters.checkedIn,
+      hint: `${queue.length} в очереди`,
+      href: '/reception',
+    },
     { label: 'На приёме', value: counters.inProgress, hint: 'у врача сейчас', href: '/reception' },
-    { label: 'К оплате', value: counters.completedPendingPayment, hint: 'ждут кассу', href: '/reception' },
+    {
+      label: 'К оплате',
+      value: counters.completedPendingPayment,
+      hint: 'ждут кассу',
+      href: '/reception',
+    },
     { label: 'Завершено', value: counters.completed, hint: 'визитов закрыто', href: '/patients' },
-    { label: 'Отмены', value: counters.cancelled + counters.noShow, hint: `${counters.noShow} не пришли`, href: '/schedule' }
+    {
+      label: 'Отмены',
+      value: counters.cancelled + counters.noShow,
+      hint: `${counters.noShow} не пришли`,
+      href: '/schedule',
+    },
   ];
 
   return (
@@ -123,7 +148,9 @@ export function DashboardView({ bootstrap }: { bootstrap: BootstrapPayload }) {
         <div>
           <span className="eyebrow">Операционный день</span>
           <h1>Операционная</h1>
-          <p>Единый экран смены: записи, очередь, врачи, кабинеты и точки внимания администратора.</p>
+          <p>
+            Единый экран смены: записи, очередь, врачи, кабинеты и точки внимания администратора.
+          </p>
         </div>
         <div className="page-actions">
           <a className="secondary-button" href="/reception">
@@ -170,7 +197,9 @@ export function DashboardView({ bootstrap }: { bootstrap: BootstrapPayload }) {
                     <span>{appointment.patientCode}</span>
                   </div>
                   <div>
-                    <strong>{appointment.service?.name ?? appointment.appointmentType ?? 'Приём'}</strong>
+                    <strong>
+                      {appointment.service?.name ?? appointment.appointmentType ?? 'Приём'}
+                    </strong>
                     <span>{appointment.roomName ?? 'Кабинет не назначен'}</span>
                   </div>
                   <div>
@@ -204,13 +233,17 @@ export function DashboardView({ bootstrap }: { bootstrap: BootstrapPayload }) {
             </div>
             {doctors.length ? (
               doctors.map((doctor) => {
-                const progress = doctor.total ? Math.round((doctor.completed / doctor.total) * 100) : 0;
+                const progress = doctor.total
+                  ? Math.round((doctor.completed / doctor.total) * 100)
+                  : 0;
                 return (
                   <article className="doctor-load-card" key={doctor.name}>
                     <span className="avatar">{initials(doctor.name)}</span>
                     <div>
                       <strong>{doctor.name}</strong>
-                      <span>{doctor.active} активных · {doctor.completed} завершено</span>
+                      <span>
+                        {doctor.active} активных · {doctor.completed} завершено
+                      </span>
                       <div className="progress-line" aria-hidden="true">
                         <span style={{ width: `${progress}%` }} />
                       </div>

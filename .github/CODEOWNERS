@@ -1,0 +1,15 @@
+# Global owners
+*       @global-lead
+
+# Backend specific ownership
+/backend/       @backend-lead
+/backend/prisma/ @database-lead @backend-lead
+
+# Frontend specific ownership
+/frontend/      @frontend-lead
+
+# DevOps and CI/CD configurations
+/.github/       @devops-lead
+/docker-compose.yml @devops-lead
+/package.json   @devops-lead
+/package-lock.json @devops-lead

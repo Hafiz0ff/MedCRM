@@ -8,4 +8,3 @@ export default async function Page() {
   if (!bootstrap || !can(bootstrap, 'reception.dashboard.read')) redirect('/dashboard');
   return <ReceptionBoard bootstrap={bootstrap} />;
 }
-

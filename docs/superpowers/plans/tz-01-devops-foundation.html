@@ -1,0 +1,1550 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ТЗ №1. DevOps Foundation — MedCRM</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #101828;
+        --muted: #667085;
+        --line: #d9e1ea;
+        --line-strong: #cfd6df;
+        --surface: #ffffff;
+        --soft: #f6f8fb;
+        --brand: #079685;
+        --brand-dark: #04786b;
+        --brand-soft: #e7f8f5;
+        --blue: #2563eb;
+        --amber: #b45309;
+        --red: #b42318;
+        --green: #15803d;
+        --violet: #6d28d9;
+        --shadow: 0 16px 40px rgba(16, 24, 40, 0.08);
+        --shadow-sm: 0 6px 18px rgba(16, 24, 40, 0.06);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #eef3f7;
+        color: var(--ink);
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Arial,
+          sans-serif;
+        line-height: 1.55;
+      }
+
+      .page {
+        width: min(1180px, calc(100% - 40px));
+        margin: 32px auto;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+      }
+
+      header.cover {
+        padding: 56px 56px 40px;
+        background:
+          linear-gradient(135deg, rgba(7, 150, 133, 0.18), rgba(37, 99, 235, 0.1)), #fbfdff;
+        border-bottom: 1px solid var(--line);
+      }
+
+      main {
+        padding: 36px 56px 56px;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4 {
+        margin: 0;
+        line-height: 1.18;
+        letter-spacing: 0;
+      }
+      h1 {
+        max-width: 880px;
+        font-size: 42px;
+        font-weight: 760;
+      }
+      h2 {
+        margin-top: 48px;
+        padding-top: 26px;
+        border-top: 1px solid var(--line);
+        font-size: 26px;
+      }
+      h3 {
+        margin-top: 28px;
+        font-size: 19px;
+      }
+      h4 {
+        margin-top: 18px;
+        font-size: 16px;
+        color: #344054;
+      }
+      p {
+        margin: 10px 0 0;
+      }
+
+      ul,
+      ol {
+        margin: 10px 0 0;
+        padding-left: 22px;
+      }
+      li + li {
+        margin-top: 6px;
+      }
+
+      table {
+        width: 100%;
+        margin-top: 14px;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th,
+      td {
+        vertical-align: top;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        text-align: left;
+      }
+      th {
+        background: #f3f7fa;
+        font-weight: 700;
+      }
+
+      code {
+        padding: 2px 5px;
+        border-radius: 5px;
+        background: #edf2f7;
+        color: #243244;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 0.92em;
+      }
+      pre {
+        margin-top: 12px;
+        padding: 16px 18px;
+        background: #0b1220;
+        color: #e6edf3;
+        border-radius: 10px;
+        overflow-x: auto;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+      }
+
+      .meta {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 28px;
+      }
+      .meta div,
+      .note,
+      .decision,
+      .warning,
+      .danger,
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.85);
+        padding: 14px 16px;
+      }
+      .meta span,
+      .eyebrow {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .meta strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 15px;
+      }
+
+      .lead {
+        max-width: 820px;
+        margin-top: 18px;
+        color: #344054;
+        font-size: 18px;
+      }
+
+      .toc {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 24px;
+        margin-top: 18px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--soft);
+      }
+      .toc a {
+        color: var(--brand-dark);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .toc a:hover {
+        text-decoration: underline;
+      }
+
+      .two {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 16px;
+      }
+      .three {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 16px;
+      }
+      .four {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+      }
+
+      .card {
+        padding: 18px;
+      }
+      .card h3 {
+        margin-top: 0;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        margin: 4px 6px 0 0;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: var(--brand-soft);
+        color: var(--brand-dark);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .tag.blue {
+        background: #eff6ff;
+        color: #1e40af;
+      }
+      .tag.amber {
+        background: #fffbeb;
+        color: #92400e;
+      }
+      .tag.red {
+        background: #fef2f2;
+        color: #991b1b;
+      }
+      .tag.violet {
+        background: #f5f3ff;
+        color: #5b21b6;
+      }
+      .tag.green {
+        background: #f0fdf4;
+        color: #166534;
+      }
+      .tag.gray {
+        background: #f3f4f6;
+        color: #374151;
+      }
+
+      .note {
+        background: #f8fbff;
+        border-color: #c7d8f0;
+      }
+      .decision {
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+      }
+      .warning {
+        background: #fff7ed;
+        border-color: #fed7aa;
+      }
+      .danger {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #7f1d1d;
+      }
+      .small {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .kpi {
+        border-radius: 12px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, #ffffff, #f7fafc);
+      }
+      .kpi .label {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .kpi .value {
+        display: block;
+        margin-top: 6px;
+        font-size: 26px;
+        font-weight: 760;
+        color: var(--ink);
+      }
+      .kpi .hint {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .check {
+        padding-left: 0;
+        list-style: none;
+      }
+      .check li {
+        position: relative;
+        padding: 6px 0 6px 26px;
+        border-bottom: 1px dashed #e5e7eb;
+      }
+      .check li:before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 11px;
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1.5px solid var(--brand);
+        background: #fff;
+      }
+      .check li:last-child {
+        border-bottom: 0;
+      }
+
+      .stage {
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--brand);
+        border-radius: 10px;
+        padding: 16px 18px;
+        margin-top: 14px;
+        background: #fbfeff;
+      }
+      .stage h3 {
+        margin-top: 0;
+      }
+      .stage .stage-meta {
+        display: inline-block;
+        margin-right: 10px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--brand-soft);
+        color: var(--brand-dark);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 6px;
+        background: #e8ecf3;
+        color: #344054;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .file-tree {
+        margin-top: 12px;
+        padding: 16px 20px;
+        background: #0b1220;
+        color: #e6edf3;
+        border-radius: 10px;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.7;
+        overflow-x: auto;
+      }
+      .file-tree b {
+        color: #7dd3fc;
+        font-weight: 700;
+      }
+      .file-tree i {
+        color: #a5b4fc;
+        font-style: normal;
+      }
+      .file-tree em {
+        color: #fcd34d;
+        font-style: normal;
+      }
+
+      @media (max-width: 860px) {
+        .page {
+          width: 100%;
+          margin: 0;
+          border-width: 0;
+        }
+        header.cover,
+        main {
+          padding: 28px 20px;
+        }
+        h1 {
+          font-size: 30px;
+        }
+        .meta,
+        .two,
+        .three,
+        .four,
+        .toc {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media print {
+        body {
+          background: #fff;
+        }
+        .page {
+          width: 100%;
+          margin: 0;
+          border: 0;
+          box-shadow: none;
+        }
+        header.cover,
+        main {
+          padding: 24px 32px;
+        }
+        pre {
+          background: #f4f4f5;
+          color: #111827;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <article class="page">
+      <header class="cover">
+        <span class="eyebrow">MedCRM · ТЗ №1 · DevOps Foundation</span>
+        <h1>CI/CD, качество кода и инженерная дисциплина</h1>
+        <p class="lead">
+          Установить базовый инженерный фундамент: автоматический CI (typecheck, lint, тесты,
+          prisma-валидация, docker-build), единый стиль кода (ESLint + Prettier), pre-commit хуки,
+          дисциплина коммитов и обновление зависимостей. Без этого фундамента дальнейшие пять ТЗ
+          накапливают долг и риск регрессий.
+        </p>
+        <section class="meta" aria-label="Метаданные документа">
+          <div><span>Версия</span><strong>1.0</strong></div>
+          <div><span>Дата</span><strong>25 мая 2026</strong></div>
+          <div><span>Проект</span><strong>xiewan1230-maker/MedCRM</strong></div>
+          <div><span>Фокус</span><strong>CI/CD, DX, code quality</strong></div>
+        </section>
+      </header>
+
+      <main>
+        <nav class="toc" aria-label="Содержание">
+          <a href="#purpose">1. Назначение</a>
+          <a href="#as-is">2. Состояние «как есть»</a>
+          <a href="#goals">3. Цели и Out of Scope</a>
+          <a href="#stack">4. Стек инструментов</a>
+          <a href="#ci">5. CI pipeline</a>
+          <a href="#lint">6. Lint / Format / Hooks</a>
+          <a href="#commits">7. Commits и PR-дисциплина</a>
+          <a href="#prisma">8. Prisma и миграции</a>
+          <a href="#deps">9. Управление зависимостями</a>
+          <a href="#security">10. Security gates</a>
+          <a href="#files">11. Структура файлов</a>
+          <a href="#plan">12. План работ</a>
+          <a href="#acceptance">13. Acceptance criteria</a>
+          <a href="#metrics">14. Метрики и риски</a>
+        </nav>
+
+        <section id="purpose">
+          <h2>1. Назначение</h2>
+          <p>
+            MedCRM позиционируется как production-oriented SaaS МИС. Однако в репозитории
+            отсутствует базовый инженерный контур: нет CI, нет линтеров, нет pre-commit, нет
+            фронтенд-тестов и нет автоматического обновления зависимостей. Это означает, что любой
+            PR в текущем состоянии может вмержить тайп-эррор, сломать миграции, поломать e2e или
+            добавить уязвимую зависимость — и команда узнает об этом только на проде.
+          </p>
+          <p>
+            Цель ТЗ №1 — установить «инженерный пол», ниже которого PR не должен попасть в
+            <code>main</code>. Все остальные ТЗ (дизайн-система, безопасность, очереди, портал
+            пациента) строятся поверх этого фундамента.
+          </p>
+          <div class="decision">
+            <span class="eyebrow">Принцип</span>
+            <strong>«Локально проходит — в CI проходит — в проде стабильно»</strong>
+            <p class="small">
+              Каждая проверка, которая ловит ошибку в CI, должна быть запускаема локально одним
+              npm-скриптом и автоматически в pre-commit/pre-push.
+            </p>
+          </div>
+        </section>
+
+        <section id="as-is">
+          <h2>2. Состояние «как есть»</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Область</th>
+                <th>Что есть сейчас</th>
+                <th>Дыра</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>CI</td>
+                <td>Папка <code>.github/workflows/</code> пустая.</td>
+                <td>Нет typecheck/lint/test/build при PR. Любой merge может сломать main.</td>
+              </tr>
+              <tr>
+                <td>Lint / Format</td>
+                <td>ESLint и Prettier не установлены ни в backend, ни во frontend.</td>
+                <td>Несогласованный стиль, мертвый код, unused imports проходят свободно.</td>
+              </tr>
+              <tr>
+                <td>Pre-commit hooks</td>
+                <td>Husky / lint-staged отсутствуют.</td>
+                <td>Локально можно закоммитить мусор и сломать main.</td>
+              </tr>
+              <tr>
+                <td>Commit-style</td>
+                <td>
+                  В истории смесь стилей: <code>feat(...)</code>,
+                  <code>Polish project documentation</code>, <code>Add ...</code>.
+                </td>
+                <td>Невозможно автогенерировать changelog и понять scope изменений.</td>
+              </tr>
+              <tr>
+                <td>Frontend tests</td>
+                <td>Тестов нет вообще — нет Vitest, нет Playwright.</td>
+                <td>Любая UI-регрессия незаметна до клиники.</td>
+              </tr>
+              <tr>
+                <td>Backend tests</td>
+                <td>
+                  7 e2e-suite (auth, patients, appointments, reception, conflicts, fhir,
+                  system-admin) + 3 spec gateway.
+                </td>
+                <td>
+                  Не запускаются в CI. Локально требуют ручного <code>npm run test:e2e</code>.
+                </td>
+              </tr>
+              <tr>
+                <td>Prisma</td>
+                <td>
+                  147 моделей, 2 миграции (<code>20260522120000_init</code>,
+                  <code>20260522140000_vertical_slice</code>).
+                </td>
+                <td>
+                  <code>prisma validate</code> и <code>prisma format</code> не запускаются в CI.
+                  Drift-чек отсутствует.
+                </td>
+              </tr>
+              <tr>
+                <td>Dependencies</td>
+                <td>Renovate / Dependabot не настроены.</td>
+                <td>Уязвимости и устаревшие пакеты накапливаются молча.</td>
+              </tr>
+              <tr>
+                <td>Docker</td>
+                <td>
+                  <code>docker-compose.yml</code> +
+                  <code>backend/infrastructure/docker/Dockerfile</code> и
+                  <code>frontend/Dockerfile</code>.
+                </td>
+                <td>Docker build не проверяется в CI.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="goals">
+          <h2>3. Цели и Out of Scope</h2>
+          <div class="two">
+            <div class="card">
+              <h3>Цели</h3>
+              <ul>
+                <li>CI на GitHub Actions, обязательный перед merge в <code>main</code>.</li>
+                <li>
+                  Single source of truth для линтера и формата (один конфиг ESLint и Prettier на
+                  репо).
+                </li>
+                <li>
+                  Husky + lint-staged: <code>pre-commit</code> прогоняет lint только на
+                  staged-файлах, <code>commit-msg</code> валидирует Conventional Commits.
+                </li>
+                <li>Prisma format + validate + drift-check в CI.</li>
+                <li>
+                  Docker build обоих образов (gateway, auth, frontend) в CI как smoke-проверка.
+                </li>
+                <li>Renovate-бот обновляет зависимости еженедельно отдельными PR.</li>
+                <li>Security gates: <code>npm audit</code>, secret-scan, OWASP-baseline.</li>
+                <li>Бейджи статуса CI в README.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Out of Scope</h3>
+              <ul>
+                <li>Полноценный CD в Kubernetes/Helm — это отдельное ТЗ (enterprise-зрелость).</li>
+                <li>Observability stack (Sentry, OTel, Prometheus, Loki) — отдельное ТЗ.</li>
+                <li>Load testing (k6) — отдельное ТЗ.</li>
+                <li>
+                  Полные contract-тесты gateway → auth-service — частично в Acceptance, полноценно —
+                  после разделения сервисов.
+                </li>
+                <li>Замена существующих CI/CD инструментов на GitLab CI или Circle.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="stack">
+          <h2>4. Стек инструментов</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Слой</th>
+                <th>Инструмент</th>
+                <th>Версия / выбор</th>
+                <th>Зачем</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>CI</td>
+                <td>GitHub Actions</td>
+                <td>actions/setup-node@v4, actions/checkout@v4</td>
+                <td>Уже работаем на GitHub. Бесплатно для public+private до 2000 min/мес.</td>
+              </tr>
+              <tr>
+                <td>Lint</td>
+                <td>ESLint 9 (flat config)</td>
+                <td>
+                  <code>typescript-eslint</code>, <code>@next/eslint-plugin-next</code>,
+                  <code>eslint-plugin-import</code>, <code>eslint-plugin-unicorn</code>,
+                  <code>eslint-plugin-promise</code>
+                </td>
+                <td>Единый flat-config на корне и на каждый workspace.</td>
+              </tr>
+              <tr>
+                <td>Format</td>
+                <td>Prettier 3</td>
+                <td>
+                  <code>prettier-plugin-prisma</code>,
+                  <code>prettier-plugin-tailwindcss</code> (после ТЗ №2)
+                </td>
+                <td>Авто-форматирование TS/TSX/JSON/MD/Prisma.</td>
+              </tr>
+              <tr>
+                <td>Git hooks</td>
+                <td>Husky 9 + lint-staged 15</td>
+                <td>—</td>
+                <td>Локальная защита перед commit/push.</td>
+              </tr>
+              <tr>
+                <td>Commit-style</td>
+                <td>commitlint + @commitlint/config-conventional</td>
+                <td>—</td>
+                <td>Conventional Commits → автогенерация changelog.</td>
+              </tr>
+              <tr>
+                <td>Changelog</td>
+                <td>release-please или changesets</td>
+                <td>release-please-action@v4 (рекомендуется)</td>
+                <td>Автоматический changelog и тэгирование релизов.</td>
+              </tr>
+              <tr>
+                <td>Frontend tests</td>
+                <td>Vitest + @testing-library/react</td>
+                <td>vitest 2.x, @vitest/coverage-v8</td>
+                <td>Юнит-тесты на компоненты и hooks.</td>
+              </tr>
+              <tr>
+                <td>E2E фронта</td>
+                <td>Playwright</td>
+                <td>@playwright/test 1.x, Chromium/Firefox/WebKit</td>
+                <td>End-to-end сценарии в браузере.</td>
+              </tr>
+              <tr>
+                <td>Dependencies</td>
+                <td>Renovate</td>
+                <td>renovate-config-best-practices, group dev-deps</td>
+                <td>Авто-PR на обновления + security alerts.</td>
+              </tr>
+              <tr>
+                <td>Secret scan</td>
+                <td>Gitleaks</td>
+                <td>gitleaks-action в pre-commit и в CI</td>
+                <td>Ловит .env, JWT-секреты, API-токены в коммитах.</td>
+              </tr>
+              <tr>
+                <td>SAST</td>
+                <td>GitHub CodeQL</td>
+                <td>codeql-action@v3</td>
+                <td>Статический анализ безопасности на каждом PR.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="ci">
+          <h2>5. CI pipeline</h2>
+          <p>Pipeline разбит на несколько workflow, чтобы можно было запускать независимо:</p>
+
+          <div class="three">
+            <div class="card">
+              <h3>ci.yml</h3>
+              <p class="small">Триггер: <code>pull_request</code> + <code>push</code> в main.</p>
+              <ul>
+                <li>install (npm ci, cache .npm и .next/cache)</li>
+                <li>lint (root, backend, frontend)</li>
+                <li>format-check (<code>prettier --check</code>)</li>
+                <li>typecheck (backend + frontend)</li>
+                <li>prisma validate + prisma format check + migrate diff dry-run</li>
+                <li>backend tests: gateway specs + e2e suites</li>
+                <li>frontend tests: vitest + playwright</li>
+                <li>docker build smoke (api-gateway, auth-service, frontend)</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>codeql.yml</h3>
+              <p class="small">SAST на TypeScript. Триггер: push в main, weekly cron.</p>
+              <ul>
+                <li>codeql-action/init</li>
+                <li>codeql-action/analyze</li>
+                <li>Результаты → Security tab GitHub.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>release-please.yml</h3>
+              <p class="small">Автоматический changelog и release-PR.</p>
+              <ul>
+                <li>Слушает <code>main</code></li>
+                <li>Парсит Conventional Commits</li>
+                <li>Поддерживает <code>release-please-config.json</code> с workspaces</li>
+                <li>Создаёт release PR; merge → git tag + GitHub Release.</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3>5.1. Скелет ci.yml</h3>
+          <pre><code>name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            backend/node_modules
+            frontend/node_modules
+          key: deps-${{ hashFiles('**/package-lock.json') }}
+
+  lint-and-format:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+
+  typecheck:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm --workspace backend run typecheck
+      - run: npm --workspace frontend run typecheck
+
+  prisma:
+    needs: install
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: medcrm
+          POSTGRES_PASSWORD: medcrm_password
+          POSTGRES_DB: medcrm
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U medcrm"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgresql://medcrm:medcrm_password@localhost:5432/medcrm?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npx --workspace backend prisma format --check
+      - run: npx --workspace backend prisma validate
+      - run: npm --workspace backend run prisma:migrate
+      - name: Drift check
+        run: npx --workspace backend prisma migrate diff \
+          --from-schema-datasource backend/prisma/schema.prisma \
+          --to-schema-datamodel    backend/prisma/schema.prisma \
+          --exit-code
+
+  backend-tests:
+    needs: [install, prisma]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env: { POSTGRES_USER: medcrm, POSTGRES_PASSWORD: medcrm_password, POSTGRES_DB: medcrm }
+        ports: ["5432:5432"]
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    env:
+      DATABASE_URL: postgresql://medcrm:medcrm_password@localhost:5432/medcrm?schema=public
+      REDIS_URL: redis://localhost:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm --workspace backend run prisma:generate
+      - run: npm --workspace backend run prisma:migrate
+      - run: npm --workspace backend run prisma:seed
+      - run: npm --workspace backend run test:gateway
+      - run: npm --workspace backend run test:e2e
+
+  frontend-tests:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm --workspace frontend run test
+      - run: npx --workspace frontend playwright install --with-deps chromium
+      - run: npm --workspace frontend run test:e2e
+
+  docker-build:
+    needs: install
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [api-gateway, auth-service, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build ${{ matrix.target }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.target == 'frontend' && './frontend' || './backend' }}
+          file: ${{ matrix.target == 'frontend' && './frontend/Dockerfile' || './backend/infrastructure/docker/Dockerfile' }}
+          build-args: APP_NAME=${{ matrix.target }}
+          push: false
+          tags: medcrm/${{ matrix.target }}:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+</code></pre>
+
+          <div class="note">
+            <span class="eyebrow">Branch protection</span>
+            <strong>Включить required checks в GitHub Settings → Branches → main:</strong>
+            <ul>
+              <li>
+                <code>lint-and-format</code>, <code>typecheck</code>, <code>prisma</code>,
+                <code>backend-tests</code>, <code>frontend-tests</code>, <code>docker-build</code>,
+                <code>gitleaks</code>
+              </li>
+              <li>
+                Require linear history, require signed commits (опционально), require review from
+                CODEOWNERS.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="lint">
+          <h2>6. Lint / Format / Hooks</h2>
+
+          <h3>6.1. ESLint flat config</h3>
+          <p>
+            Один root-конфиг <code>eslint.config.mjs</code> + расширения в каждом workspace.
+            Включить:
+          </p>
+          <ul>
+            <li><code>@eslint/js</code> recommended;</li>
+            <li><code>typescript-eslint</code> strict-type-checked;</li>
+            <li>
+              <code>eslint-plugin-import</code> с правилами на <code>import/order</code>,
+              <code>import/no-cycle</code>;
+            </li>
+            <li>
+              <code>eslint-plugin-unicorn</code> recommended (filename-case, prefer-node-protocol);
+            </li>
+            <li><code>eslint-plugin-promise</code>;</li>
+            <li>
+              в <code>frontend</code> — <code>@next/eslint-plugin-next</code> core-web-vitals,
+              <code>eslint-plugin-jsx-a11y</code>, <code>eslint-plugin-react</code>,
+              <code>eslint-plugin-react-hooks</code>.
+            </li>
+          </ul>
+
+          <h3>6.2. Prettier</h3>
+          <p>Конфиг <code>.prettierrc.json</code> в корне:</p>
+          <pre><code>{
+  "semi": true,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "printWidth": 100,
+  "tabWidth": 2,
+  "plugins": ["prettier-plugin-prisma"]
+}</code></pre>
+          <p>
+            <code>.prettierignore</code> включает <code>dist/</code>, <code>.next/</code>,
+            <code>node_modules/</code>, <code>package-lock.json</code>, генерёшку
+            <code>backend/prisma/generated</code>.
+          </p>
+
+          <h3>6.3. Husky + lint-staged</h3>
+          <pre><code>// package.json (root)
+{
+  "scripts": {
+    "prepare": "husky",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": ["eslint --fix --max-warnings=0", "prettier --write"],
+    "*.{json,md,yml,yaml,css}": ["prettier --write"],
+    "backend/prisma/schema.prisma": ["prisma format"]
+  }
+}</code></pre>
+          <p><code>.husky/pre-commit</code>:</p>
+          <pre><code>npx lint-staged
+npx gitleaks protect --staged --redact --no-banner</code></pre>
+          <p><code>.husky/commit-msg</code>:</p>
+          <pre><code>npx --no -- commitlint --edit "$1"</code></pre>
+          <p><code>.husky/pre-push</code> (опционально, быстрая защита перед push):</p>
+          <pre><code>npm --workspace backend run typecheck &
+npm --workspace frontend run typecheck &
+wait</code></pre>
+
+          <div class="warning">
+            <span class="eyebrow">Compatibility</span>
+            <strong
+              >Husky v9 не использует <code>.husky/_/husky.sh</code> — миграция тривиальная, см.
+              <code>https://typicode.github.io/husky/migrating-from-v4.html</code>.</strong
+            >
+          </div>
+        </section>
+
+        <section id="commits">
+          <h2>7. Commits и PR-дисциплина</h2>
+          <h3>7.1. Conventional Commits</h3>
+          <p>Принимаем формат <code>type(scope): subject</code>. Допустимые <code>type</code>:</p>
+          <div class="four">
+            <div class="card">
+              <strong>feat</strong>
+              <p class="small">новая фича для пользователя</p>
+            </div>
+            <div class="card">
+              <strong>fix</strong>
+              <p class="small">баг-фикс</p>
+            </div>
+            <div class="card">
+              <strong>refactor</strong>
+              <p class="small">переработка без изменения поведения</p>
+            </div>
+            <div class="card">
+              <strong>perf</strong>
+              <p class="small">улучшение производительности</p>
+            </div>
+            <div class="card">
+              <strong>docs</strong>
+              <p class="small">документация</p>
+            </div>
+            <div class="card">
+              <strong>test</strong>
+              <p class="small">тесты</p>
+            </div>
+            <div class="card">
+              <strong>chore</strong>
+              <p class="small">служебные изменения, deps</p>
+            </div>
+            <div class="card">
+              <strong>ci</strong>
+              <p class="small">конвейер сборки</p>
+            </div>
+          </div>
+          <p>
+            <code>scope</code> — модуль из текущей структуры: <code>auth</code>, <code>emr</code>,
+            <code>finance</code>, <code>reception</code>, <code>scheduling</code>,
+            <code>gateway</code>, <code>frontend</code>, <code>prisma</code>, <code>infra</code>.
+          </p>
+
+          <h3>7.2. PR-шаблон</h3>
+          <p>Файл <code>.github/pull_request_template.md</code> должен содержать:</p>
+          <ul>
+            <li>Что и зачем (бизнес-описание);</li>
+            <li>Технические детали (как реализовано);</li>
+            <li>Скриншоты / Loom для UI-изменений;</li>
+            <li>Migration-плэн (если затрагивает Prisma);</li>
+            <li>
+              Чек-лист: typecheck, lint, tests, миграции (`prisma migrate dev`), Storybook (после ТЗ
+              №2).
+            </li>
+          </ul>
+
+          <h3>7.3. CODEOWNERS</h3>
+          <p>
+            Назначить ответственных по доменам — улучшает качество ревью и распределяет
+            ответственность.
+          </p>
+          <pre><code>/backend/apps/auth-service/src/auth/        @core-team
+/backend/apps/auth-service/src/emr/         @medical-team
+/backend/apps/auth-service/src/finance/     @finance-team
+/backend/prisma/                            @data-team
+/frontend/modules/                          @frontend-team
+/frontend/shared/ui/                        @design-system-team
+/.github/                                   @platform-team</code></pre>
+        </section>
+
+        <section id="prisma">
+          <h2>8. Prisma и миграции</h2>
+          <p>
+            147 моделей в одном файле — это технический долг. До разделения на доменные файлы (ТЗ
+            для отдельного этапа) ставим минимально обязательные правила:
+          </p>
+          <ul>
+            <li>В CI всегда <code>prisma format --check</code> и <code>prisma validate</code>.</li>
+            <li>
+              Migration policy: <strong>одно осмысленное изменение — одна миграция</strong>.
+              Запрещено схлопывать несколько фич в один файл.
+            </li>
+            <li>
+              Имена миграций: <code>YYYYMMDDHHMMSS_short_kebab_scope</code> (например
+              <code>20260601090000_add_appointment_recurrence_rule</code>).
+            </li>
+            <li>
+              Drift detection в CI: <code>prisma migrate diff</code> — если детектируется drift
+              между schema.prisma и migrations, билд падает.
+            </li>
+            <li>
+              Запретить <code>prisma db push</code> в репозитории — только
+              <code>prisma migrate</code>.
+            </li>
+            <li>
+              В <code>backend/prisma/README.md</code> описать процесс ревью миграций (rollback-план,
+              ETA, влияние на индексы, lock-time на больших таблицах).
+            </li>
+          </ul>
+
+          <div class="note">
+            <span class="eyebrow">Будущее</span>
+            <strong
+              >Подготовить переход на <code>prismaSchemaFolder</code> (preview-feature).</strong
+            >
+            <p class="small">
+              Это позволит разбить <code>schema.prisma</code> на <code>schema/auth.prisma</code>,
+              <code>schema/emr.prisma</code>, <code>schema/finance.prisma</code> и т.д. Включается
+              отдельным мини-ТЗ, но <em>планируется</em> уже сейчас.
+            </p>
+          </div>
+        </section>
+
+        <section id="deps">
+          <h2>9. Управление зависимостями</h2>
+          <h3>9.1. Renovate</h3>
+          <p>Файл <code>renovate.json</code> в корне. Базовый профиль:</p>
+          <pre><code>{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices",
+    ":semanticCommits",
+    ":semanticCommitScope(deps)",
+    ":dependencyDashboard",
+    ":timezone(Asia/Dushanbe)"
+  ],
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "prHourlyLimit": 4,
+  "prConcurrentLimit": 10,
+  "packageRules": [
+    {
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "dev dependencies",
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "matchPackagePatterns": ["^@nestjs/"],
+      "groupName": "nestjs"
+    },
+    {
+      "matchPackagePatterns": ["^@prisma/", "^prisma$"],
+      "groupName": "prisma"
+    },
+    {
+      "matchPackagePatterns": ["^next$", "^react", "^@tanstack/"],
+      "groupName": "frontend core"
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  }
+}</code></pre>
+
+          <h3>9.2. <code>npm audit</code> + Snyk</h3>
+          <ul>
+            <li>В CI: <code>npm audit --audit-level=high</code> — fail при high/critical;</li>
+            <li>
+              Опционально <code>snyk test --severity-threshold=high</code> при наличии токена;
+            </li>
+            <li>Уязвимости с CVSS ≥ 7.0 блокируют merge.</li>
+          </ul>
+
+          <h3>9.3. Node version pinning</h3>
+          <p>
+            Создать файл <code>.nvmrc</code> с <code>24</code>, добавить
+            <code>"engines": { "node": "&gt;=24" }</code> в корневой <code>package.json</code>. В
+            Dockerfile зафиксировать <code>FROM node:24-alpine</code>.
+          </p>
+        </section>
+
+        <section id="security">
+          <h2>10. Security gates</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Gate</th>
+                <th>Инструмент</th>
+                <th>Когда срабатывает</th>
+                <th>Действие</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Secret scan</td>
+                <td>Gitleaks</td>
+                <td>pre-commit + CI</td>
+                <td>Блок коммита и PR при детекте секрета.</td>
+              </tr>
+              <tr>
+                <td>SAST</td>
+                <td>GitHub CodeQL (TS)</td>
+                <td>PR + weekly cron</td>
+                <td>Уязвимости -&gt; Security tab; high → PR fail.</td>
+              </tr>
+              <tr>
+                <td>SCA</td>
+                <td>npm audit + Renovate vuln alerts</td>
+                <td>CI на каждый PR</td>
+                <td>Блок при high/critical.</td>
+              </tr>
+              <tr>
+                <td>Docker image scan</td>
+                <td>Trivy (опционально)</td>
+                <td>после docker-build job</td>
+                <td>Отчёт; high/critical → fail после grace-периода 14 дней.</td>
+              </tr>
+              <tr>
+                <td>License scan</td>
+                <td>license-checker</td>
+                <td>weekly cron</td>
+                <td>Блок GPL/AGPL в production-зависимостях.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="files">
+          <h2>11. Структура файлов</h2>
+          <p>Что создаём в репозитории:</p>
+          <div class="file-tree">
+            MedCRM/ ├─ <b>.github/</b> │ ├─ <i>CODEOWNERS</i> │ ├─ <i>pull_request_template.md</i> │
+            ├─ <i>ISSUE_TEMPLATE/</i> │ │ ├─ bug_report.md │ │ └─ feature_request.md │ └─ workflows/
+            │ ├─ <em>ci.yml</em> │ ├─ <em>codeql.yml</em> │ └─ <em>release-please.yml</em> ├─
+            <b>.husky/</b> │ ├─ pre-commit │ ├─ commit-msg │ └─ pre-push ├─
+            <b>eslint.config.mjs</b> ← root flat config ├─ <b>.prettierrc.json</b> ├─
+            <b>.prettierignore</b> ├─ <b>commitlint.config.cjs</b> ├─ <b>renovate.json</b> ├─
+            <b>.nvmrc</b> ← "24" ├─ <b>.editorconfig</b> ├─ <b>.gitleaks.toml</b> ← allowlist для
+            .env.example ├─ <b>release-please-config.json</b> ├─
+            <b>release-please-manifest.json</b> ├─ <b>backend/</b> │ ├─ eslint.config.mjs ← extends
+            root │ ├─ vitest.config.ts ← если нужны unit для core/ │ └─ prisma/ │ └─ README.md ←
+            migration policy └─ <b>frontend/</b>
+            ├─ eslint.config.mjs ← extends root + next ├─ vitest.config.ts ├─ playwright.config.ts
+            └─ tests/ ├─ unit/ └─ e2e/
+          </div>
+        </section>
+
+        <section id="plan">
+          <h2>12. План работ</h2>
+
+          <div class="stage">
+            <span class="stage-meta">День 1 · ~4ч</span>
+            <h3>Этап 1. Lint, Format, Hooks локально</h3>
+            <ul>
+              <li>Установить ESLint 9 + typescript-eslint + Prettier 3.</li>
+              <li>
+                Написать root <code>eslint.config.mjs</code>, наследовать в backend и frontend.
+              </li>
+              <li>Настроить Husky + lint-staged + commitlint.</li>
+              <li>
+                Локально прогнать <code>npm run lint</code> и <code>npm run format</code>, починить
+                накопленный шум (обычно ≤ 200 правок).
+              </li>
+              <li>
+                Закоммитить отдельным PR
+                <code>chore(infra): introduce eslint, prettier, husky</code>.
+              </li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">День 2 · ~4ч</span>
+            <h3>Этап 2. CI основной workflow</h3>
+            <ul>
+              <li>
+                Создать <code>.github/workflows/ci.yml</code> с jobs: lint, typecheck, prisma,
+                backend-tests, frontend-tests (заглушка пока), docker-build, gitleaks.
+              </li>
+              <li>Включить branch protection: required checks + linear history.</li>
+              <li>PR <code>ci(infra): add github actions baseline</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">День 3 · ~4ч</span>
+            <h3>Этап 3. Frontend tests + Playwright</h3>
+            <ul>
+              <li>Установить Vitest + @testing-library/react + jsdom.</li>
+              <li>
+                Написать smoke-тесты на <code>shared/ui</code> (StatusPill, Skeleton, ConfirmDialog,
+                Toast).
+              </li>
+              <li>
+                Установить Playwright, написать E2E «login → dashboard» (используя демо-учётку).
+              </li>
+              <li>Включить frontend-tests job в CI и сделать required.</li>
+              <li>PR <code>test(frontend): vitest + playwright baseline</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">День 4 · ~3ч</span>
+            <h3>Этап 4. Renovate, CodeQL, release-please</h3>
+            <ul>
+              <li>Поставить Renovate-app на репозиторий, добавить <code>renovate.json</code>.</li>
+              <li>Создать <code>codeql.yml</code>, проверить, что Security tab отчитывает.</li>
+              <li>Настроить release-please (включая manifest для workspaces).</li>
+              <li>PR <code>ci(infra): renovate, codeql, release-please</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">День 5 · ~3ч</span>
+            <h3>Этап 5. Polishing</h3>
+            <ul>
+              <li>Добавить бейджи CI в README.</li>
+              <li>Написать <code>backend/prisma/README.md</code> с policy миграций.</li>
+              <li>Создать <code>CONTRIBUTING.md</code> с правилами PR/commit/branch.</li>
+              <li>
+                Описать процесс «локально как в CI»: <code>npm run verify</code> прогоняет всё.
+              </li>
+              <li>PR <code>docs: contributor handbook + ci badges</code>.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="acceptance">
+          <h2>13. Acceptance criteria</h2>
+          <ul class="check">
+            <li>
+              Любой PR в <code>main</code> прогоняет CI; merge заблокирован, если хоть один
+              required-check красный.
+            </li>
+            <li>
+              Локально работают команды: <code>npm run lint</code>, <code>npm run format</code>,
+              <code>npm run format:check</code>, <code>npm run typecheck</code>,
+              <code>npm run verify</code> (агрегатор).
+            </li>
+            <li>Husky блокирует коммит с lint-ошибкой и с невалидным commit-message.</li>
+            <li>Все существующие 7 e2e suites и 3 gateway specs запускаются в CI и зелёные.</li>
+            <li>
+              Vitest + Playwright настроены, минимум 5 unit-тестов на <code>shared/ui</code> и 1 E2E
+              (auth flow).
+            </li>
+            <li>
+              Renovate создает первый еженедельный PR с обновлениями dev-deps; security-alerts
+              активны.
+            </li>
+            <li>CodeQL первый раз запустился, отчёт в Security tab пуст или с known issues.</li>
+            <li>release-please сгенерировал CHANGELOG-PR при первом merge feat-коммита.</li>
+            <li>В README добавлены бейджи: CI status, CodeQL, License, Node version.</li>
+            <li>Pre-commit ловит секреты (smoke-тест: попытка закоммитить JWT — блок).</li>
+            <li>
+              Branch protection включён: ≥ 1 review, dismiss stale reviews, require status checks,
+              require linear history.
+            </li>
+          </ul>
+        </section>
+
+        <section id="metrics">
+          <h2>14. Метрики и риски</h2>
+
+          <h3>14.1. Метрики</h3>
+          <div class="four">
+            <div class="kpi">
+              <span class="label">PR lead time</span><span class="value">≤ 24ч</span
+              ><span class="hint">от open до merge при зелёном CI</span>
+            </div>
+            <div class="kpi">
+              <span class="label">CI duration</span><span class="value">≤ 8 мин</span
+              ><span class="hint">P90 для всех required jobs</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Lint debt</span><span class="value">0</span
+              ><span class="hint"><code>--max-warnings=0</code></span>
+            </div>
+            <div class="kpi">
+              <span class="label">Test coverage</span><span class="value">≥ 60%</span
+              ><span class="hint">target по core/ и shared/ui к концу квартала</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Vuln backlog</span><span class="value">0 high+</span
+              ><span class="hint">не дольше 7 дней</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Renovate PRs</span><span class="value">мержатся ≤ 7д</span
+              ><span class="hint">dev-deps auto-merge</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Drift Prisma</span><span class="value">0</span
+              ><span class="hint">CI падает при drift</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Mainline green</span><span class="value">≥ 95%</span
+              ><span class="hint">% времени, когда main зелёный</span>
+            </div>
+          </div>
+
+          <h3>14.2. Риски</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Риск</th>
+                <th>Митigation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Лавина ESLint-ошибок при включении правил → большой «cleanup PR».</td>
+                <td>
+                  Включать правила инкрементально: сначала <code>warn</code>, потом
+                  <code>error</code>. Использовать <code>--fix</code> и autofix-friendly правила.
+                </td>
+              </tr>
+              <tr>
+                <td>CI «висит» из-за медленных e2e на холодном Postgres.</td>
+                <td>
+                  Postgres как service-container, <code>--health-*</code>, кеш npm + cache на docker
+                  buildx.
+                </td>
+              </tr>
+              <tr>
+                <td>Husky тормозит коммит на больших diff.</td>
+                <td>
+                  lint-staged по умолчанию только на staged-файлах; pre-push для тяжёлого typecheck.
+                </td>
+              </tr>
+              <tr>
+                <td>Renovate шлёт по 30 PR/неделю.</td>
+                <td>
+                  Группировка пакетов (nestjs/prisma/frontend core), schedule ночное окно,
+                  auto-merge dev-deps.
+                </td>
+              </tr>
+              <tr>
+                <td>CodeQL ложноположительные срабатывания.</td>
+                <td>
+                  Конфигурировать <code>.github/codeql/codeql-config.yml</code> с suppressions для
+                  тестов и моков.
+                </td>
+              </tr>
+              <tr>
+                <td>Расхождение Node version между разработчиками.</td>
+                <td>
+                  <code>.nvmrc</code>, <code>engines</code> в package.json, Volta-readiness
+                  опционально.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="decision">
+            <span class="eyebrow">Definition of Done</span>
+            <strong
+              >CI зелёный на main, branch protection активна, в README — badges, в репо —
+              eslint/prettier/husky/renovate/codeql/release-please. Команда коммитит по Conventional
+              Commits. Frontend имеет минимум 1 e2e и 5 unit тестов. Любой PR проходит через
+              required checks.</strong
+            >
+          </div>
+        </section>
+
+        <section>
+          <h2>Приложение А. Команды для разработчика</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Цель</th>
+                <th>Команда</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Установка</td>
+                <td><code>npm install</code> (Husky подцепится сам через <code>prepare</code>)</td>
+              </tr>
+              <tr>
+                <td>Lint</td>
+                <td><code>npm run lint</code></td>
+              </tr>
+              <tr>
+                <td>Lint + autofix</td>
+                <td><code>npm run lint:fix</code></td>
+              </tr>
+              <tr>
+                <td>Format</td>
+                <td><code>npm run format</code></td>
+              </tr>
+              <tr>
+                <td>Format check</td>
+                <td><code>npm run format:check</code></td>
+              </tr>
+              <tr>
+                <td>Typecheck (всё)</td>
+                <td><code>npm run typecheck</code></td>
+              </tr>
+              <tr>
+                <td>Полный «как CI»</td>
+                <td><code>npm run verify</code></td>
+              </tr>
+              <tr>
+                <td>Backend e2e</td>
+                <td><code>npm --workspace backend run test:e2e</code></td>
+              </tr>
+              <tr>
+                <td>Frontend unit</td>
+                <td><code>npm --workspace frontend run test</code></td>
+              </tr>
+              <tr>
+                <td>Frontend E2E</td>
+                <td><code>npm --workspace frontend run test:e2e</code></td>
+              </tr>
+              <tr>
+                <td>Prisma format+validate</td>
+                <td>
+                  <code
+                    >npx --workspace backend prisma format && npx --workspace backend prisma
+                    validate</code
+                  >
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>Приложение Б. Bootstrap-скрипт</h2>
+          <p>Однократный скрипт, который активирует ТЗ №1 в репозитории:</p>
+          <pre><code>npm install --save-dev \
+  eslint@^9 typescript-eslint @eslint/js eslint-plugin-import \
+  eslint-plugin-unicorn eslint-plugin-promise eslint-plugin-jsx-a11y \
+  eslint-config-prettier eslint-plugin-react eslint-plugin-react-hooks \
+  @next/eslint-plugin-next \
+  prettier@^3 prettier-plugin-prisma \
+  husky@^9 lint-staged@^15 \
+  @commitlint/cli @commitlint/config-conventional \
+  vitest @vitest/coverage-v8 @testing-library/react @testing-library/jest-dom jsdom \
+  @playwright/test
+
+npx husky init
+echo 'npx lint-staged' > .husky/pre-commit
+echo 'npx --no -- commitlint --edit "$1"' > .husky/commit-msg
+
+# CI workflow + конфиги создаются вручную из шаблонов раздела 11.</code></pre>
+        </section>
+
+        <footer
+          style="
+            margin-top: 56px;
+            padding-top: 22px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 13px;
+          "
+        >
+          Документ подготовлен в рамках roadmap MedCRM. Связанные ТЗ: №2 Design System, №3 Security
+          Baseline, №4 Async Workflows, №5 Patient Portal MVP.
+        </footer>
+      </main>
+    </article>
+  </body>
+</html>

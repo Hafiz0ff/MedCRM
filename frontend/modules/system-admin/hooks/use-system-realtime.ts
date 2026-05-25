@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { getRealtimeSocket } from '@/shared/realtime/socket';
+import { useEffect } from 'react';
 import { SystemAdminQueryKeys as QK } from './use-system-admin';
+import { getRealtimeSocket } from '@/shared/realtime/socket';
 
 type RoleEvent = { roleId?: string };
 type UserRolesEvent = { userId?: string };

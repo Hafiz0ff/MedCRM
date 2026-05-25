@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ACCESS_TOKEN_COOKIE } from '@/shared/auth/cookies';
+import { useState } from 'react';
 import { loginSchema } from '../schemas/login.schema';
+import { ACCESS_TOKEN_COOKIE } from '@/shared/auth/cookies';
 
 type LoginResponse = {
   accessToken: string;
@@ -37,7 +37,7 @@ export function LoginForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(parsed.data)
+        body: JSON.stringify(parsed.data),
       });
 
       if (!response.ok) {
@@ -60,15 +60,32 @@ export function LoginForm() {
     <form className="form" onSubmit={submit}>
       <div className="field">
         <label htmlFor="tenantCode">Код клиники</label>
-        <input id="tenantCode" autoComplete="organization" value={tenantCode} onChange={(event) => setTenantCode(event.target.value)} />
+        <input
+          id="tenantCode"
+          autoComplete="organization"
+          value={tenantCode}
+          onChange={(event) => setTenantCode(event.target.value)}
+        />
       </div>
       <div className="field">
         <label htmlFor="email">Email</label>
-        <input id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+        <input
+          id="email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
       </div>
       <div className="field">
         <label htmlFor="password">Пароль</label>
-        <input id="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} />
+        <input
+          id="password"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
       </div>
       {error ? <div className="error">{error}</div> : null}
       <button className="button" type="submit" disabled={submitting}>

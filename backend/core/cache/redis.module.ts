@@ -20,12 +20,12 @@ export class RedisModule implements OnApplicationShutdown {
             const url = config.get<string>('REDIS_URL', 'redis://localhost:6379');
             return new Redis(url, {
               maxRetriesPerRequest: 3,
-              enableReadyCheck: true
+              enableReadyCheck: true,
             });
-          }
-        }
+          },
+        },
       ],
-      exports: [REDIS_CLIENT]
+      exports: [REDIS_CLIENT],
     };
   }
 
@@ -37,4 +37,3 @@ export class RedisModule implements OnApplicationShutdown {
     }
   }
 }
-

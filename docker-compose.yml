@@ -7,11 +7,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medcrm_password}
       POSTGRES_DB: ${POSTGRES_DB:-medcrm}
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medcrm} -d ${POSTGRES_DB:-medcrm}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-medcrm} -d ${POSTGRES_DB:-medcrm}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -20,9 +20,9 @@ services:
     image: redis:7-alpine
     container_name: medcrm-redis
     ports:
-      - "6379:6379"
+      - '6379:6379'
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -35,12 +35,12 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-medcrm_minio}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-medcrm_minio_password}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - '9000:9000'
+      - '9001:9001'
     volumes:
       - minio-data:/data
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ['CMD', 'mc', 'ready', 'local']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -64,9 +64,13 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "3001:3001"
+      - '3001:3001'
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://localhost:3001/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -88,9 +92,13 @@ services:
       auth-service:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - '3000:3000'
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://localhost:3000/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -109,9 +117,13 @@ services:
       api-gateway:
         condition: service_healthy
     ports:
-      - "3002:3002"
+      - '3002:3002'
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3002/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://localhost:3002/api/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
       interval: 10s
       timeout: 5s
       retries: 10

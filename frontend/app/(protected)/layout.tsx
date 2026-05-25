@@ -1,8 +1,8 @@
-import { ReactNode } from 'react';
-import { redirect } from 'next/navigation';
 import { Bell, Menu, RefreshCw, Search } from 'lucide-react';
-import { getBootstrap } from '@/shared/api/server-api';
+import { redirect } from 'next/navigation';
+import { ReactNode } from 'react';
 import { Sidebar } from '@/modules/shell/components/sidebar';
+import { getBootstrap } from '@/shared/api/server-api';
 import { AppQueryProvider } from '@/shared/query/query-provider';
 import { formatDate } from '@/shared/ui/status';
 
@@ -20,7 +20,12 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
       <main className="main">
         <header className="topbar">
           <div className="topbar-left">
-            <button className="icon-button topbar-menu" type="button" aria-label="Открыть меню" title="Меню">
+            <button
+              className="icon-button topbar-menu"
+              type="button"
+              aria-label="Открыть меню"
+              title="Меню"
+            >
               <Menu size={18} />
             </button>
             <span className="topbar-divider" aria-hidden="true" />
@@ -29,21 +34,39 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
           </div>
           <label className="global-search">
             <Search size={18} />
-            <input placeholder="Найти пациента, запись или действие" aria-label="Глобальный поиск" />
+            <input
+              placeholder="Найти пациента, запись или действие"
+              aria-label="Глобальный поиск"
+            />
           </label>
           <div className="topbar-actions">
             <span className="realtime-pill">
               <span className="dot" />
               Live
             </span>
-            <button className="icon-button" type="button" aria-label="Обновить данные" title="Обновить данные">
+            <button
+              className="icon-button"
+              type="button"
+              aria-label="Обновить данные"
+              title="Обновить данные"
+            >
               <RefreshCw size={17} />
             </button>
-            <button className="icon-button notification-button" type="button" aria-label="Уведомления" title="Уведомления">
+            <button
+              className="icon-button notification-button"
+              type="button"
+              aria-label="Уведомления"
+              title="Уведомления"
+            >
               <Bell size={18} />
               <span className="notification-dot" aria-hidden="true" />
             </button>
-            <button className="topbar-avatar" type="button" aria-label="Профиль" title={bootstrap.tenant.subscriptionPlan}>
+            <button
+              className="topbar-avatar"
+              type="button"
+              aria-label="Профиль"
+              title={bootstrap.tenant.subscriptionPlan}
+            >
               АД
             </button>
           </div>

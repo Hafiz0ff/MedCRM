@@ -1,0 +1,7 @@
+dist/
+.next/
+node_modules/
+package-lock.json
+backend/prisma/generated
+**/*next-env.d.ts
+**/*.d.ts

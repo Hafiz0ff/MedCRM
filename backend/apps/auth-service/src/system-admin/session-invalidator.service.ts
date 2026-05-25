@@ -1,7 +1,7 @@
+import { REDIS_CLIENT } from '@core/cache/redis.module';
+import { PrismaService } from '@core/database/prisma.service';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
-import { PrismaService } from '@core/database/prisma.service';
-import { REDIS_CLIENT } from '@core/cache/redis.module';
 
 const REVOKED_TTL_SECONDS = 60 * 60 * 24 * 30;
 
@@ -16,17 +16,17 @@ export class SessionInvalidatorService {
 
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(REDIS_CLIENT) private readonly redis: Redis
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
   async revokeAllSessionsForUser(
     userId: string,
     tenantId: string,
-    options: { reason: string } = { reason: 'rbac.policy.changed' }
+    options: { reason: string } = { reason: 'rbac.policy.changed' },
   ): Promise<{ count: number; sessionIds: string[] }> {
     const sessions = await this.prisma.userSession.findMany({
       where: { userId, tenantId, revokedAt: null },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (sessions.length === 0) {
@@ -37,7 +37,7 @@ export class SessionInvalidatorService {
 
     await this.prisma.userSession.updateMany({
       where: { id: { in: sessionIds } },
-      data: { revokedAt: new Date() }
+      data: { revokedAt: new Date() },
     });
 
     const pipeline = this.redis.multi();
@@ -47,7 +47,7 @@ export class SessionInvalidatorService {
     await pipeline.exec();
 
     this.logger.log(
-      `Revoked ${sessionIds.length} session(s) for user=${userId} tenant=${tenantId} reason=${options.reason}`
+      `Revoked ${sessionIds.length} session(s) for user=${userId} tenant=${tenantId} reason=${options.reason}`,
     );
     return { count: sessionIds.length, sessionIds };
   }

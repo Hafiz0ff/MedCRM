@@ -15,7 +15,7 @@ const defaultMaxByPolicy: Record<GatewayRateLimitPolicy, number> = {
   auth: 20,
   public: 300,
   internal: 1000,
-  websocket: 120
+  websocket: 120,
 };
 
 function policyForPath(path: string): GatewayRateLimitPolicy {
@@ -42,7 +42,8 @@ export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>) {
     const max = maxByPolicy[policy];
     const key = clientKey(req, policy);
     const existing = buckets.get(key);
-    const bucket = existing && existing.resetAt > now ? existing : { count: 0, resetAt: now + windowMs };
+    const bucket =
+      existing && existing.resetAt > now ? existing : { count: 0, resetAt: now + windowMs };
 
     bucket.count += 1;
     buckets.set(key, bucket);
@@ -61,11 +62,11 @@ export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>) {
           details: {
             policy,
             limit: max,
-            resetAt: new Date(bucket.resetAt).toISOString()
+            resetAt: new Date(bucket.resetAt).toISOString(),
           },
           requestId: req.headers['x-request-id'] || 'unknown',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
       return;
     }

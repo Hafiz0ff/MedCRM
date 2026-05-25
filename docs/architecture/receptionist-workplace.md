@@ -33,19 +33,19 @@ receptionist-workplace
   |-- offline-sync
 ```
 
-| Подмодуль | Ответственность |
-|---|---|
-| todays-board | Главный realtime dashboard администратора |
-| fast-booking | Быстрая запись через modal/command palette |
-| patient-search | Быстрый fuzzy/transliteration поиск пациента |
-| queue-management | Электронная очередь и статусы ожидания |
-| call-handling | Входящие звонки, mini CRM card, unknown caller flow |
-| visit-control | Быстрые переходы статусов визита |
-| invoice-preparation | Черновик счета после завершения приема |
-| receptionist-timeline | Лента операционных действий |
-| realtime-dashboard | Socket.IO события и dashboard cache |
-| sticky-patient-context | Глобальный выбранный пациент в popup/workflows |
-| offline-sync | Локальный cache, optimistic UI, retry synchronization |
+| Подмодуль              | Ответственность                                       |
+| ---------------------- | ----------------------------------------------------- |
+| todays-board           | Главный realtime dashboard администратора             |
+| fast-booking           | Быстрая запись через modal/command palette            |
+| patient-search         | Быстрый fuzzy/transliteration поиск пациента          |
+| queue-management       | Электронная очередь и статусы ожидания                |
+| call-handling          | Входящие звонки, mini CRM card, unknown caller flow   |
+| visit-control          | Быстрые переходы статусов визита                      |
+| invoice-preparation    | Черновик счета после завершения приема                |
+| receptionist-timeline  | Лента операционных действий                           |
+| realtime-dashboard     | Socket.IO события и dashboard cache                   |
+| sticky-patient-context | Глобальный выбранный пациент в popup/workflows        |
+| offline-sync           | Локальный cache, optimistic UI, retry synchronization |
 
 ## 3. Today's Board
 
@@ -82,14 +82,14 @@ receptionist-workplace
 
 Цветовая система:
 
-| Статус | Цвет |
-|---|---|
-| WAITING | yellow |
-| CHECKED_IN | blue |
-| IN_PROGRESS | purple |
+| Статус                    | Цвет   |
+| ------------------------- | ------ |
+| WAITING                   | yellow |
+| CHECKED_IN                | blue   |
+| IN_PROGRESS               | purple |
 | COMPLETED_PENDING_PAYMENT | orange |
-| COMPLETED | green |
-| NO_SHOW | red |
+| COMPLETED                 | green  |
+| NO_SHOW                   | red    |
 
 ## 4. Visit lifecycle UI
 
@@ -134,45 +134,45 @@ SCHEDULED
 
 Кэш Today’s Board для realtime performance.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| branch_id | uuid | Да |
-| dashboard_date | date | Да |
-| dashboard_json | jsonb | Да |
-| recalculated_at | timestamptz | Да |
+| Поле            | Тип         | Обязательность |
+| --------------- | ----------- | -------------- |
+| id              | uuid        | Да             |
+| tenant_id       | uuid        | Да             |
+| branch_id       | uuid        | Да             |
+| dashboard_date  | date        | Да             |
+| dashboard_json  | jsonb       | Да             |
+| recalculated_at | timestamptz | Да             |
 
 ### `appointment_visit_states`
 
 Операционная история переходов статусов через АРМ.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| appointment_id | uuid | Да |
-| old_state | varchar | Нет |
-| new_state | varchar | Да |
-| changed_by | uuid | Нет |
-| workstation_type | varchar | Да |
-| created_at | timestamptz | Да |
+| Поле             | Тип         | Обязательность |
+| ---------------- | ----------- | -------------- |
+| id               | uuid        | Да             |
+| tenant_id        | uuid        | Да             |
+| appointment_id   | uuid        | Да             |
+| old_state        | varchar     | Нет            |
+| new_state        | varchar     | Да             |
+| changed_by       | uuid        | Нет            |
+| workstation_type | varchar     | Да             |
+| created_at       | timestamptz | Да             |
 
 ### `visit_queue`
 
 Электронная очередь.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| branch_id | uuid | Да |
-| appointment_id | uuid | Да |
-| queue_number | varchar | Да |
-| queue_status | varchar | Да |
-| priority | integer | Да |
-| estimated_wait_time | integer | Нет |
-| created_at | timestamptz | Да |
+| Поле                | Тип         | Обязательность |
+| ------------------- | ----------- | -------------- |
+| id                  | uuid        | Да             |
+| tenant_id           | uuid        | Да             |
+| branch_id           | uuid        | Да             |
+| appointment_id      | uuid        | Да             |
+| queue_number        | varchar     | Да             |
+| queue_status        | varchar     | Да             |
+| priority            | integer     | Да             |
+| estimated_wait_time | integer     | Нет            |
+| created_at          | timestamptz | Да             |
 
 Статусы очереди:
 
@@ -186,19 +186,19 @@ SCHEDULED
 
 Foundation для IP-телефонии.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| branch_id | uuid | Да |
-| phone_number | varchar | Да |
-| patient_id | uuid | Нет |
-| operator_user_id | uuid | Нет |
-| call_started_at | timestamptz | Да |
-| call_ended_at | timestamptz | Нет |
-| duration_seconds | integer | Нет |
-| call_result | varchar | Нет |
-| recording_file_id | uuid | Нет |
+| Поле              | Тип         | Обязательность |
+| ----------------- | ----------- | -------------- |
+| id                | uuid        | Да             |
+| tenant_id         | uuid        | Да             |
+| branch_id         | uuid        | Да             |
+| phone_number      | varchar     | Да             |
+| patient_id        | uuid        | Нет            |
+| operator_user_id  | uuid        | Нет            |
+| call_started_at   | timestamptz | Да             |
+| call_ended_at     | timestamptz | Нет            |
+| duration_seconds  | integer     | Нет            |
+| call_result       | varchar     | Нет            |
+| recording_file_id | uuid        | Нет            |
 
 `call_result`: `MISSED`, `ANSWERED`, `BOOKED`, `CALLBACK_REQUIRED`, `SPAM`.
 
@@ -206,33 +206,33 @@ Foundation для IP-телефонии.
 
 Finance foundation версия счета.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| branch_id | uuid | Да |
-| patient_id | uuid | Да |
-| appointment_id | uuid | Нет |
-| status | varchar | Да |
-| subtotal_amount | numeric | Да |
-| discount_amount | numeric | Да |
-| total_amount | numeric | Да |
-| created_by | uuid | Нет |
-| created_at | timestamptz | Да |
+| Поле            | Тип         | Обязательность |
+| --------------- | ----------- | -------------- |
+| id              | uuid        | Да             |
+| tenant_id       | uuid        | Да             |
+| branch_id       | uuid        | Да             |
+| patient_id      | uuid        | Да             |
+| appointment_id  | uuid        | Нет            |
+| status          | varchar     | Да             |
+| subtotal_amount | numeric     | Да             |
+| discount_amount | numeric     | Да             |
+| total_amount    | numeric     | Да             |
+| created_by      | uuid        | Нет            |
+| created_at      | timestamptz | Да             |
 
 Статусы: `DRAFT`, `PENDING_PAYMENT`, `PAID`, `CANCELLED`.
 
 ### `invoice_items`
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| invoice_id | uuid | Да |
-| service_id | uuid | Нет |
-| quantity | numeric | Да |
-| unit_price | numeric | Да |
-| total_price | numeric | Да |
-| performer_employee_id | uuid | Нет |
+| Поле                  | Тип     | Обязательность |
+| --------------------- | ------- | -------------- |
+| id                    | uuid    | Да             |
+| invoice_id            | uuid    | Да             |
+| service_id            | uuid    | Нет            |
+| quantity              | numeric | Да             |
+| unit_price            | numeric | Да             |
+| total_price           | numeric | Да             |
+| performer_employee_id | uuid    | Нет            |
 
 ## 6. SQL baseline
 
@@ -690,4 +690,3 @@ export const ReceptionistWorkplaceModuleManifest = {
   },
 } as const;
 ```
-

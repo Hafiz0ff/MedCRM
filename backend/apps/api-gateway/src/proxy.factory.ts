@@ -1,21 +1,26 @@
+import { ServerResponse } from 'node:http';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createProxyMiddleware, Options } from 'http-proxy-middleware';
-import { ServerResponse } from 'node:http';
 import { GatewayRouteConfig } from './gateway-route.config';
 
 const logger = new Logger('GatewayProxy');
 
 function resolveTarget(config: ConfigService, route: GatewayRouteConfig): string {
   if (route.targetEnv === 'AUTH_SERVICE_INTERNAL_URL') {
-    return config.get<string>('AUTH_SERVICE_INTERNAL_URL') ?? config.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001');
+    return (
+      config.get<string>('AUTH_SERVICE_INTERNAL_URL') ??
+      config.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001')
+    );
   }
 
   return config.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001');
 }
 
 function rewritePath(path: string, route: GatewayRouteConfig): string {
-  const suffix = path.startsWith(route.gatewayPrefix) ? path.slice(route.gatewayPrefix.length) : path;
+  const suffix = path.startsWith(route.gatewayPrefix)
+    ? path.slice(route.gatewayPrefix.length)
+    : path;
   return `${route.upstreamPrefix}${suffix}`;
 }
 
@@ -81,15 +86,15 @@ export function createGatewayProxy(config: ConfigService, route: GatewayRouteCon
               details: {
                 route: route.gatewayPrefix,
                 target,
-                reason: error.message
+                reason: error.message,
               },
               requestId: req.headers['x-request-id'] || 'unknown',
-              timestamp: new Date().toISOString()
-            }
-          })
+              timestamp: new Date().toISOString(),
+            },
+          }),
         );
-      }
-    }
+      },
+    },
   };
 
   return createProxyMiddleware(options);

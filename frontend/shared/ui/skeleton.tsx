@@ -1,6 +1,14 @@
 'use client';
 
-export function Skeleton({ width, height, className }: { width?: string; height?: string; className?: string }) {
+export function Skeleton({
+  width,
+  height,
+  className,
+}: {
+  width?: string;
+  height?: string;
+  className?: string;
+}) {
   return (
     <div
       className={`skeleton ${className ?? ''}`}

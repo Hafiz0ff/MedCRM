@@ -1,5 +1,5 @@
-import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { describe, it, before, after } from 'node:test';
 import { setupE2eTest, teardownE2eTest, TestContext } from './e2e-helper';
 
 describe('E2E Reception Workflow Completion', () => {
@@ -18,17 +18,17 @@ describe('E2E Reception Workflow Completion', () => {
 
     // Retrieve seeded patient, employee, and service
     const patient = await context.prisma.patient.findFirstOrThrow({
-      where: { tenantId: context.tenantId }
+      where: { tenantId: context.tenantId },
     });
     patientId = patient.id;
 
     const employee = await context.prisma.employee.findFirstOrThrow({
-      where: { tenantId: context.tenantId }
+      where: { tenantId: context.tenantId },
     });
     employeeId = employee.id;
 
     const service = await context.prisma.service.findFirstOrThrow({
-      where: { tenantId: context.tenantId, code: 'consultation' }
+      where: { tenantId: context.tenantId, code: 'consultation' },
     });
     serviceId = service.id;
 
@@ -52,8 +52,8 @@ describe('E2E Reception Workflow Completion', () => {
         bookingSource: 'ADMIN_PANEL',
         appointmentType: 'CONSULTATION',
         durationMinutes: 30,
-        appointmentNumber: `A-REC-${Date.now()}`
-      }
+        appointmentNumber: `A-REC-${Date.now()}`,
+      },
     });
     appointmentId = app.id;
   });
@@ -64,10 +64,13 @@ describe('E2E Reception Workflow Completion', () => {
 
   it('should fetch today board dashboard successfully with counters and queue', async () => {
     const today = new Date().toISOString().slice(0, 10);
-    const res = await fetch(`${context.baseUrl}/reception/dashboard?branchId=${context.branchId}&date=${today}`, {
-      method: 'GET',
-      headers: context.authHeaders
-    });
+    const res = await fetch(
+      `${context.baseUrl}/reception/dashboard?branchId=${context.branchId}&date=${today}`,
+      {
+        method: 'GET',
+        headers: context.authHeaders,
+      },
+    );
 
     assert.equal(res.status, 200);
     const body = await res.json();
@@ -82,8 +85,8 @@ describe('E2E Reception Workflow Completion', () => {
       headers: context.authHeaders,
       body: JSON.stringify({
         appointmentId,
-        priority: 'NORMAL'
-      })
+        priority: 'NORMAL',
+      }),
     });
 
     if (res.status !== 201) {
@@ -103,8 +106,8 @@ describe('E2E Reception Workflow Completion', () => {
       method: 'PATCH',
       headers: context.authHeaders,
       body: JSON.stringify({
-        priority: 'VIP'
-      })
+        priority: 'VIP',
+      }),
     });
 
     assert.equal(res.status, 200);
@@ -125,11 +128,11 @@ describe('E2E Reception Workflow Completion', () => {
             serviceId,
             quantity: 1,
             unitPrice: 1500,
-            performerEmployeeId: employeeId
-          }
+            performerEmployeeId: employeeId,
+          },
         ],
-        discountAmount: 0
-      })
+        discountAmount: 0,
+      }),
     });
 
     assert.equal(res.status, 201);
@@ -144,8 +147,8 @@ describe('E2E Reception Workflow Completion', () => {
       method: 'POST',
       headers: context.authHeaders,
       body: JSON.stringify({
-        paymentMethod: 'CASH'
-      })
+        paymentMethod: 'CASH',
+      }),
     });
 
     assert.equal(res.status, 201);
@@ -154,7 +157,7 @@ describe('E2E Reception Workflow Completion', () => {
 
     // Verify Payment entity exists in DB
     const payment = await context.prisma.payment.findFirst({
-      where: { invoiceId, tenantId: context.tenantId }
+      where: { invoiceId, tenantId: context.tenantId },
     });
     assert.ok(payment);
     assert.equal(payment.paymentMethod, 'CASH');
@@ -164,7 +167,7 @@ describe('E2E Reception Workflow Completion', () => {
   it('should return a quick patient preview successfully', async () => {
     const res = await fetch(`${context.baseUrl}/reception/patient-preview/${patientId}`, {
       method: 'GET',
-      headers: context.authHeaders
+      headers: context.authHeaders,
     });
 
     assert.equal(res.status, 200);

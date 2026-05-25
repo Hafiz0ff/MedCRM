@@ -118,7 +118,7 @@ export type Diagnosis = {
 export function useMedicalRecord(patientId: string) {
   return useQuery({
     queryKey: ['medical-record', patientId],
-    queryFn: () => apiFetch<MedicalRecord>(`/emr/medical-records/patient/${patientId}`)
+    queryFn: () => apiFetch<MedicalRecord>(`/emr/medical-records/patient/${patientId}`),
   });
 }
 
@@ -128,18 +128,18 @@ export function useUpdateMedicalRecord(patientId: string) {
     mutationFn: (input: Partial<MedicalRecord>) =>
       apiFetch<MedicalRecord>(`/emr/medical-records/patient/${patientId}`, {
         method: 'PUT',
-        body: JSON.stringify(input)
+        body: JSON.stringify(input),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['medical-record', patientId] });
-    }
+    },
   });
 }
 
 export function useEpisodes(patientId: string) {
   return useQuery({
     queryKey: ['episodes', patientId],
-    queryFn: () => apiFetch<EpisodeOfCare[]>(`/emr/episodes?patientId=${patientId}`)
+    queryFn: () => apiFetch<EpisodeOfCare[]>(`/emr/episodes?patientId=${patientId}`),
   });
 }
 
@@ -156,11 +156,11 @@ export function useCreateEpisode(patientId: string) {
     }) =>
       apiFetch<EpisodeOfCare>('/emr/episodes', {
         method: 'POST',
-        body: JSON.stringify({ ...input, patientId })
+        body: JSON.stringify({ ...input, patientId }),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['episodes', patientId] });
-    }
+    },
   });
 }
 
@@ -175,18 +175,18 @@ export function useUpdateEpisode(patientId: string, episodeId: string) {
     }) =>
       apiFetch<EpisodeOfCare>(`/emr/episodes/${episodeId}`, {
         method: 'PATCH',
-        body: JSON.stringify(input)
+        body: JSON.stringify(input),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['episodes', patientId] });
-    }
+    },
   });
 }
 
 export function useClinicalTemplates() {
   return useQuery({
     queryKey: ['clinical-templates'],
-    queryFn: () => apiFetch<ClinicalTemplate[]>('/emr/templates')
+    queryFn: () => apiFetch<ClinicalTemplate[]>('/emr/templates'),
   });
 }
 
@@ -194,7 +194,7 @@ export function useEncounterDetails(id: string) {
   return useQuery({
     queryKey: ['encounter', id],
     queryFn: () => apiFetch<Encounter>(`/emr/encounters/${id}`),
-    enabled: !!id
+    enabled: !!id,
   });
 }
 
@@ -202,7 +202,7 @@ export function useEncounterVersions(id: string) {
   return useQuery({
     queryKey: ['encounter-versions', id],
     queryFn: () => apiFetch<any[]>(`/emr/encounters/${id}/versions`),
-    enabled: !!id
+    enabled: !!id,
   });
 }
 
@@ -224,13 +224,13 @@ export function useSaveEncounterDraft(patientId: string) {
       const method = id ? 'PATCH' : 'POST';
       return apiFetch<Encounter>(url, {
         method,
-        body: JSON.stringify({ ...data, patientId })
+        body: JSON.stringify({ ...data, patientId }),
       });
     },
     onSuccess: (encounter) => {
       queryClient.invalidateQueries({ queryKey: ['patient-timeline', patientId] });
       queryClient.invalidateQueries({ queryKey: ['encounter', encounter.id] });
-    }
+    },
   });
 }
 
@@ -244,12 +244,12 @@ export function useSignEncounter(patientId: string, id: string) {
     }) =>
       apiFetch<Encounter>(`/emr/encounters/${id}/sign`, {
         method: 'POST',
-        body: JSON.stringify(input)
+        body: JSON.stringify(input),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['encounter', id] });
       queryClient.invalidateQueries({ queryKey: ['patient-timeline', patientId] });
-    }
+    },
   });
 }
 
@@ -259,13 +259,13 @@ export function useAmendEncounter(patientId: string, id: string) {
     mutationFn: (input: { amendmentReason: string }) =>
       apiFetch<Encounter>(`/emr/encounters/${id}/amend`, {
         method: 'POST',
-        body: JSON.stringify(input)
+        body: JSON.stringify(input),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['encounter', id] });
       queryClient.invalidateQueries({ queryKey: ['encounter-versions', id] });
       queryClient.invalidateQueries({ queryKey: ['patient-timeline', patientId] });
-    }
+    },
   });
 }
 
@@ -280,11 +280,11 @@ export function useAssignDiagnosis(patientId: string, encounterId: string) {
     }) =>
       apiFetch<any>(`/emr/encounters/${encounterId}/diagnoses`, {
         method: 'POST',
-        body: JSON.stringify(input)
+        body: JSON.stringify(input),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['encounter', encounterId] });
-    }
+    },
   });
 }
 
@@ -293,7 +293,13 @@ export function useCreatePrescription(patientId: string, encounterId: string) {
   return useMutation({
     mutationFn: (input: {
       diagnosisId?: string | null;
-      prescriptionType: 'MEDICATION' | 'LAB_ORDER' | 'PROCEDURE' | 'IMAGING' | 'REFERRAL' | 'FOLLOW_UP';
+      prescriptionType:
+        | 'MEDICATION'
+        | 'LAB_ORDER'
+        | 'PROCEDURE'
+        | 'IMAGING'
+        | 'REFERRAL'
+        | 'FOLLOW_UP';
       notes?: string | null;
       items: Array<{
         itemCode: string;
@@ -309,10 +315,10 @@ export function useCreatePrescription(patientId: string, encounterId: string) {
     }) =>
       apiFetch<any>(`/emr/encounters/${encounterId}/prescriptions`, {
         method: 'POST',
-        body: JSON.stringify(input)
+        body: JSON.stringify(input),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['encounter', encounterId] });
-    }
+    },
   });
 }

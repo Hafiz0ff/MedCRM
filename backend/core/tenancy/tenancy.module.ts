@@ -5,11 +5,10 @@ import { TenantContextService } from './tenant-context.service';
 @Global()
 @Module({
   providers: [TenantContextService, TenantContextMiddleware],
-  exports: [TenantContextService]
+  exports: [TenantContextService],
 })
 export class TenancyModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer.apply(TenantContextMiddleware).forRoutes('*');
   }
 }
-

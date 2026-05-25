@@ -1,921 +1,1255 @@
 <!doctype html>
 <html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ТЗ на дизайн MedCRM</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --ink: #101828;
-      --muted: #667085;
-      --line: #d9e1ea;
-      --surface: #ffffff;
-      --soft: #f6f8fb;
-      --brand: #0f766e;
-      --brand-dark: #134e4a;
-      --blue: #2563eb;
-      --amber: #b45309;
-      --red: #b42318;
-      --green: #15803d;
-      --violet: #6d28d9;
-      --shadow: 0 16px 40px rgba(16, 24, 40, 0.08);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: #eef3f7;
-      color: var(--ink);
-      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      line-height: 1.55;
-    }
-
-    .page {
-      width: min(1180px, calc(100% - 40px));
-      margin: 32px auto;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
-    }
-
-    header {
-      padding: 48px 56px 36px;
-      background:
-        linear-gradient(135deg, rgba(15, 118, 110, 0.14), rgba(37, 99, 235, 0.08)),
-        #fbfdff;
-      border-bottom: 1px solid var(--line);
-    }
-
-    main {
-      padding: 36px 56px 56px;
-    }
-
-    h1,
-    h2,
-    h3 {
-      margin: 0;
-      line-height: 1.18;
-      letter-spacing: 0;
-    }
-
-    h1 {
-      max-width: 880px;
-      font-size: 42px;
-      font-weight: 760;
-    }
-
-    h2 {
-      margin-top: 44px;
-      padding-top: 24px;
-      border-top: 1px solid var(--line);
-      font-size: 26px;
-    }
-
-    h3 {
-      margin-top: 28px;
-      font-size: 19px;
-    }
-
-    p {
-      margin: 10px 0 0;
-    }
-
-    ul,
-    ol {
-      margin: 10px 0 0;
-      padding-left: 22px;
-    }
-
-    li + li {
-      margin-top: 6px;
-    }
-
-    table {
-      width: 100%;
-      margin-top: 14px;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-
-    th,
-    td {
-      vertical-align: top;
-      padding: 12px 14px;
-      border: 1px solid var(--line);
-      text-align: left;
-    }
-
-    th {
-      background: #f3f7fa;
-      font-weight: 700;
-    }
-
-    code {
-      padding: 2px 5px;
-      border-radius: 5px;
-      background: #edf2f7;
-      color: #243244;
-      font-family: "SFMono-Regular", Consolas, monospace;
-      font-size: 0.92em;
-    }
-
-    .meta {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 28px;
-    }
-
-    .meta div,
-    .note,
-    .decision,
-    .warning {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.78);
-      padding: 14px 16px;
-    }
-
-    .meta span,
-    .eyebrow {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .meta strong {
-      display: block;
-      margin-top: 4px;
-      font-size: 15px;
-    }
-
-    .lead {
-      max-width: 820px;
-      margin-top: 18px;
-      color: #344054;
-      font-size: 18px;
-    }
-
-    .toc {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px 24px;
-      margin-top: 18px;
-      padding: 18px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--soft);
-    }
-
-    .toc a {
-      color: var(--brand-dark);
-      text-decoration: none;
-    }
-
-    .two {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
-      margin-top: 16px;
-    }
-
-    .three {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 18px;
-      margin-top: 16px;
-    }
-
-    .card {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--surface);
-      padding: 18px;
-    }
-
-    .card h3 {
-      margin-top: 0;
-    }
-
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      margin: 4px 6px 0 0;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: #e8f4f2;
-      color: var(--brand-dark);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .status-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .status {
-      border-radius: 9px;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      background: #f8fafc;
-      font-size: 13px;
-    }
-
-    .status strong {
-      display: block;
-      margin-bottom: 3px;
-    }
-
-    .blue { border-color: #bfdbfe; background: #eff6ff; color: #1e40af; }
-    .amber { border-color: #fde68a; background: #fffbeb; color: #92400e; }
-    .green { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
-    .red { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
-    .violet { border-color: #ddd6fe; background: #f5f3ff; color: #5b21b6; }
-
-    .note {
-      margin-top: 16px;
-      background: #f8fbff;
-    }
-
-    .decision {
-      margin-top: 16px;
-      background: #ecfdf5;
-      border-color: #a7f3d0;
-    }
-
-    .warning {
-      margin-top: 16px;
-      background: #fff7ed;
-      border-color: #fed7aa;
-    }
-
-    .small {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .screen {
-      margin-top: 18px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-
-    .screen-title {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 14px 16px;
-      background: #f3f7fa;
-      border-bottom: 1px solid var(--line);
-      font-weight: 700;
-    }
-
-    .screen-body {
-      padding: 16px;
-    }
-
-    .acceptance li {
-      margin-top: 8px;
-    }
-
-    @media (max-width: 860px) {
-      .page {
-        width: 100%;
-        margin: 0;
-        border-width: 0;
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ТЗ на дизайн MedCRM</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #101828;
+        --muted: #667085;
+        --line: #d9e1ea;
+        --surface: #ffffff;
+        --soft: #f6f8fb;
+        --brand: #0f766e;
+        --brand-dark: #134e4a;
+        --blue: #2563eb;
+        --amber: #b45309;
+        --red: #b42318;
+        --green: #15803d;
+        --violet: #6d28d9;
+        --shadow: 0 16px 40px rgba(16, 24, 40, 0.08);
       }
 
-      header,
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #eef3f7;
+        color: var(--ink);
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Arial,
+          sans-serif;
+        line-height: 1.55;
+      }
+
+      .page {
+        width: min(1180px, calc(100% - 40px));
+        margin: 32px auto;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+      }
+
+      header {
+        padding: 48px 56px 36px;
+        background:
+          linear-gradient(135deg, rgba(15, 118, 110, 0.14), rgba(37, 99, 235, 0.08)), #fbfdff;
+        border-bottom: 1px solid var(--line);
+      }
+
       main {
-        padding: 28px 20px;
+        padding: 36px 56px 56px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        line-height: 1.18;
+        letter-spacing: 0;
       }
 
       h1 {
-        font-size: 31px;
+        max-width: 880px;
+        font-size: 42px;
+        font-weight: 760;
       }
 
-      .meta,
-      .two,
-      .three,
-      .toc,
-      .status-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media print {
-      body {
-        background: #fff;
+      h2 {
+        margin-top: 44px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+        font-size: 26px;
       }
 
-      .page {
+      h3 {
+        margin-top: 28px;
+        font-size: 19px;
+      }
+
+      p {
+        margin: 10px 0 0;
+      }
+
+      ul,
+      ol {
+        margin: 10px 0 0;
+        padding-left: 22px;
+      }
+
+      li + li {
+        margin-top: 6px;
+      }
+
+      table {
         width: 100%;
-        margin: 0;
-        border: 0;
-        box-shadow: none;
+        margin-top: 14px;
+        border-collapse: collapse;
+        font-size: 14px;
       }
 
-      header,
-      main {
-        padding: 24px 32px;
+      th,
+      td {
+        vertical-align: top;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        text-align: left;
       }
-    }
-  </style>
-</head>
-<body>
-  <article class="page">
-    <header>
-      <span class="eyebrow">MedCRM · техническое задание на дизайн</span>
-      <h1>Современный интерфейс CRM/МИС для частной клиники</h1>
-      <p class="lead">
-        Цель документа: зафиксировать аудит текущего фронтенда MedCRM и дать прикладное ТЗ для проектирования
-        полноценного, современного и удобного интерфейса медицинской CRM-системы.
-      </p>
-      <section class="meta" aria-label="Метаданные документа">
-        <div>
-          <span>Версия</span>
-          <strong>1.0</strong>
-        </div>
-        <div>
-          <span>Дата</span>
-          <strong>23 мая 2026</strong>
-        </div>
-        <div>
-          <span>Проект</span>
-          <strong>Hafiz0ff/MedCRM</strong>
-        </div>
-        <div>
-          <span>Фокус</span>
-          <strong>Frontend, UX/UI, дизайн-система</strong>
-        </div>
-      </section>
-    </header>
 
-    <main>
-      <nav class="toc" aria-label="Содержание">
-        <a href="#summary">1. Резюме аудита</a>
-        <a href="#product">2. Продуктовый контекст</a>
-        <a href="#current">3. Текущее состояние фронтенда</a>
-        <a href="#direction">4. Дизайн-направление</a>
-        <a href="#ia">5. Информационная архитектура</a>
-        <a href="#screens">6. ТЗ по экранам</a>
-        <a href="#design-system">7. Дизайн-система</a>
-        <a href="#states">8. Состояния и UX-правила</a>
-        <a href="#responsive">9. Адаптивность и доступность</a>
-        <a href="#delivery">10. Результаты и приемка</a>
-      </nav>
+      th {
+        background: #f3f7fa;
+        font-weight: 700;
+      }
 
-      <section id="summary">
-        <h2>1. Резюме аудита</h2>
-        <p>
-          Backend и архитектурные документы описывают серьезную SaaS CRM/МИС платформу для частных клиник:
-          multi-tenant, RBAC, Patient CRM, Smart Scheduling, Receptionist Workplace, а также заготовки под финансы,
-          EMR, коммуникации, BI, склад и интеграции. Фронтенд пока выполняет роль MVP-оболочки и не соответствует
-          масштабу продукта.
+      code {
+        padding: 2px 5px;
+        border-radius: 5px;
+        background: #edf2f7;
+        color: #243244;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 0.92em;
+      }
+
+      .meta {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      .meta div,
+      .note,
+      .decision,
+      .warning {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.78);
+        padding: 14px 16px;
+      }
+
+      .meta span,
+      .eyebrow {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .meta strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 15px;
+      }
+
+      .lead {
+        max-width: 820px;
+        margin-top: 18px;
+        color: #344054;
+        font-size: 18px;
+      }
+
+      .toc {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 24px;
+        margin-top: 18px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--soft);
+      }
+
+      .toc a {
+        color: var(--brand-dark);
+        text-decoration: none;
+      }
+
+      .two {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 16px;
+      }
+
+      .three {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 16px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+        padding: 18px;
+      }
+
+      .card h3 {
+        margin-top: 0;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        margin: 4px 6px 0 0;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #e8f4f2;
+        color: var(--brand-dark);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .status-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .status {
+        border-radius: 9px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        background: #f8fafc;
+        font-size: 13px;
+      }
+
+      .status strong {
+        display: block;
+        margin-bottom: 3px;
+      }
+
+      .blue {
+        border-color: #bfdbfe;
+        background: #eff6ff;
+        color: #1e40af;
+      }
+      .amber {
+        border-color: #fde68a;
+        background: #fffbeb;
+        color: #92400e;
+      }
+      .green {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+        color: #166534;
+      }
+      .red {
+        border-color: #fecaca;
+        background: #fef2f2;
+        color: #991b1b;
+      }
+      .violet {
+        border-color: #ddd6fe;
+        background: #f5f3ff;
+        color: #5b21b6;
+      }
+
+      .note {
+        margin-top: 16px;
+        background: #f8fbff;
+      }
+
+      .decision {
+        margin-top: 16px;
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+      }
+
+      .warning {
+        margin-top: 16px;
+        background: #fff7ed;
+        border-color: #fed7aa;
+      }
+
+      .small {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .screen {
+        margin-top: 18px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      .screen-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 16px;
+        background: #f3f7fa;
+        border-bottom: 1px solid var(--line);
+        font-weight: 700;
+      }
+
+      .screen-body {
+        padding: 16px;
+      }
+
+      .acceptance li {
+        margin-top: 8px;
+      }
+
+      @media (max-width: 860px) {
+        .page {
+          width: 100%;
+          margin: 0;
+          border-width: 0;
+        }
+
+        header,
+        main {
+          padding: 28px 20px;
+        }
+
+        h1 {
+          font-size: 31px;
+        }
+
+        .meta,
+        .two,
+        .three,
+        .toc,
+        .status-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media print {
+        body {
+          background: #fff;
+        }
+
+        .page {
+          width: 100%;
+          margin: 0;
+          border: 0;
+          box-shadow: none;
+        }
+
+        header,
+        main {
+          padding: 24px 32px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <article class="page">
+      <header>
+        <span class="eyebrow">MedCRM · техническое задание на дизайн</span>
+        <h1>Современный интерфейс CRM/МИС для частной клиники</h1>
+        <p class="lead">
+          Цель документа: зафиксировать аудит текущего фронтенда MedCRM и дать прикладное ТЗ для
+          проектирования полноценного, современного и удобного интерфейса медицинской CRM-системы.
         </p>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Область</th>
-              <th>Найдено сейчас</th>
-              <th>Что требуется в дизайне</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Визуальная система</td>
-              <td>Глобальный CSS, Arial, простые панели, нет токенов компонентов.</td>
-              <td>Цельная медицинская SaaS-айдентика, дизайн-токены, компоненты, статусы, таблицы, формы.</td>
-            </tr>
-            <tr>
-              <td>Навигация</td>
-              <td>Левое меню из четырех пунктов: Dashboard, Пациенты, Расписание, Регистратура.</td>
-              <td>Модульная навигация с группировкой, активными состояниями, поиском, user/tenant контекстом.</td>
-            </tr>
-            <tr>
-              <td>Dashboard</td>
-              <td>Отображает JSON с количеством модулей и permissions.</td>
-              <td>Операционная панель клиники: день, поток пациентов, загрузка врачей, деньги, задачи, риски.</td>
-            </tr>
-            <tr>
-              <td>Пациенты</td>
-              <td>Список ссылок, простой поиск, короткая форма создания, базовая карточка пациента.</td>
-              <td>CRM-реестр с фильтрами, дублями, сегментами, timeline, контактами, статусами и быстрыми действиями.</td>
-            </tr>
-            <tr>
-              <td>Расписание</td>
-              <td>Линейный список записей на сегодня и форма создания записи.</td>
-              <td>Календарь день/неделя, ресурсы, врачи, слоты, конфликты, быстрый booking flow.</td>
-            </tr>
-            <tr>
-              <td>Регистратура</td>
-              <td>Горизонтальная kanban-доска статусов и очередь.</td>
-              <td>АРМ администратора: today board, быстрый check-in, очередь, звонки, мини-карточка пациента, realtime.</td>
-            </tr>
-            <tr>
-              <td>Состояния интерфейса</td>
-              <td>Минимальные loading/error сообщения, нет empty states, skeletons, toasts, confirmations.</td>
-              <td>Полный набор состояний для загрузки, ошибок, пустых списков, прав доступа, offline/retry и realtime.</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div class="decision">
-          <strong>Вывод:</strong> дизайн нужно проектировать не как набор красивых страниц, а как операционную рабочую
-          систему клиники: плотную, спокойную, быструю, с высоким доверием к данным и минимальным числом переключений.
-        </div>
-      </section>
-
-      <section id="product">
-        <h2>2. Продуктовый контекст</h2>
-        <p>
-          MedCRM предназначен для частных клиник и должен совмещать CRM, расписание, регистратуру, коммуникации,
-          аналитику и будущие медицинские модули. Основной пользователь работает под давлением времени: звонки,
-          пациенты у стойки, переносы записей, оплата, очередь, вопросы врачей.
-        </p>
-
-        <div class="three">
-          <div class="card">
-            <h3>Администратор</h3>
-            <p>Главный пользователь MVP. Ему нужны быстрый поиск, запись пациента, check-in, очередь, статусы визитов и минимум переходов.</p>
+        <section class="meta" aria-label="Метаданные документа">
+          <div>
+            <span>Версия</span>
+            <strong>1.0</strong>
           </div>
-          <div class="card">
-            <h3>Управляющий клиники</h3>
-            <p>Смотрит поток пациентов, загрузку филиалов и врачей, финансовые показатели, проблемные зоны и качество обработки.</p>
+          <div>
+            <span>Дата</span>
+            <strong>23 мая 2026</strong>
           </div>
-          <div class="card">
-            <h3>Врач и медицинский персонал</h3>
-            <p>Получает контекст визита, статус пациента, кабинет, услугу, историю и будущий переход в EMR/рабочее место врача.</p>
+          <div>
+            <span>Проект</span>
+            <strong>Hafiz0ff/MedCRM</strong>
           </div>
-        </div>
-
-        <h3>Ключевые продуктовые принципы</h3>
-        <ul>
-          <li>Интерфейс должен быть операционным, а не маркетинговым: без hero-блоков внутри приложения и без декоративной перегрузки.</li>
-          <li>Главные действия должны быть доступны за 1-2 клика: найти пациента, создать запись, подтвердить, отметить приход, отменить, перенести.</li>
-          <li>Система обязана ясно показывать статус данных: филиал, дата, realtime-соединение, активный пользователь, права, модуль.</li>
-          <li>Медицинская тематика требует сдержанного, доверительного визуального языка: чистые поверхности, высокая читаемость, аккуратные статусы.</li>
-          <li>Дизайн должен масштабироваться под новые модули: finance, communications, EMR, BI, inventory, integrations.</li>
-        </ul>
-      </section>
-
-      <section id="current">
-        <h2>3. Текущее состояние фронтенда</h2>
-
-        <h3>Технологии</h3>
-        <p>
-          Фронтенд использует Next.js 16 App Router, React 19, TypeScript, TanStack Query, Zod, Socket.IO Client.
-          В архитектурных документах запланированы TailwindCSS, shadcn/ui, Zustand, next-intl, PWA, ECharts, но в
-          текущем <code>frontend/package.json</code> TailwindCSS, shadcn/ui, icons, charting и i18n еще не подключены.
-        </p>
-
-        <h3>Фактические экраны</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Маршрут</th>
-              <th>Текущая роль</th>
-              <th>Основной дефицит UX/UI</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>/auth/login</code></td>
-              <td>Вход по tenant code, email, password.</td>
-              <td>Нет брендовой доверительной страницы, подсказок безопасности, MFA-состояния, локализации.</td>
-            </tr>
-            <tr>
-              <td><code>/dashboard</code></td>
-              <td>Проверка bootstrap payload.</td>
-              <td>Нет реального dashboard: KPI, задач, визитов, динамики, предупреждений.</td>
-            </tr>
-            <tr>
-              <td><code>/patients</code></td>
-              <td>Поиск, список пациентов, создание пациента.</td>
-              <td>Нет табличного реестра, фильтров, сортировки, дубликатов как полноценного workflow.</td>
-            </tr>
-            <tr>
-              <td><code>/patients/[id]</code></td>
-              <td>Карточка пациента и смена статуса.</td>
-              <td>Нет CRM-профиля, истории, контактов, визитов, документов, заметок и быстрых действий.</td>
-            </tr>
-            <tr>
-              <td><code>/schedule</code></td>
-              <td>Список записей на сегодня и создание записи.</td>
-              <td>Нет календарной сетки, ресурсов, фильтров по врачу/кабинету, конфликтов, drag/reschedule.</td>
-            </tr>
-            <tr>
-              <td><code>/reception</code></td>
-              <td>Kanban по статусам и очередь.</td>
-              <td>Статусы технические, доска перегружена 7 колонками, нет приоритетов, звонков, оплаты, sticky context.</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h3>Главные UX-риски</h3>
-        <ul>
-          <li>Пользователь видит технические статусы на английском, а не понятные операционные состояния.</li>
-          <li>Формы не объясняют ошибки до отправки и не дают быстрых альтернатив при конфликте записи.</li>
-          <li>Списки представлены как карточки/ссылки, что плохо масштабируется для клиники с большим потоком пациентов.</li>
-          <li>Дизайн не показывает realtime-доверие: непонятно, свежие ли данные, идет ли синхронизация, кто изменил статус.</li>
-          <li>Нет единого языка статусов между расписанием, регистратурой, карточкой пациента и будущими модулями.</li>
-        </ul>
-      </section>
-
-      <section id="direction">
-        <h2>4. Дизайн-направление</h2>
-
-        <div class="note">
-          <strong>Визуальная теза:</strong> спокойный медицинский операционный интерфейс с плотной информационной
-          сеткой, чистыми белыми поверхностями, графитовым текстом, бирюзовым основным акцентом и ограниченной
-          системой статусных цветов.
-        </div>
-
-        <div class="two">
-          <div class="card">
-            <h3>Характер интерфейса</h3>
-            <ul>
-              <li>Современный B2B SaaS, ближе к Linear/Notion/Intercom по чистоте, но плотнее по данным.</li>
-              <li>Меньше декоративных карточек, больше таблиц, панелей, split-view и контекстных drawers.</li>
-              <li>Ощущение медицинской надежности: точность, порядок, видимость статуса, отсутствие визуального шума.</li>
-            </ul>
+          <div>
+            <span>Фокус</span>
+            <strong>Frontend, UX/UI, дизайн-система</strong>
           </div>
-          <div class="card">
-            <h3>Интерактивная теза</h3>
-            <ul>
-              <li>Мягкие transitions для drawer/modal, смены статуса и появления realtime-событий.</li>
-              <li>Drag-and-drop только там, где он ускоряет работу: расписание и today board.</li>
-              <li>Hover/focus состояния помогают сканировать строки и карточки, но не меняют layout.</li>
-            </ul>
+        </section>
+      </header>
+
+      <main>
+        <nav class="toc" aria-label="Содержание">
+          <a href="#summary">1. Резюме аудита</a>
+          <a href="#product">2. Продуктовый контекст</a>
+          <a href="#current">3. Текущее состояние фронтенда</a>
+          <a href="#direction">4. Дизайн-направление</a>
+          <a href="#ia">5. Информационная архитектура</a>
+          <a href="#screens">6. ТЗ по экранам</a>
+          <a href="#design-system">7. Дизайн-система</a>
+          <a href="#states">8. Состояния и UX-правила</a>
+          <a href="#responsive">9. Адаптивность и доступность</a>
+          <a href="#delivery">10. Результаты и приемка</a>
+        </nav>
+
+        <section id="summary">
+          <h2>1. Резюме аудита</h2>
+          <p>
+            Backend и архитектурные документы описывают серьезную SaaS CRM/МИС платформу для частных
+            клиник: multi-tenant, RBAC, Patient CRM, Smart Scheduling, Receptionist Workplace, а
+            также заготовки под финансы, EMR, коммуникации, BI, склад и интеграции. Фронтенд пока
+            выполняет роль MVP-оболочки и не соответствует масштабу продукта.
+          </p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Область</th>
+                <th>Найдено сейчас</th>
+                <th>Что требуется в дизайне</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Визуальная система</td>
+                <td>Глобальный CSS, Arial, простые панели, нет токенов компонентов.</td>
+                <td>
+                  Цельная медицинская SaaS-айдентика, дизайн-токены, компоненты, статусы, таблицы,
+                  формы.
+                </td>
+              </tr>
+              <tr>
+                <td>Навигация</td>
+                <td>
+                  Левое меню из четырех пунктов: Dashboard, Пациенты, Расписание, Регистратура.
+                </td>
+                <td>
+                  Модульная навигация с группировкой, активными состояниями, поиском, user/tenant
+                  контекстом.
+                </td>
+              </tr>
+              <tr>
+                <td>Dashboard</td>
+                <td>Отображает JSON с количеством модулей и permissions.</td>
+                <td>
+                  Операционная панель клиники: день, поток пациентов, загрузка врачей, деньги,
+                  задачи, риски.
+                </td>
+              </tr>
+              <tr>
+                <td>Пациенты</td>
+                <td>
+                  Список ссылок, простой поиск, короткая форма создания, базовая карточка пациента.
+                </td>
+                <td>
+                  CRM-реестр с фильтрами, дублями, сегментами, timeline, контактами, статусами и
+                  быстрыми действиями.
+                </td>
+              </tr>
+              <tr>
+                <td>Расписание</td>
+                <td>Линейный список записей на сегодня и форма создания записи.</td>
+                <td>
+                  Календарь день/неделя, ресурсы, врачи, слоты, конфликты, быстрый booking flow.
+                </td>
+              </tr>
+              <tr>
+                <td>Регистратура</td>
+                <td>Горизонтальная kanban-доска статусов и очередь.</td>
+                <td>
+                  АРМ администратора: today board, быстрый check-in, очередь, звонки, мини-карточка
+                  пациента, realtime.
+                </td>
+              </tr>
+              <tr>
+                <td>Состояния интерфейса</td>
+                <td>
+                  Минимальные loading/error сообщения, нет empty states, skeletons, toasts,
+                  confirmations.
+                </td>
+                <td>
+                  Полный набор состояний для загрузки, ошибок, пустых списков, прав доступа,
+                  offline/retry и realtime.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="decision">
+            <strong>Вывод:</strong> дизайн нужно проектировать не как набор красивых страниц, а как
+            операционную рабочую систему клиники: плотную, спокойную, быструю, с высоким доверием к
+            данным и минимальным числом переключений.
           </div>
-        </div>
+        </section>
 
-        <h3>Палитра верхнего уровня</h3>
-        <div class="status-grid">
-          <div class="status green"><strong>Основной акцент</strong>#0f766e · действия, активные элементы</div>
-          <div class="status blue"><strong>Информация</strong>#2563eb · confirmed, системные уведомления</div>
-          <div class="status amber"><strong>Внимание</strong>#b45309 · ожидание, предупреждения, очередь</div>
-          <div class="status red"><strong>Критично</strong>#b42318 · отмены, ошибки, no-show, блокировки</div>
-        </div>
-      </section>
+        <section id="product">
+          <h2>2. Продуктовый контекст</h2>
+          <p>
+            MedCRM предназначен для частных клиник и должен совмещать CRM, расписание, регистратуру,
+            коммуникации, аналитику и будущие медицинские модули. Основной пользователь работает под
+            давлением времени: звонки, пациенты у стойки, переносы записей, оплата, очередь, вопросы
+            врачей.
+          </p>
 
-      <section id="ia">
-        <h2>5. Информационная архитектура</h2>
-        <p>
-          Навигация должна отражать модульность платформы, но не превращаться в длинный список. На MVP-этапе
-          рекомендуется сгруппировать разделы по рабочим зонам.
-        </p>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Группа</th>
-              <th>Пункты</th>
-              <th>Назначение</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Операции</td>
-              <td>Операционная панель, Регистратура, Расписание</td>
-              <td>Ежедневная работа клиники и поток пациентов.</td>
-            </tr>
-            <tr>
-              <td>CRM</td>
-              <td>Пациенты, Сегменты, Коммуникации</td>
-              <td>База пациентов, удержание, история контактов, рассылки.</td>
-            </tr>
-            <tr>
-              <td>Клиника</td>
-              <td>Филиалы, Сотрудники, Кабинеты, Услуги</td>
-              <td>Организационная структура и ресурсы записи.</td>
-            </tr>
-            <tr>
-              <td>Управление</td>
-              <td>Финансы, BI, Склад, Интеграции</td>
-              <td>Административные и управленческие модули.</td>
-            </tr>
-            <tr>
-              <td>Система</td>
-              <td>Пользователи, Роли, Настройки, Audit log</td>
-              <td>Tenant, RBAC, безопасность и конфигурация.</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h3>Shell приложения</h3>
-        <ul>
-          <li>Левый sidebar: логотип, группы навигации, активный пункт, компактный режим, права доступа.</li>
-          <li>Верхняя панель: поиск/command palette, филиал, дата/смена, realtime status, уведомления, профиль пользователя.</li>
-          <li>Рабочая область: max-width не ограничивает операционные таблицы; важные экраны используют всю ширину.</li>
-          <li>Правый drawer: быстрый просмотр пациента, записи, счета, звонка или события без ухода со страницы.</li>
-        </ul>
-      </section>
-
-      <section id="screens">
-        <h2>6. ТЗ по экранам</h2>
-
-        <div class="screen">
-          <div class="screen-title">
-            <span>6.1 Login</span>
-            <span class="small"><code>/auth/login</code></span>
+          <div class="three">
+            <div class="card">
+              <h3>Администратор</h3>
+              <p>
+                Главный пользователь MVP. Ему нужны быстрый поиск, запись пациента, check-in,
+                очередь, статусы визитов и минимум переходов.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Управляющий клиники</h3>
+              <p>
+                Смотрит поток пациентов, загрузку филиалов и врачей, финансовые показатели,
+                проблемные зоны и качество обработки.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Врач и медицинский персонал</h3>
+              <p>
+                Получает контекст визита, статус пациента, кабинет, услугу, историю и будущий
+                переход в EMR/рабочее место врача.
+              </p>
+            </div>
           </div>
-          <div class="screen-body">
-            <p><strong>Цель:</strong> быстро и безопасно войти в клинику/tenant.</p>
-            <ul>
-              <li>Слева или сверху: MedCRM, короткая формулировка продукта для клиники, доверительный медицинский визуальный фон без стоковой перегрузки.</li>
-              <li>Форма: код клиники, email, пароль, submit, состояние загрузки, ошибка, восстановление доступа.</li>
-              <li>Поддержать future-state для MFA: экран ввода кода, повторная отправка, истекший код.</li>
-              <li>После ошибки не сбрасывать заполненные поля, показывать понятную причину без раскрытия лишней security-информации.</li>
-            </ul>
+
+          <h3>Ключевые продуктовые принципы</h3>
+          <ul>
+            <li>
+              Интерфейс должен быть операционным, а не маркетинговым: без hero-блоков внутри
+              приложения и без декоративной перегрузки.
+            </li>
+            <li>
+              Главные действия должны быть доступны за 1-2 клика: найти пациента, создать запись,
+              подтвердить, отметить приход, отменить, перенести.
+            </li>
+            <li>
+              Система обязана ясно показывать статус данных: филиал, дата, realtime-соединение,
+              активный пользователь, права, модуль.
+            </li>
+            <li>
+              Медицинская тематика требует сдержанного, доверительного визуального языка: чистые
+              поверхности, высокая читаемость, аккуратные статусы.
+            </li>
+            <li>
+              Дизайн должен масштабироваться под новые модули: finance, communications, EMR, BI,
+              inventory, integrations.
+            </li>
+          </ul>
+        </section>
+
+        <section id="current">
+          <h2>3. Текущее состояние фронтенда</h2>
+
+          <h3>Технологии</h3>
+          <p>
+            Фронтенд использует Next.js 16 App Router, React 19, TypeScript, TanStack Query, Zod,
+            Socket.IO Client. В архитектурных документах запланированы TailwindCSS, shadcn/ui,
+            Zustand, next-intl, PWA, ECharts, но в текущем
+            <code>frontend/package.json</code> TailwindCSS, shadcn/ui, icons, charting и i18n еще не
+            подключены.
+          </p>
+
+          <h3>Фактические экраны</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Маршрут</th>
+                <th>Текущая роль</th>
+                <th>Основной дефицит UX/UI</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>/auth/login</code></td>
+                <td>Вход по tenant code, email, password.</td>
+                <td>
+                  Нет брендовой доверительной страницы, подсказок безопасности, MFA-состояния,
+                  локализации.
+                </td>
+              </tr>
+              <tr>
+                <td><code>/dashboard</code></td>
+                <td>Проверка bootstrap payload.</td>
+                <td>Нет реального dashboard: KPI, задач, визитов, динамики, предупреждений.</td>
+              </tr>
+              <tr>
+                <td><code>/patients</code></td>
+                <td>Поиск, список пациентов, создание пациента.</td>
+                <td>
+                  Нет табличного реестра, фильтров, сортировки, дубликатов как полноценного
+                  workflow.
+                </td>
+              </tr>
+              <tr>
+                <td><code>/patients/[id]</code></td>
+                <td>Карточка пациента и смена статуса.</td>
+                <td>
+                  Нет CRM-профиля, истории, контактов, визитов, документов, заметок и быстрых
+                  действий.
+                </td>
+              </tr>
+              <tr>
+                <td><code>/schedule</code></td>
+                <td>Список записей на сегодня и создание записи.</td>
+                <td>
+                  Нет календарной сетки, ресурсов, фильтров по врачу/кабинету, конфликтов,
+                  drag/reschedule.
+                </td>
+              </tr>
+              <tr>
+                <td><code>/reception</code></td>
+                <td>Kanban по статусам и очередь.</td>
+                <td>
+                  Статусы технические, доска перегружена 7 колонками, нет приоритетов, звонков,
+                  оплаты, sticky context.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Главные UX-риски</h3>
+          <ul>
+            <li>
+              Пользователь видит технические статусы на английском, а не понятные операционные
+              состояния.
+            </li>
+            <li>
+              Формы не объясняют ошибки до отправки и не дают быстрых альтернатив при конфликте
+              записи.
+            </li>
+            <li>
+              Списки представлены как карточки/ссылки, что плохо масштабируется для клиники с
+              большим потоком пациентов.
+            </li>
+            <li>
+              Дизайн не показывает realtime-доверие: непонятно, свежие ли данные, идет ли
+              синхронизация, кто изменил статус.
+            </li>
+            <li>
+              Нет единого языка статусов между расписанием, регистратурой, карточкой пациента и
+              будущими модулями.
+            </li>
+          </ul>
+        </section>
+
+        <section id="direction">
+          <h2>4. Дизайн-направление</h2>
+
+          <div class="note">
+            <strong>Визуальная теза:</strong> спокойный медицинский операционный интерфейс с плотной
+            информационной сеткой, чистыми белыми поверхностями, графитовым текстом, бирюзовым
+            основным акцентом и ограниченной системой статусных цветов.
           </div>
-        </div>
 
-        <div class="screen">
-          <div class="screen-title">
-            <span>6.2 Операционная панель</span>
-            <span class="small"><code>/dashboard</code></span>
+          <div class="two">
+            <div class="card">
+              <h3>Характер интерфейса</h3>
+              <ul>
+                <li>
+                  Современный B2B SaaS, ближе к Linear/Notion/Intercom по чистоте, но плотнее по
+                  данным.
+                </li>
+                <li>
+                  Меньше декоративных карточек, больше таблиц, панелей, split-view и контекстных
+                  drawers.
+                </li>
+                <li>
+                  Ощущение медицинской надежности: точность, порядок, видимость статуса, отсутствие
+                  визуального шума.
+                </li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Интерактивная теза</h3>
+              <ul>
+                <li>
+                  Мягкие transitions для drawer/modal, смены статуса и появления realtime-событий.
+                </li>
+                <li>Drag-and-drop только там, где он ускоряет работу: расписание и today board.</li>
+                <li>
+                  Hover/focus состояния помогают сканировать строки и карточки, но не меняют layout.
+                </li>
+              </ul>
+            </div>
           </div>
-          <div class="screen-body">
-            <p><strong>Цель:</strong> дать управляющему и администратору обзор текущего дня.</p>
-            <ul>
-              <li>Верхний блок: дата, филиал, смена, realtime status, быстрые действия "Новая запись", "Новый пациент".</li>
-              <li>KPI: записи сегодня, пришли, ожидают, отмены/no-show, загрузка врачей, выручка/ожидаемая оплата.</li>
-              <li>Операционный список: ближайшие визиты, пациенты в очереди, проблемные записи, конфликты расписания.</li>
-              <li>Небольшой график загрузки по часам и по врачам; для реализации использовать будущий ECharts или аналог.</li>
-              <li>Виджеты должны иметь empty/loading/error состояния и не показывать технический JSON.</li>
-            </ul>
+
+          <h3>Палитра верхнего уровня</h3>
+          <div class="status-grid">
+            <div class="status green">
+              <strong>Основной акцент</strong>#0f766e · действия, активные элементы
+            </div>
+            <div class="status blue">
+              <strong>Информация</strong>#2563eb · confirmed, системные уведомления
+            </div>
+            <div class="status amber">
+              <strong>Внимание</strong>#b45309 · ожидание, предупреждения, очередь
+            </div>
+            <div class="status red">
+              <strong>Критично</strong>#b42318 · отмены, ошибки, no-show, блокировки
+            </div>
           </div>
-        </div>
+        </section>
 
-        <div class="screen">
-          <div class="screen-title">
-            <span>6.3 Пациенты</span>
-            <span class="small"><code>/patients</code>, <code>/patients/[id]</code></span>
+        <section id="ia">
+          <h2>5. Информационная архитектура</h2>
+          <p>
+            Навигация должна отражать модульность платформы, но не превращаться в длинный список. На
+            MVP-этапе рекомендуется сгруппировать разделы по рабочим зонам.
+          </p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Группа</th>
+                <th>Пункты</th>
+                <th>Назначение</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Операции</td>
+                <td>Операционная панель, Регистратура, Расписание</td>
+                <td>Ежедневная работа клиники и поток пациентов.</td>
+              </tr>
+              <tr>
+                <td>CRM</td>
+                <td>Пациенты, Сегменты, Коммуникации</td>
+                <td>База пациентов, удержание, история контактов, рассылки.</td>
+              </tr>
+              <tr>
+                <td>Клиника</td>
+                <td>Филиалы, Сотрудники, Кабинеты, Услуги</td>
+                <td>Организационная структура и ресурсы записи.</td>
+              </tr>
+              <tr>
+                <td>Управление</td>
+                <td>Финансы, BI, Склад, Интеграции</td>
+                <td>Административные и управленческие модули.</td>
+              </tr>
+              <tr>
+                <td>Система</td>
+                <td>Пользователи, Роли, Настройки, Audit log</td>
+                <td>Tenant, RBAC, безопасность и конфигурация.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Shell приложения</h3>
+          <ul>
+            <li>
+              Левый sidebar: логотип, группы навигации, активный пункт, компактный режим, права
+              доступа.
+            </li>
+            <li>
+              Верхняя панель: поиск/command palette, филиал, дата/смена, realtime status,
+              уведомления, профиль пользователя.
+            </li>
+            <li>
+              Рабочая область: max-width не ограничивает операционные таблицы; важные экраны
+              используют всю ширину.
+            </li>
+            <li>
+              Правый drawer: быстрый просмотр пациента, записи, счета, звонка или события без ухода
+              со страницы.
+            </li>
+          </ul>
+        </section>
+
+        <section id="screens">
+          <h2>6. ТЗ по экранам</h2>
+
+          <div class="screen">
+            <div class="screen-title">
+              <span>6.1 Login</span>
+              <span class="small"><code>/auth/login</code></span>
+            </div>
+            <div class="screen-body">
+              <p><strong>Цель:</strong> быстро и безопасно войти в клинику/tenant.</p>
+              <ul>
+                <li>
+                  Слева или сверху: MedCRM, короткая формулировка продукта для клиники,
+                  доверительный медицинский визуальный фон без стоковой перегрузки.
+                </li>
+                <li>
+                  Форма: код клиники, email, пароль, submit, состояние загрузки, ошибка,
+                  восстановление доступа.
+                </li>
+                <li>
+                  Поддержать future-state для MFA: экран ввода кода, повторная отправка, истекший
+                  код.
+                </li>
+                <li>
+                  После ошибки не сбрасывать заполненные поля, показывать понятную причину без
+                  раскрытия лишней security-информации.
+                </li>
+              </ul>
+            </div>
           </div>
-          <div class="screen-body">
-            <p><strong>Цель:</strong> превратить текущий список в полноценную CRM-базу пациентов.</p>
-            <ul>
-              <li>Реестр: таблица с ФИО, кодом, телефоном, статусом, тегами, последним визитом, филиалом, менеджером, LTV/future metric.</li>
-              <li>Поиск: единая строка с поддержкой ФИО, телефона, patient code; фильтры по статусу, филиалу, тегу, дубликатам.</li>
-              <li>Создание пациента: drawer или modal, а не отдельная узкая карточка; валидация телефона и подсказка возможных дублей до сохранения.</li>
-              <li>Карточка пациента: header с ФИО, кодом, статусом, контактами, быстрыми действиями "Записать", "Позвонить", "Сообщение", "Заметка".</li>
-              <li>Внутри карточки: timeline, визиты, контакты, документы/согласия, сегменты, история коммуникаций, будущая финансовая вкладка.</li>
-            </ul>
+
+          <div class="screen">
+            <div class="screen-title">
+              <span>6.2 Операционная панель</span>
+              <span class="small"><code>/dashboard</code></span>
+            </div>
+            <div class="screen-body">
+              <p><strong>Цель:</strong> дать управляющему и администратору обзор текущего дня.</p>
+              <ul>
+                <li>
+                  Верхний блок: дата, филиал, смена, realtime status, быстрые действия "Новая
+                  запись", "Новый пациент".
+                </li>
+                <li>
+                  KPI: записи сегодня, пришли, ожидают, отмены/no-show, загрузка врачей,
+                  выручка/ожидаемая оплата.
+                </li>
+                <li>
+                  Операционный список: ближайшие визиты, пациенты в очереди, проблемные записи,
+                  конфликты расписания.
+                </li>
+                <li>
+                  Небольшой график загрузки по часам и по врачам; для реализации использовать
+                  будущий ECharts или аналог.
+                </li>
+                <li>
+                  Виджеты должны иметь empty/loading/error состояния и не показывать технический
+                  JSON.
+                </li>
+              </ul>
+            </div>
           </div>
-        </div>
 
-        <div class="screen">
-          <div class="screen-title">
-            <span>6.4 Расписание</span>
-            <span class="small"><code>/schedule</code></span>
+          <div class="screen">
+            <div class="screen-title">
+              <span>6.3 Пациенты</span>
+              <span class="small"><code>/patients</code>, <code>/patients/[id]</code></span>
+            </div>
+            <div class="screen-body">
+              <p>
+                <strong>Цель:</strong> превратить текущий список в полноценную CRM-базу пациентов.
+              </p>
+              <ul>
+                <li>
+                  Реестр: таблица с ФИО, кодом, телефоном, статусом, тегами, последним визитом,
+                  филиалом, менеджером, LTV/future metric.
+                </li>
+                <li>
+                  Поиск: единая строка с поддержкой ФИО, телефона, patient code; фильтры по статусу,
+                  филиалу, тегу, дубликатам.
+                </li>
+                <li>
+                  Создание пациента: drawer или modal, а не отдельная узкая карточка; валидация
+                  телефона и подсказка возможных дублей до сохранения.
+                </li>
+                <li>
+                  Карточка пациента: header с ФИО, кодом, статусом, контактами, быстрыми действиями
+                  "Записать", "Позвонить", "Сообщение", "Заметка".
+                </li>
+                <li>
+                  Внутри карточки: timeline, визиты, контакты, документы/согласия, сегменты, история
+                  коммуникаций, будущая финансовая вкладка.
+                </li>
+              </ul>
+            </div>
           </div>
-          <div class="screen-body">
-            <p><strong>Цель:</strong> заменить линейный список календарным рабочим инструментом.</p>
-            <ul>
-              <li>Виды: день, неделя, список; MVP по умолчанию - день по врачам/ресурсам.</li>
-              <li>Фильтры: филиал, врач, отделение, кабинет, услуга, статус.</li>
-              <li>Сетка времени: фиксированная левая шкала, колонки врачей/кабинетов, цветные appointment blocks.</li>
-              <li>Booking drawer: пациент, врач, услуга, дата/время, длительность, заметка; сразу показывать conflicts и alternative slots.</li>
-              <li>Действия по записи: confirm, check-in, cancel, reschedule, открыть пациента; кнопки на русском языке.</li>
-            </ul>
+
+          <div class="screen">
+            <div class="screen-title">
+              <span>6.4 Расписание</span>
+              <span class="small"><code>/schedule</code></span>
+            </div>
+            <div class="screen-body">
+              <p>
+                <strong>Цель:</strong> заменить линейный список календарным рабочим инструментом.
+              </p>
+              <ul>
+                <li>Виды: день, неделя, список; MVP по умолчанию - день по врачам/ресурсам.</li>
+                <li>Фильтры: филиал, врач, отделение, кабинет, услуга, статус.</li>
+                <li>
+                  Сетка времени: фиксированная левая шкала, колонки врачей/кабинетов, цветные
+                  appointment blocks.
+                </li>
+                <li>
+                  Booking drawer: пациент, врач, услуга, дата/время, длительность, заметка; сразу
+                  показывать conflicts и alternative slots.
+                </li>
+                <li>
+                  Действия по записи: confirm, check-in, cancel, reschedule, открыть пациента;
+                  кнопки на русском языке.
+                </li>
+              </ul>
+            </div>
           </div>
-        </div>
 
-        <div class="screen">
-          <div class="screen-title">
-            <span>6.5 Регистратура</span>
-            <span class="small"><code>/reception</code></span>
+          <div class="screen">
+            <div class="screen-title">
+              <span>6.5 Регистратура</span>
+              <span class="small"><code>/reception</code></span>
+            </div>
+            <div class="screen-body">
+              <p>
+                <strong>Цель:</strong> сделать АРМ администратора главным операционным экраном
+                клиники.
+              </p>
+              <ul>
+                <li>
+                  Основной экран: today board с колонками "Ожидают", "Пришли", "На приеме", "К
+                  оплате", "Завершено", "Отмены/не пришли".
+                </li>
+                <li>
+                  Карточка визита: время, пациент, врач, кабинет, услуга, статус, VIP/долг/первичный
+                  визит, быстрый check-in.
+                </li>
+                <li>
+                  Правая панель: очередь, быстрый поиск пациента, входящие звонки/future
+                  placeholder, последние события.
+                </li>
+                <li>
+                  Drag-and-drop должен сопровождаться явным visual feedback и confirmation/reason
+                  для критичных переходов.
+                </li>
+                <li>
+                  Realtime-события показывать как мягкие обновления: строка подсвечивается,
+                  появляется "обновлено только что", без резких layout shifts.
+                </li>
+              </ul>
+            </div>
           </div>
-          <div class="screen-body">
-            <p><strong>Цель:</strong> сделать АРМ администратора главным операционным экраном клиники.</p>
-            <ul>
-              <li>Основной экран: today board с колонками "Ожидают", "Пришли", "На приеме", "К оплате", "Завершено", "Отмены/не пришли".</li>
-              <li>Карточка визита: время, пациент, врач, кабинет, услуга, статус, VIP/долг/первичный визит, быстрый check-in.</li>
-              <li>Правая панель: очередь, быстрый поиск пациента, входящие звонки/future placeholder, последние события.</li>
-              <li>Drag-and-drop должен сопровождаться явным visual feedback и confirmation/reason для критичных переходов.</li>
-              <li>Realtime-события показывать как мягкие обновления: строка подсвечивается, появляется "обновлено только что", без резких layout shifts.</li>
-            </ul>
+
+          <div class="screen">
+            <div class="screen-title">
+              <span>6.6 Будущие модули</span>
+              <span class="small">finance, communications, EMR, BI, inventory, integrations</span>
+            </div>
+            <div class="screen-body">
+              <p>
+                <strong>Цель:</strong> заложить паттерны, чтобы новые модули выглядели частью одной
+                системы.
+              </p>
+              <ul>
+                <li>
+                  Каждый модуль получает common page header, filters bar, table/list pattern, empty
+                  state, permissions state.
+                </li>
+                <li>
+                  Finance: счета, оплаты, задолженности, статусы платежей, связь с визитом и
+                  пациентом.
+                </li>
+                <li>
+                  Communications: inbox, шаблоны, история SMS/Email/мессенджеров, consent-aware
+                  действия.
+                </li>
+                <li>BI: спокойные графики, фильтры периода/филиала, drill-down в таблицы.</li>
+                <li>
+                  EMR: визуально отделять клинические данные от CRM-данных и учитывать повышенную
+                  чувствительность информации.
+                </li>
+              </ul>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <div class="screen">
-          <div class="screen-title">
-            <span>6.6 Будущие модули</span>
-            <span class="small">finance, communications, EMR, BI, inventory, integrations</span>
+        <section id="design-system">
+          <h2>7. Дизайн-система</h2>
+
+          <h3>Базовые токены</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Категория</th>
+                <th>Требование</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Типографика</td>
+                <td>
+                  Inter или Geist Sans. Базовый размер 14-15px для рабочих поверхностей, 13px для
+                  вторичных метаданных, 20-28px для заголовков страниц.
+                </td>
+              </tr>
+              <tr>
+                <td>Сетка</td>
+                <td>
+                  8px spacing scale. Shell: sidebar 248-280px, topbar 56-64px, content padding
+                  20-28px. Таблицы и календарь используют всю ширину.
+                </td>
+              </tr>
+              <tr>
+                <td>Радиусы</td>
+                <td>
+                  6-8px для controls и panels. Не использовать чрезмерно круглые карточки для
+                  операционного UI.
+                </td>
+              </tr>
+              <tr>
+                <td>Тени</td>
+                <td>
+                  Минимально: dropdown, modal, drawer. Основная иерархия через фон, границы и
+                  spacing.
+                </td>
+              </tr>
+              <tr>
+                <td>Иконки</td>
+                <td>
+                  Lucide React или аналог: Calendar, Users, Search, Bell, Settings, Stethoscope,
+                  CreditCard, Activity, Plus, MoreHorizontal.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Компоненты</h3>
+          <p>
+            Дизайн должен быть готов к реализации через <code>shared/ui</code> и предпочтительно
+            через TailwindCSS/shadcn/ui, как указано в архитектурном ТЗ. Если зависимости еще не
+            добавлены, дизайн все равно должен поставляться как компонентная система, а не как набор
+            уникальных страниц.
+          </p>
+
+          <div>
+            <span class="tag">Button</span>
+            <span class="tag">IconButton</span>
+            <span class="tag">Input</span>
+            <span class="tag">Select</span>
+            <span class="tag">DateTimePicker</span>
+            <span class="tag">CommandPalette</span>
+            <span class="tag">DataTable</span>
+            <span class="tag">StatusBadge</span>
+            <span class="tag">Tabs</span>
+            <span class="tag">Drawer</span>
+            <span class="tag">Dialog</span>
+            <span class="tag">Toast</span>
+            <span class="tag">Skeleton</span>
+            <span class="tag">CalendarGrid</span>
+            <span class="tag">VisitCard</span>
+            <span class="tag">PatientHeader</span>
+            <span class="tag">Timeline</span>
           </div>
-          <div class="screen-body">
-            <p><strong>Цель:</strong> заложить паттерны, чтобы новые модули выглядели частью одной системы.</p>
-            <ul>
-              <li>Каждый модуль получает common page header, filters bar, table/list pattern, empty state, permissions state.</li>
-              <li>Finance: счета, оплаты, задолженности, статусы платежей, связь с визитом и пациентом.</li>
-              <li>Communications: inbox, шаблоны, история SMS/Email/мессенджеров, consent-aware действия.</li>
-              <li>BI: спокойные графики, фильтры периода/филиала, drill-down в таблицы.</li>
-              <li>EMR: визуально отделять клинические данные от CRM-данных и учитывать повышенную чувствительность информации.</li>
-            </ul>
+
+          <h3>Статусы appointment</h3>
+          <div class="status-grid">
+            <div class="status"><strong>Запланирован</strong>SCHEDULED</div>
+            <div class="status blue"><strong>Подтвержден</strong>CONFIRMED</div>
+            <div class="status amber"><strong>Пришел / ожидает</strong>CHECKED_IN</div>
+            <div class="status violet"><strong>На приеме</strong>IN_PROGRESS</div>
+            <div class="status green"><strong>Завершен</strong>COMPLETED</div>
+            <div class="status red"><strong>Отменен</strong>CANCELLED</div>
+            <div class="status red"><strong>Не пришел</strong>NO_SHOW</div>
+            <div class="status"><strong>Перенесен</strong>RESCHEDULED</div>
           </div>
-        </div>
-      </section>
 
-      <section id="design-system">
-        <h2>7. Дизайн-система</h2>
+          <h3>Микрокопирайтинг</h3>
+          <ul>
+            <li>
+              Пользовательские тексты должны быть на русском языке; технические enum значения не
+              показывать без перевода.
+            </li>
+            <li>
+              Кнопки: "Записать", "Подтвердить", "Отметить приход", "Отменить", "Перенести",
+              "Создать пациента".
+            </li>
+            <li>
+              Ошибки должны объяснять действие: "Врач занят в это время. Выберите другой слот"
+              вместо "Conflict".
+            </li>
+            <li>
+              Пустые состояния должны предлагать следующее действие, а не просто писать "Нет
+              данных".
+            </li>
+          </ul>
+        </section>
 
-        <h3>Базовые токены</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Категория</th>
-              <th>Требование</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Типографика</td>
-              <td>Inter или Geist Sans. Базовый размер 14-15px для рабочих поверхностей, 13px для вторичных метаданных, 20-28px для заголовков страниц.</td>
-            </tr>
-            <tr>
-              <td>Сетка</td>
-              <td>8px spacing scale. Shell: sidebar 248-280px, topbar 56-64px, content padding 20-28px. Таблицы и календарь используют всю ширину.</td>
-            </tr>
-            <tr>
-              <td>Радиусы</td>
-              <td>6-8px для controls и panels. Не использовать чрезмерно круглые карточки для операционного UI.</td>
-            </tr>
-            <tr>
-              <td>Тени</td>
-              <td>Минимально: dropdown, modal, drawer. Основная иерархия через фон, границы и spacing.</td>
-            </tr>
-            <tr>
-              <td>Иконки</td>
-              <td>Lucide React или аналог: Calendar, Users, Search, Bell, Settings, Stethoscope, CreditCard, Activity, Plus, MoreHorizontal.</td>
-            </tr>
-          </tbody>
-        </table>
+        <section id="states">
+          <h2>8. Состояния и UX-правила</h2>
 
-        <h3>Компоненты</h3>
-        <p>
-          Дизайн должен быть готов к реализации через <code>shared/ui</code> и предпочтительно через TailwindCSS/shadcn/ui,
-          как указано в архитектурном ТЗ. Если зависимости еще не добавлены, дизайн все равно должен поставляться как
-          компонентная система, а не как набор уникальных страниц.
-        </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Состояние</th>
+                <th>Требование</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Loading</td>
+                <td>
+                  Skeleton для таблиц, календаря, карточек пациента. Кнопки показывают
+                  spinner/disabled state без изменения ширины.
+                </td>
+              </tr>
+              <tr>
+                <td>Empty</td>
+                <td>
+                  Контекстное пустое состояние: "На сегодня записей нет" + действие "Создать
+                  запись".
+                </td>
+              </tr>
+              <tr>
+                <td>Error</td>
+                <td>
+                  Понятное сообщение, retry, техническая деталь скрыта под раскрытием для
+                  support/admin.
+                </td>
+              </tr>
+              <tr>
+                <td>Permission denied</td>
+                <td>
+                  Скрывать недоступные действия; если пользователь попал на route без прав, показать
+                  нейтральный экран с объяснением.
+                </td>
+              </tr>
+              <tr>
+                <td>Realtime</td>
+                <td>
+                  Показывать online/offline индикатор, время последнего обновления, мягкую подсветку
+                  обновленных элементов.
+                </td>
+              </tr>
+              <tr>
+                <td>Optimistic updates</td>
+                <td>
+                  Для смены статусов показывать pending state и rollback при ошибке с
+                  toast-уведомлением.
+                </td>
+              </tr>
+              <tr>
+                <td>Критичные действия</td>
+                <td>
+                  Отмена визита, блокировка пациента, удаление/архивирование требуют confirmation и
+                  reason, если это предусмотрено backend.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
 
-        <div>
-          <span class="tag">Button</span>
-          <span class="tag">IconButton</span>
-          <span class="tag">Input</span>
-          <span class="tag">Select</span>
-          <span class="tag">DateTimePicker</span>
-          <span class="tag">CommandPalette</span>
-          <span class="tag">DataTable</span>
-          <span class="tag">StatusBadge</span>
-          <span class="tag">Tabs</span>
-          <span class="tag">Drawer</span>
-          <span class="tag">Dialog</span>
-          <span class="tag">Toast</span>
-          <span class="tag">Skeleton</span>
-          <span class="tag">CalendarGrid</span>
-          <span class="tag">VisitCard</span>
-          <span class="tag">PatientHeader</span>
-          <span class="tag">Timeline</span>
-        </div>
+        <section id="responsive">
+          <h2>9. Адаптивность и доступность</h2>
+          <h3>Breakpoints</h3>
+          <ul>
+            <li>
+              Desktop 1440+: полный sidebar, широкие таблицы, календарь с несколькими колонками.
+            </li>
+            <li>
+              Laptop 1024-1439: sidebar может быть компактнее, правые панели открываются drawer-ом.
+            </li>
+            <li>
+              Tablet 768-1023: sidebar collapsible, таблицы переходят в плотный список, календарь
+              ограничивает число колонок.
+            </li>
+            <li>
+              Mobile до 767: основные сценарии read/action only: поиск пациента, check-in, быстрый
+              просмотр очереди, звонок/сообщение.
+            </li>
+          </ul>
 
-        <h3>Статусы appointment</h3>
-        <div class="status-grid">
-          <div class="status"><strong>Запланирован</strong>SCHEDULED</div>
-          <div class="status blue"><strong>Подтвержден</strong>CONFIRMED</div>
-          <div class="status amber"><strong>Пришел / ожидает</strong>CHECKED_IN</div>
-          <div class="status violet"><strong>На приеме</strong>IN_PROGRESS</div>
-          <div class="status green"><strong>Завершен</strong>COMPLETED</div>
-          <div class="status red"><strong>Отменен</strong>CANCELLED</div>
-          <div class="status red"><strong>Не пришел</strong>NO_SHOW</div>
-          <div class="status"><strong>Перенесен</strong>RESCHEDULED</div>
-        </div>
+          <h3>Accessibility</h3>
+          <ul>
+            <li>Контраст текста и интерактивных элементов не ниже WCAG AA.</li>
+            <li>Все кнопки с иконками имеют aria-label и tooltip.</li>
+            <li>Drag-and-drop операции имеют keyboard alternative: меню смены статуса.</li>
+            <li>Фокус видим и не обрезается в таблицах, drawer, dialog, sidebar.</li>
+            <li>
+              Цвет не является единственным способом отличить статус: нужен текст/иконка/форма
+              бейджа.
+            </li>
+          </ul>
+        </section>
 
-        <h3>Микрокопирайтинг</h3>
-        <ul>
-          <li>Пользовательские тексты должны быть на русском языке; технические enum значения не показывать без перевода.</li>
-          <li>Кнопки: "Записать", "Подтвердить", "Отметить приход", "Отменить", "Перенести", "Создать пациента".</li>
-          <li>Ошибки должны объяснять действие: "Врач занят в это время. Выберите другой слот" вместо "Conflict".</li>
-          <li>Пустые состояния должны предлагать следующее действие, а не просто писать "Нет данных".</li>
-        </ul>
-      </section>
+        <section id="delivery">
+          <h2>10. Результаты и критерии приемки</h2>
 
-      <section id="states">
-        <h2>8. Состояния и UX-правила</h2>
+          <h3>Ожидаемые дизайн-результаты</h3>
+          <ol>
+            <li>Figma-файл или эквивалентный дизайн-макет с desktop и mobile состояниями.</li>
+            <li>
+              Компонентная библиотека: tokens, buttons, inputs, tables, badges, drawers, modals,
+              toast, calendar, visit card, patient header.
+            </li>
+            <li>
+              Макеты ключевых экранов: login, shell, dashboard, patients list, patient profile,
+              schedule, reception board.
+            </li>
+            <li>
+              Прототипы ключевых сценариев: создать пациента, создать запись, найти пациента,
+              check-in, отменить визит, открыть карточку из очереди.
+            </li>
+            <li>Документация по статусам, цветам, empty/loading/error/permission состояниям.</li>
+          </ol>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Состояние</th>
-              <th>Требование</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Loading</td>
-              <td>Skeleton для таблиц, календаря, карточек пациента. Кнопки показывают spinner/disabled state без изменения ширины.</td>
-            </tr>
-            <tr>
-              <td>Empty</td>
-              <td>Контекстное пустое состояние: "На сегодня записей нет" + действие "Создать запись".</td>
-            </tr>
-            <tr>
-              <td>Error</td>
-              <td>Понятное сообщение, retry, техническая деталь скрыта под раскрытием для support/admin.</td>
-            </tr>
-            <tr>
-              <td>Permission denied</td>
-              <td>Скрывать недоступные действия; если пользователь попал на route без прав, показать нейтральный экран с объяснением.</td>
-            </tr>
-            <tr>
-              <td>Realtime</td>
-              <td>Показывать online/offline индикатор, время последнего обновления, мягкую подсветку обновленных элементов.</td>
-            </tr>
-            <tr>
-              <td>Optimistic updates</td>
-              <td>Для смены статусов показывать pending state и rollback при ошибке с toast-уведомлением.</td>
-            </tr>
-            <tr>
-              <td>Критичные действия</td>
-              <td>Отмена визита, блокировка пациента, удаление/архивирование требуют confirmation и reason, если это предусмотрено backend.</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+          <h3>Критерии приемки дизайна</h3>
+          <ul class="acceptance">
+            <li>
+              Интерфейс выглядит как единая медицинская SaaS-система, а не как набор MVP-страниц.
+            </li>
+            <li>
+              Администратор может понять состояние клиники за 10 секунд на dashboard или reception
+              screen.
+            </li>
+            <li>
+              Основные действия администратора доступны без перехода между множеством страниц.
+            </li>
+            <li>Все технические enum/status значения переведены в пользовательский язык.</li>
+            <li>
+              Есть явные состояния для loading, empty, error, permission denied, offline/realtime
+              reconnect.
+            </li>
+            <li>
+              Дизайн покрывает desktop и mobile, при этом mobile не ломает таблицы и рабочие панели.
+            </li>
+            <li>
+              Компоненты готовы к реализации в существующей структуре
+              <code>frontend/modules</code> и <code>frontend/shared</code>.
+            </li>
+            <li>
+              Цветовая система не перегружена одним оттенком и поддерживает медицинские статусы без
+              визуального конфликта.
+            </li>
+            <li>
+              Интерфейс учитывает RBAC, tenant/branch context и модульное подключение разделов.
+            </li>
+          </ul>
 
-      <section id="responsive">
-        <h2>9. Адаптивность и доступность</h2>
-        <h3>Breakpoints</h3>
-        <ul>
-          <li>Desktop 1440+: полный sidebar, широкие таблицы, календарь с несколькими колонками.</li>
-          <li>Laptop 1024-1439: sidebar может быть компактнее, правые панели открываются drawer-ом.</li>
-          <li>Tablet 768-1023: sidebar collapsible, таблицы переходят в плотный список, календарь ограничивает число колонок.</li>
-          <li>Mobile до 767: основные сценарии read/action only: поиск пациента, check-in, быстрый просмотр очереди, звонок/сообщение.</li>
-        </ul>
+          <div class="warning">
+            <strong>Важное ограничение реализации:</strong> текущий фронтенд еще не содержит
+            TailwindCSS, shadcn/ui, lucide-react, charting и i18n. Если дизайн будет строиться
+            вокруг этих инструментов, отдельной задачей нужно добавить и настроить зависимости,
+            структуру <code>shared/ui</code>, tokens и базовые layout components.
+          </div>
 
-        <h3>Accessibility</h3>
-        <ul>
-          <li>Контраст текста и интерактивных элементов не ниже WCAG AA.</li>
-          <li>Все кнопки с иконками имеют aria-label и tooltip.</li>
-          <li>Drag-and-drop операции имеют keyboard alternative: меню смены статуса.</li>
-          <li>Фокус видим и не обрезается в таблицах, drawer, dialog, sidebar.</li>
-          <li>Цвет не является единственным способом отличить статус: нужен текст/иконка/форма бейджа.</li>
-        </ul>
-      </section>
-
-      <section id="delivery">
-        <h2>10. Результаты и критерии приемки</h2>
-
-        <h3>Ожидаемые дизайн-результаты</h3>
-        <ol>
-          <li>Figma-файл или эквивалентный дизайн-макет с desktop и mobile состояниями.</li>
-          <li>Компонентная библиотека: tokens, buttons, inputs, tables, badges, drawers, modals, toast, calendar, visit card, patient header.</li>
-          <li>Макеты ключевых экранов: login, shell, dashboard, patients list, patient profile, schedule, reception board.</li>
-          <li>Прототипы ключевых сценариев: создать пациента, создать запись, найти пациента, check-in, отменить визит, открыть карточку из очереди.</li>
-          <li>Документация по статусам, цветам, empty/loading/error/permission состояниям.</li>
-        </ol>
-
-        <h3>Критерии приемки дизайна</h3>
-        <ul class="acceptance">
-          <li>Интерфейс выглядит как единая медицинская SaaS-система, а не как набор MVP-страниц.</li>
-          <li>Администратор может понять состояние клиники за 10 секунд на dashboard или reception screen.</li>
-          <li>Основные действия администратора доступны без перехода между множеством страниц.</li>
-          <li>Все технические enum/status значения переведены в пользовательский язык.</li>
-          <li>Есть явные состояния для loading, empty, error, permission denied, offline/realtime reconnect.</li>
-          <li>Дизайн покрывает desktop и mobile, при этом mobile не ломает таблицы и рабочие панели.</li>
-          <li>Компоненты готовы к реализации в существующей структуре <code>frontend/modules</code> и <code>frontend/shared</code>.</li>
-          <li>Цветовая система не перегружена одним оттенком и поддерживает медицинские статусы без визуального конфликта.</li>
-          <li>Интерфейс учитывает RBAC, tenant/branch context и модульное подключение разделов.</li>
-        </ul>
-
-        <div class="warning">
-          <strong>Важное ограничение реализации:</strong> текущий фронтенд еще не содержит TailwindCSS, shadcn/ui,
-          lucide-react, charting и i18n. Если дизайн будет строиться вокруг этих инструментов, отдельной задачей
-          нужно добавить и настроить зависимости, структуру <code>shared/ui</code>, tokens и базовые layout components.
-        </div>
-
-        <h3>Рекомендуемый порядок реализации после утверждения дизайна</h3>
-        <ol>
-          <li>Подключить дизайн-инфраструктуру: tokens, UI primitives, icons, toast, dialog, drawer, data table.</li>
-          <li>Пересобрать shell: sidebar, topbar, layout, responsive behavior, permissions-aware navigation.</li>
-          <li>Сделать dashboard и patients как основу visual language.</li>
-          <li>Переработать schedule и reception, потому что они несут основной операционный UX.</li>
-          <li>Добавить future-ready паттерны для finance, communications, BI и EMR без реализации лишней бизнес-логики.</li>
-        </ol>
-      </section>
-    </main>
-  </article>
-</body>
+          <h3>Рекомендуемый порядок реализации после утверждения дизайна</h3>
+          <ol>
+            <li>
+              Подключить дизайн-инфраструктуру: tokens, UI primitives, icons, toast, dialog, drawer,
+              data table.
+            </li>
+            <li>
+              Пересобрать shell: sidebar, topbar, layout, responsive behavior, permissions-aware
+              navigation.
+            </li>
+            <li>Сделать dashboard и patients как основу visual language.</li>
+            <li>
+              Переработать schedule и reception, потому что они несут основной операционный UX.
+            </li>
+            <li>
+              Добавить future-ready паттерны для finance, communications, BI и EMR без реализации
+              лишней бизнес-логики.
+            </li>
+          </ol>
+        </section>
+      </main>
+    </article>
+  </body>
 </html>

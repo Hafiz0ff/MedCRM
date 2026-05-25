@@ -1,15 +1,25 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards, UsePipes } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { RequirePermissions } from '@core/security/permissions.decorator';
 import { RequireModule } from '@core/security/modules.decorator';
+import { RequirePermissions } from '@core/security/permissions.decorator';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { ModuleEnabledGuard } from '../../auth/guards/module-enabled.guard';
 import { RbacGuard } from '../../auth/guards/rbac.guard';
-import { BranchesService } from '../services/branches.service';
 import { BranchDto, BranchSchema } from '../dto/organization-structure.schemas';
+import { BranchesService } from '../services/branches.service';
 
 @ApiTags('branches')
 @ApiBearerAuth()

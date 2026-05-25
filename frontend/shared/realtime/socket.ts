@@ -9,9 +9,8 @@ export function getRealtimeSocket(): Socket {
   if (!socket) {
     socket = io(`${process.env.NEXT_PUBLIC_REALTIME_URL ?? 'http://localhost:3000'}/realtime`, {
       auth: { token: getAccessToken() },
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
     });
   }
   return socket;
 }
-

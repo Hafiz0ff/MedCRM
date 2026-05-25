@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Filter, Loader2, ScrollText } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { AuditFilters, AuditLogEntry, useAuditLog } from '../hooks/use-system-admin';
 
 const PAGE_SIZE = 25;
@@ -27,7 +27,7 @@ const knownActions = [
   'system.integration.provider.created',
   'system.integration.provider.updated',
   'system.integration.provider.deleted',
-  'system.integration.provider.key.rotated'
+  'system.integration.provider.key.rotated',
 ];
 
 export function AuditTab() {
@@ -51,9 +51,9 @@ export function AuditTab() {
       dateFrom: dateFrom ? new Date(dateFrom).toISOString() : undefined,
       dateTo: dateTo ? new Date(dateTo).toISOString() : undefined,
       page,
-      pageSize: PAGE_SIZE
+      pageSize: PAGE_SIZE,
     }),
-    [debouncedAction, debouncedUserId, debouncedEntityType, dateFrom, dateTo, page]
+    [debouncedAction, debouncedUserId, debouncedEntityType, dateFrom, dateTo, page],
   );
 
   // Reset to page 1 whenever filters (other than `page`) change.
@@ -84,7 +84,11 @@ export function AuditTab() {
       <div className="audit-filters">
         <div className="field">
           <label>Действие</label>
-          <select className="input" value={action} onChange={(event) => setAction(event.target.value)}>
+          <select
+            className="input"
+            value={action}
+            onChange={(event) => setAction(event.target.value)}
+          >
             {knownActions.map((opt) => (
               <option key={opt} value={opt}>
                 {opt || 'Все действия'}
@@ -200,7 +204,7 @@ export function AuditTab() {
 function AuditRow({
   entry,
   expanded,
-  onToggle
+  onToggle,
 }: {
   entry: AuditLogEntry;
   expanded: boolean;

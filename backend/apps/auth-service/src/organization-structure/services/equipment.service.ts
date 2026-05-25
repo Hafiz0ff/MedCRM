@@ -1,14 +1,14 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EquipmentDto } from '../dto/organization-structure.schemas';
 
 @Injectable()
 export class EquipmentService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly audit: AuditLoggerService
+    private readonly audit: AuditLoggerService,
   ) {}
 
   async list(user: AuthenticatedUser, branchId?: string) {
@@ -17,13 +17,13 @@ export class EquipmentService {
     return this.prisma.equipment.findMany({
       where: {
         tenantId: user.tenantId,
-        branchId: branchId ? branchId : { in: user.branchIds }
+        branchId: branchId ? branchId : { in: user.branchIds },
       },
       include: {
         category: true,
-        room: true
+        room: true,
       },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -35,9 +35,9 @@ export class EquipmentService {
         room: true,
         roomEquipments: {
           include: { room: true },
-          orderBy: { installedAt: 'desc' }
-        }
-      }
+          orderBy: { installedAt: 'desc' },
+        },
+      },
     });
 
     if (!equipment) throw new NotFoundException('Equipment not found');
@@ -49,7 +49,9 @@ export class EquipmentService {
   async create(user: AuthenticatedUser, dto: EquipmentDto) {
     this.assertBranchAccess(user, dto.branchId);
     if (dto.roomId) {
-      const room = await this.prisma.room.findFirst({ where: { id: dto.roomId, tenantId: user.tenantId } });
+      const room = await this.prisma.room.findFirst({
+        where: { id: dto.roomId, tenantId: user.tenantId },
+      });
       if (!room) throw new NotFoundException('Target room not found');
     }
 
@@ -68,8 +70,8 @@ export class EquipmentService {
         maintenanceDate: dto.maintenanceDate ? new Date(dto.maintenanceDate) : null,
         calibrationDate: dto.calibrationDate ? new Date(dto.calibrationDate) : null,
         status: dto.status,
-        isSharedResource: dto.isSharedResource
-      }
+        isSharedResource: dto.isSharedResource,
+      },
     });
 
     if (dto.roomId) {
@@ -77,8 +79,8 @@ export class EquipmentService {
         data: {
           roomId: dto.roomId,
           equipmentId: equipment.id,
-          installedAt: new Date()
-        }
+          installedAt: new Date(),
+        },
       });
     }
 
@@ -89,7 +91,7 @@ export class EquipmentService {
       action: 'equipment.created',
       entityType: 'equipment',
       entityId: equipment.id,
-      newValuesJson: equipment
+      newValuesJson: equipment,
     });
 
     return this.get(user, equipment.id);
@@ -100,7 +102,9 @@ export class EquipmentService {
 
     this.assertBranchAccess(user, dto.branchId);
     if (dto.roomId) {
-      const room = await this.prisma.room.findFirst({ where: { id: dto.roomId, tenantId: user.tenantId } });
+      const room = await this.prisma.room.findFirst({
+        where: { id: dto.roomId, tenantId: user.tenantId },
+      });
       if (!room) throw new NotFoundException('Target room not found');
     }
 
@@ -119,8 +123,8 @@ export class EquipmentService {
         maintenanceDate: dto.maintenanceDate ? new Date(dto.maintenanceDate) : null,
         calibrationDate: dto.calibrationDate ? new Date(dto.calibrationDate) : null,
         status: dto.status,
-        isSharedResource: dto.isSharedResource
-      }
+        isSharedResource: dto.isSharedResource,
+      },
     });
 
     // Sync room history tracking
@@ -128,7 +132,7 @@ export class EquipmentService {
       if (current.roomId) {
         await this.prisma.roomEquipment.updateMany({
           where: { roomId: current.roomId, equipmentId: id, removedAt: null },
-          data: { removedAt: new Date() }
+          data: { removedAt: new Date() },
         });
       }
       if (dto.roomId) {
@@ -136,8 +140,8 @@ export class EquipmentService {
           data: {
             roomId: dto.roomId,
             equipmentId: id,
-            installedAt: new Date()
-          }
+            installedAt: new Date(),
+          },
         });
       }
     }
@@ -150,7 +154,7 @@ export class EquipmentService {
       entityType: 'equipment',
       entityId: equipment.id,
       oldValuesJson: current,
-      newValuesJson: equipment
+      newValuesJson: equipment,
     });
 
     return this.get(user, equipment.id);
@@ -167,7 +171,7 @@ export class EquipmentService {
       userId: user.userId,
       action: 'equipment.deleted',
       entityType: 'equipment',
-      entityId: equipment.id
+      entityId: equipment.id,
     });
 
     return { success: true };

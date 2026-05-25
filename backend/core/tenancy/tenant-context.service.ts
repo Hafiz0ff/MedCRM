@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
+import { Injectable } from '@nestjs/common';
 import { TenantContextValue } from './tenant-context';
 
 @Injectable()
@@ -13,9 +13,9 @@ export class TenantContextService {
         requestId: context.requestId ?? randomUUID(),
         tenantId: context.tenantId,
         tenantCode: context.tenantCode,
-        branchId: context.branchId
+        branchId: context.branchId,
       },
-      callback
+      callback,
     );
   }
 
@@ -23,4 +23,3 @@ export class TenantContextService {
     return this.storage.getStore() ?? { requestId: randomUUID() };
   }
 }
-

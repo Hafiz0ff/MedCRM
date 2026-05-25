@@ -15,4 +15,3 @@ export type AuthenticatedUser = {
   permissions: string[];
   sessionId: string;
 };
-

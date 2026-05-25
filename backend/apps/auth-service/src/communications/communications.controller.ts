@@ -1,13 +1,24 @@
-import { Body, Controller, Get, Param, Post, Put, UseGuards, UsePipes, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { RequirePermissions } from '@core/security/permissions.decorator';
 import { RequireModule } from '@core/security/modules.decorator';
+import { RequirePermissions } from '@core/security/permissions.decorator';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+  UsePipes,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ModuleEnabledGuard } from '../auth/guards/module-enabled.guard';
 import { RbacGuard } from '../auth/guards/rbac.guard';
-import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { CommunicationsService } from './communications.service';
 import {
   SendMessageSchema,
@@ -25,7 +36,7 @@ import {
   UpdatePreferencesSchema,
   UpdatePreferencesDto,
   ChatbotWebhookSchema,
-  ChatbotWebhookDto
+  ChatbotWebhookDto,
 } from './dto/communications.dto';
 
 @ApiTags('communications')
@@ -54,7 +65,7 @@ export class CommunicationsController {
   sendMessage(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') conversationId: string,
-    @Body() dto: SendMessageDto
+    @Body() dto: SendMessageDto,
   ) {
     return this.comms.sendMessage(user, conversationId, dto);
   }
@@ -65,7 +76,7 @@ export class CommunicationsController {
   assignConversation(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') conversationId: string,
-    @Body() dto: AssignConversationDto
+    @Body() dto: AssignConversationDto,
   ) {
     return this.comms.assignConversation(user, conversationId, dto.operatorId);
   }
@@ -89,7 +100,7 @@ export class CommunicationsController {
   updateTemplate(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() dto: UpdateTemplateDto
+    @Body() dto: UpdateTemplateDto,
   ) {
     return this.comms.updateTemplate(user, id, dto);
   }
@@ -97,7 +108,10 @@ export class CommunicationsController {
   @Post('rules')
   @RequirePermissions('communications.rule.manage')
   @UsePipes(new ZodValidationPipe(CreateNotificationRuleSchema))
-  createNotificationRule(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateNotificationRuleDto) {
+  createNotificationRule(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreateNotificationRuleDto,
+  ) {
     return this.comms.createNotificationRule(user, dto);
   }
 
@@ -125,8 +139,17 @@ export class CommunicationsController {
   @Post('webhooks/chatbot')
   @RequirePermissions('communications.chatbot.manage')
   @UsePipes(new ZodValidationPipe(ChatbotWebhookSchema))
-  async handleChatbotWebhook(@CurrentUser() user: AuthenticatedUser, @Body() dto: ChatbotWebhookDto) {
-    return this.comms.handleInboundMessage(user.tenantId, dto.chatId, 'TELEGRAM', dto.text, dto.externalMessageId);
+  async handleChatbotWebhook(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ChatbotWebhookDto,
+  ) {
+    return this.comms.handleInboundMessage(
+      user.tenantId,
+      dto.chatId,
+      'TELEGRAM',
+      dto.text,
+      dto.externalMessageId,
+    );
   }
 
   @Post('webhooks/telegram')
@@ -144,7 +167,7 @@ export class CommunicationsController {
   async handleSmsInbound(
     @CurrentUser() user: AuthenticatedUser,
     @Param('provider') provider: string,
-    @Body() payload: any
+    @Body() payload: any,
   ) {
     const phone = payload.phone || payload.sender || '';
     const text = payload.text || payload.message || '';

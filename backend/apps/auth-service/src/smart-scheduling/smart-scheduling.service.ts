@@ -1,11 +1,17 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { createHash, randomInt } from 'node:crypto';
-import { Prisma } from '@prisma/client';
-import Redis from 'ioredis';
-import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  Inject,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import Redis from 'ioredis';
 import {
   AppointmentListQuery,
   CreateAppointmentDto,
@@ -21,7 +27,7 @@ import {
   RescheduleDto,
   WeekAvailabilityQuery,
   RoomUtilizationQuery,
-  CreateRecurringDto
+  CreateRecurringDto,
 } from './dto/appointment.schemas';
 import { RealtimeGateway } from './realtime.gateway';
 import { RemindersService } from './reminders.service';
@@ -35,7 +41,7 @@ export class SmartSchedulingService {
     private readonly audit: AuditLoggerService,
     private readonly realtime: RealtimeGateway,
     private readonly reminders: RemindersService,
-    @Inject(REDIS_CLIENT) private readonly redis: Redis
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
   // Distributed Lock Helpers (Idempotent Redis locking)
@@ -62,13 +68,13 @@ export class SmartSchedulingService {
           service: true,
           branch: true,
           employee: true,
-          statusHistory: { orderBy: { createdAt: 'desc' }, take: 3 }
+          statusHistory: { orderBy: { createdAt: 'desc' }, take: 3 },
         },
         orderBy: { startAt: 'asc' },
         skip: (query.page - 1) * query.pageSize,
-        take: query.pageSize
+        take: query.pageSize,
       }),
-      this.prisma.appointment.count({ where })
+      this.prisma.appointment.count({ where }),
     ]);
     return { items, total, page: query.page, pageSize: query.pageSize };
   }
@@ -88,7 +94,8 @@ export class SmartSchedulingService {
       if (locked) break;
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    if (!locked) throw new BadRequestException('Slot is currently being processed. Please try again.');
+    if (!locked)
+      throw new BadRequestException('Slot is currently being processed. Please try again.');
 
     try {
       // Auto-resolve required resources based on service requirements
@@ -100,7 +107,7 @@ export class SmartSchedulingService {
           dto.branchId,
           dto.serviceId,
           startAt,
-          endAt
+          endAt,
         );
         roomId = resolved.roomId;
         equipmentIds = resolved.equipmentIds;
@@ -115,7 +122,7 @@ export class SmartSchedulingService {
         endAt,
         undefined,
         roomId,
-        equipmentIds
+        equipmentIds,
       );
 
       const number = await this.nextAppointmentNumber(user.tenantId);
@@ -137,16 +144,45 @@ export class SmartSchedulingService {
             createdBy: user.userId,
             resources: {
               create: [
-                { tenantId: user.tenantId, resourceType: 'EMPLOYEE', resourceId: dto.employeeId, reservedFrom: startAt, reservedTo: endAt },
-                ...(roomId ? [{ tenantId: user.tenantId, resourceType: 'ROOM', resourceId: roomId, reservedFrom: startAt, reservedTo: endAt }] : []),
-                ...equipmentIds.map(eqId => ({ tenantId: user.tenantId, resourceType: 'EQUIPMENT', resourceId: eqId, reservedFrom: startAt, reservedTo: endAt }))
-              ]
+                {
+                  tenantId: user.tenantId,
+                  resourceType: 'EMPLOYEE',
+                  resourceId: dto.employeeId,
+                  reservedFrom: startAt,
+                  reservedTo: endAt,
+                },
+                ...(roomId
+                  ? [
+                      {
+                        tenantId: user.tenantId,
+                        resourceType: 'ROOM',
+                        resourceId: roomId,
+                        reservedFrom: startAt,
+                        reservedTo: endAt,
+                      },
+                    ]
+                  : []),
+                ...equipmentIds.map((eqId) => ({
+                  tenantId: user.tenantId,
+                  resourceType: 'EQUIPMENT',
+                  resourceId: eqId,
+                  reservedFrom: startAt,
+                  reservedTo: endAt,
+                })),
+              ],
             },
             statusHistory: {
-              create: [{ tenantId: user.tenantId, newStatus: 'SCHEDULED', changedBy: user.userId, reason: 'Created' }]
-            }
+              create: [
+                {
+                  tenantId: user.tenantId,
+                  newStatus: 'SCHEDULED',
+                  changedBy: user.userId,
+                  reason: 'Created',
+                },
+              ],
+            },
           },
-          include: { patient: { include: { contacts: true } }, service: true, branch: true }
+          include: { patient: { include: { contacts: true } }, service: true, branch: true },
         });
         return created;
       });
@@ -159,10 +195,20 @@ export class SmartSchedulingService {
         action: 'appointment.created',
         entityType: 'appointment',
         entityId: appointment.id,
-        newValuesJson: appointment
+        newValuesJson: appointment,
       });
-      this.realtime.emitAppointmentEvent('appointment.created', user.tenantId, appointment.branchId, appointment);
-      await this.invalidateAvailabilityCache(user.tenantId, appointment.employeeId, appointment.branchId, appointment.startAt);
+      this.realtime.emitAppointmentEvent(
+        'appointment.created',
+        user.tenantId,
+        appointment.branchId,
+        appointment,
+      );
+      await this.invalidateAvailabilityCache(
+        user.tenantId,
+        appointment.employeeId,
+        appointment.branchId,
+        appointment.startAt,
+      );
       return appointment;
     } finally {
       await this.releaseLock(lockKey);
@@ -185,17 +231,18 @@ export class SmartSchedulingService {
       if (locked) break;
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    if (!locked) throw new BadRequestException('Slot is currently being processed. Please try again.');
+    if (!locked)
+      throw new BadRequestException('Slot is currently being processed. Please try again.');
 
     try {
       // Find current room resource assigned to the appointment
       const currentRoomRes = await this.prisma.appointmentResource.findFirst({
-        where: { appointmentId: id, resourceType: 'ROOM' }
+        where: { appointmentId: id, resourceType: 'ROOM' },
       });
 
       let roomId: string | null = dto.branchId ? null : (currentRoomRes?.resourceId ?? null);
       let equipmentIds: string[] = [];
-      
+
       const serviceId = dto.serviceId ?? current.serviceId;
       if (serviceId) {
         const resolved = await this.resolveRequiredResources(
@@ -204,7 +251,7 @@ export class SmartSchedulingService {
           serviceId,
           startAt,
           endAt,
-          dto.branchId ? null : (currentRoomRes?.resourceId ?? null)
+          dto.branchId ? null : (currentRoomRes?.resourceId ?? null),
         );
         roomId = resolved.roomId;
         equipmentIds = resolved.equipmentIds;
@@ -218,7 +265,7 @@ export class SmartSchedulingService {
         endAt,
         id,
         roomId,
-        equipmentIds
+        equipmentIds,
       );
 
       const updated = await this.prisma.$transaction(async (tx) => {
@@ -240,13 +287,35 @@ export class SmartSchedulingService {
             cancellationReason: dto.cancellationReason,
             resources: {
               create: [
-                { tenantId: user.tenantId, resourceType: 'EMPLOYEE', resourceId: employeeId, reservedFrom: startAt, reservedTo: endAt },
-                ...(roomId ? [{ tenantId: user.tenantId, resourceType: 'ROOM', resourceId: roomId, reservedFrom: startAt, reservedTo: endAt }] : []),
-                ...equipmentIds.map(eqId => ({ tenantId: user.tenantId, resourceType: 'EQUIPMENT', resourceId: eqId, reservedFrom: startAt, reservedTo: endAt }))
-              ]
-            }
+                {
+                  tenantId: user.tenantId,
+                  resourceType: 'EMPLOYEE',
+                  resourceId: employeeId,
+                  reservedFrom: startAt,
+                  reservedTo: endAt,
+                },
+                ...(roomId
+                  ? [
+                      {
+                        tenantId: user.tenantId,
+                        resourceType: 'ROOM',
+                        resourceId: roomId,
+                        reservedFrom: startAt,
+                        reservedTo: endAt,
+                      },
+                    ]
+                  : []),
+                ...equipmentIds.map((eqId) => ({
+                  tenantId: user.tenantId,
+                  resourceType: 'EQUIPMENT',
+                  resourceId: eqId,
+                  reservedFrom: startAt,
+                  reservedTo: endAt,
+                })),
+              ],
+            },
           },
-          include: { patient: { include: { contacts: true } }, service: true, branch: true }
+          include: { patient: { include: { contacts: true } }, service: true, branch: true },
         });
         return appointment;
       });
@@ -259,12 +328,26 @@ export class SmartSchedulingService {
         entityType: 'appointment',
         entityId: id,
         oldValuesJson: current,
-        newValuesJson: updated
+        newValuesJson: updated,
       });
       this.realtime.emitAppointmentEvent('appointment.updated', user.tenantId, branchId, updated);
-      await this.invalidateAvailabilityCache(user.tenantId, updated.employeeId, updated.branchId, updated.startAt);
-      if (current.employeeId !== updated.employeeId || current.startAt.getTime() !== updated.startAt.getTime() || current.branchId !== updated.branchId) {
-        await this.invalidateAvailabilityCache(user.tenantId, current.employeeId, current.branchId, current.startAt);
+      await this.invalidateAvailabilityCache(
+        user.tenantId,
+        updated.employeeId,
+        updated.branchId,
+        updated.startAt,
+      );
+      if (
+        current.employeeId !== updated.employeeId ||
+        current.startAt.getTime() !== updated.startAt.getTime() ||
+        current.branchId !== updated.branchId
+      ) {
+        await this.invalidateAvailabilityCache(
+          user.tenantId,
+          current.employeeId,
+          current.branchId,
+          current.startAt,
+        );
       }
       return updated;
     } finally {
@@ -288,10 +371,17 @@ export class SmartSchedulingService {
       const appointment = await tx.appointment.update({
         where: { id },
         data,
-        include: { patient: { include: { contacts: true } }, service: true, branch: true }
+        include: { patient: { include: { contacts: true } }, service: true, branch: true },
       });
       await tx.appointmentStatusHistory.create({
-        data: { tenantId: user.tenantId, appointmentId: id, oldStatus: current.status, newStatus: status, changedBy: user.userId, reason }
+        data: {
+          tenantId: user.tenantId,
+          appointmentId: id,
+          oldStatus: current.status,
+          newStatus: status,
+          changedBy: user.userId,
+          reason,
+        },
       });
       return appointment;
     });
@@ -304,14 +394,19 @@ export class SmartSchedulingService {
       entityType: 'appointment',
       entityId: id,
       oldValuesJson: current,
-      newValuesJson: updated
+      newValuesJson: updated,
     });
 
     await this.recalculateMetrics(user.tenantId, updated.patientId);
 
-     const event = status === 'CHECKED_IN' ? 'appointment.checked_in' : 'appointment.updated';
+    const event = status === 'CHECKED_IN' ? 'appointment.checked_in' : 'appointment.updated';
     this.realtime.emitAppointmentEvent(event, user.tenantId, updated.branchId, updated);
-    await this.invalidateAvailabilityCache(user.tenantId, updated.employeeId, updated.branchId, updated.startAt);
+    await this.invalidateAvailabilityCache(
+      user.tenantId,
+      updated.employeeId,
+      updated.branchId,
+      updated.startAt,
+    );
 
     // If cancelled, trigger Waiting List slot matching flow
     if (status === 'CANCELLED') {
@@ -325,7 +420,7 @@ export class SmartSchedulingService {
     const where = this.buildWhere(user, query);
     const appointments = await this.prisma.appointment.findMany({
       where,
-      select: { employeeId: true, startAt: true, endAt: true, status: true }
+      select: { employeeId: true, startAt: true, endAt: true, status: true },
     });
     return { busy: appointments.filter((item) => ACTIVE_STATUSES.includes(item.status)) };
   }
@@ -338,13 +433,16 @@ export class SmartSchedulingService {
         tenantId: user.tenantId,
         slotKey,
         reservedBy: user.userId,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000)
-      }
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
     });
   }
 
   services(user: AuthenticatedUser) {
-    return this.prisma.service.findMany({ where: { tenantId: user.tenantId, isActive: true }, orderBy: { name: 'asc' } });
+    return this.prisma.service.findMany({
+      where: { tenantId: user.tenantId, isActive: true },
+      orderBy: { name: 'asc' },
+    });
   }
 
   async doctors(user: AuthenticatedUser) {
@@ -356,18 +454,18 @@ export class SmartSchedulingService {
           some: {
             branchId: { in: user.branchIds },
             activeTo: null,
-            position: { isMedicalStaff: true }
-          }
-        }
+            position: { isMedicalStaff: true },
+          },
+        },
       },
       include: {
         positions: {
           where: { branchId: { in: user.branchIds }, activeTo: null },
           include: { branch: true, position: true, specialty: true },
-          orderBy: { isPrimary: 'desc' }
-        }
+          orderBy: { isPrimary: 'desc' },
+        },
       },
-      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }]
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     });
 
     return employees.map((employee) => {
@@ -377,16 +475,22 @@ export class SmartSchedulingService {
         name: `${employee.lastName} ${employee.firstName}`,
         branchId: primaryPosition?.branchId ?? user.branchIds[0],
         branchName: primaryPosition?.branch.name ?? 'Филиал не назначен',
-        role: primaryPosition?.specialty?.name ?? primaryPosition?.position.name ?? 'Врач'
+        role: primaryPosition?.specialty?.name ?? primaryPosition?.position.name ?? 'Врач',
       };
     });
   }
 
   // Conflict Resolution Helpers
-  private async checkEntitySchedule(tenantId: string, entityType: string, entityId: string, startAt: Date, endAt: Date) {
+  private async checkEntitySchedule(
+    tenantId: string,
+    entityType: string,
+    entityId: string,
+    startAt: Date,
+    endAt: Date,
+  ) {
     const dateStr = startAt.toISOString().slice(0, 10);
     const exception = await this.prisma.scheduleException.findFirst({
-      where: { tenantId, entityType, entityId, exceptionDate: new Date(dateStr) }
+      where: { tenantId, entityType, entityId, exceptionDate: new Date(dateStr) },
     });
 
     if (exception) {
@@ -401,14 +505,16 @@ export class SmartSchedulingService {
         const exceptionEnd = new Date(startAt);
         exceptionEnd.setHours(eEndH, eEndM, 0, 0);
         if (startAt < exceptionStart || endAt > exceptionEnd) {
-          throw new BadRequestException(`${entityType} working hours on this date are restricted to ${exception.startTime}-${exception.endTime}`);
+          throw new BadRequestException(
+            `${entityType} working hours on this date are restricted to ${exception.startTime}-${exception.endTime}`,
+          );
         }
       }
     }
 
     const weekday = startAt.getDay() === 0 ? 7 : startAt.getDay();
     const schedules = await this.prisma.workingSchedule.findMany({
-      where: { tenantId, entityType, entityId, weekday, isActive: true }
+      where: { tenantId, entityType, entityId, weekday, isActive: true },
     });
 
     if (schedules.length > 0) {
@@ -439,7 +545,9 @@ export class SmartSchedulingService {
         }
       }
       if (!withinSchedule) {
-        throw new BadRequestException(`${entityType} schedule does not allow bookings at this hour`);
+        throw new BadRequestException(
+          `${entityType} schedule does not allow bookings at this hour`,
+        );
       }
     }
   }
@@ -450,10 +558,10 @@ export class SmartSchedulingService {
     resourceId: string,
     startAt: Date,
     endAt: Date,
-    excludeAppointmentId?: string
+    excludeAppointmentId?: string,
   ) {
     const buffer = await this.prisma.resourceBuffer.findUnique({
-      where: { tenantId_resourceType_resourceId: { tenantId, resourceType, resourceId } }
+      where: { tenantId_resourceType_resourceId: { tenantId, resourceType, resourceId } },
     });
     const beforeMinutes = buffer?.beforeMinutes ?? 0;
     const afterMinutes = buffer?.afterMinutes ?? 0;
@@ -469,13 +577,15 @@ export class SmartSchedulingService {
         appointmentId: excludeAppointmentId ? { not: excludeAppointmentId } : undefined,
         appointment: { status: { in: ACTIVE_STATUSES } },
         reservedFrom: { lt: newEndWithBuffer },
-        reservedTo: { gt: newStartWithBuffer }
+        reservedTo: { gt: newStartWithBuffer },
       },
-      include: { appointment: true }
+      include: { appointment: true },
     });
 
     if (conflict) {
-      throw new BadRequestException(`${resourceType} is already occupied by appointment ${conflict.appointment.appointmentNumber}`);
+      throw new BadRequestException(
+        `${resourceType} is already occupied by appointment ${conflict.appointment.appointmentNumber}`,
+      );
     }
   }
 
@@ -487,7 +597,7 @@ export class SmartSchedulingService {
     endAt: Date,
     excludeAppointmentId?: string,
     roomId?: string | null,
-    equipmentIds: string[] = []
+    equipmentIds: string[] = [],
   ) {
     await this.checkEntitySchedule(tenantId, 'branch', branchId, startAt, endAt);
     await this.checkEntitySchedule(tenantId, 'employee', employeeId, startAt, endAt);
@@ -510,19 +620,25 @@ export class SmartSchedulingService {
     startAt: Date,
     endAt: Date,
     requestedRoomId?: string | null,
-    requestedEquipmentIds: string[] = []
+    requestedEquipmentIds: string[] = [],
   ): Promise<{ roomId: string | null; equipmentIds: string[] }> {
     let resolvedRoomId: string | null = requestedRoomId ?? null;
     const resolvedEquipmentIds: string[] = [...requestedEquipmentIds];
 
     const requiredResources = await this.prisma.serviceRequiredResource.findMany({
-      where: { tenantId, serviceId }
+      where: { tenantId, serviceId },
     });
 
     const roomReq = requiredResources.find((r) => r.resourceType === 'ROOM_TYPE');
     if (roomReq && !resolvedRoomId) {
       const rooms = await this.prisma.room.findMany({
-        where: { tenantId, branchId, roomTypeId: roomReq.resourceCategoryId, isActive: true, status: 'ACTIVE' }
+        where: {
+          tenantId,
+          branchId,
+          roomTypeId: roomReq.resourceCategoryId,
+          isActive: true,
+          status: 'ACTIVE',
+        },
       });
       for (const rm of rooms) {
         try {
@@ -540,12 +656,12 @@ export class SmartSchedulingService {
     const eqReqs = requiredResources.filter((r) => r.resourceType === 'EQUIPMENT_CATEGORY');
     for (const eqReq of eqReqs) {
       const alreadyHasCategory = await this.prisma.equipment.findFirst({
-        where: { id: { in: resolvedEquipmentIds }, categoryId: eqReq.resourceCategoryId }
+        where: { id: { in: resolvedEquipmentIds }, categoryId: eqReq.resourceCategoryId },
       });
 
       if (!alreadyHasCategory) {
         const equipmentItems = await this.prisma.equipment.findMany({
-          where: { tenantId, branchId, categoryId: eqReq.resourceCategoryId, status: 'ACTIVE' }
+          where: { tenantId, branchId, categoryId: eqReq.resourceCategoryId, status: 'ACTIVE' },
         });
         let foundEqId: string | null = null;
         for (const eq of equipmentItems) {
@@ -571,7 +687,7 @@ export class SmartSchedulingService {
     return this.prisma.waitingList.findMany({
       where: { tenantId: user.tenantId, status: 'ACTIVE' },
       include: { patient: true, employee: true, service: true },
-      orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }]
+      orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
     });
   }
 
@@ -589,14 +705,14 @@ export class SmartSchedulingService {
         preferredTimeTo: dto.preferredTimeTo,
         serviceId: dto.serviceId,
         priority: dto.priority,
-        notes: dto.notes
-      }
+        notes: dto.notes,
+      },
     });
   }
 
   async updateWaitingList(user: AuthenticatedUser, id: string, dto: UpdateWaitingListDto) {
     const entry = await this.prisma.waitingList.findFirst({
-      where: { id, tenantId: user.tenantId }
+      where: { id, tenantId: user.tenantId },
     });
     if (!entry) throw new NotFoundException('Waiting list entry not found');
     if (dto.branchId) this.assertBranchAccess(user, dto.branchId);
@@ -613,14 +729,14 @@ export class SmartSchedulingService {
         serviceId: dto.serviceId,
         priority: dto.priority,
         notes: dto.notes,
-        status: dto.status
-      }
+        status: dto.status,
+      },
     });
   }
 
   async deleteWaitingList(user: AuthenticatedUser, id: string) {
     const entry = await this.prisma.waitingList.findFirst({
-      where: { id, tenantId: user.tenantId }
+      where: { id, tenantId: user.tenantId },
     });
     if (!entry) throw new NotFoundException('Waiting list entry not found');
     await this.prisma.waitingList.delete({ where: { id } });
@@ -634,9 +750,9 @@ export class SmartSchedulingService {
         branchId: appointment.branchId,
         status: 'ACTIVE',
         preferredDateFrom: { lte: appointment.startAt },
-        preferredDateTo: { gte: appointment.startAt }
+        preferredDateTo: { gte: appointment.startAt },
       },
-      orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }]
+      orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
     });
 
     const appHourMin = appointment.startAt.toISOString().slice(11, 16); // e.g. "14:30"
@@ -650,7 +766,7 @@ export class SmartSchedulingService {
       // Found a match!
       await this.prisma.waitingList.update({
         where: { id: entry.id },
-        data: { status: 'MATCHED' }
+        data: { status: 'MATCHED' },
       });
 
       // Create a temporary slot reservation for the patient
@@ -662,18 +778,23 @@ export class SmartSchedulingService {
           tenantId: user.tenantId,
           slotKey,
           reservedBy: entry.patientId,
-          expiresAt: new Date(Date.now() + 10 * 60 * 1000)
-        }
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        },
       });
 
       // Emit event
-      this.realtime.emitAppointmentEvent('waitinglist.matched', user.tenantId, appointment.branchId, {
-        waitingListId: entry.id,
-        patientId: entry.patientId,
-        slotKey,
-        startAt: appointment.startAt,
-        endAt: appointment.endAt
-      });
+      this.realtime.emitAppointmentEvent(
+        'waitinglist.matched',
+        user.tenantId,
+        appointment.branchId,
+        {
+          waitingListId: entry.id,
+          patientId: entry.patientId,
+          slotKey,
+          startAt: appointment.startAt,
+          endAt: appointment.endAt,
+        },
+      );
       break; // Only match the first priority patient
     }
   }
@@ -681,7 +802,7 @@ export class SmartSchedulingService {
   // Buffers logic
   async listResourceBuffers(user: AuthenticatedUser) {
     return this.prisma.resourceBuffer.findMany({
-      where: { tenantId: user.tenantId }
+      where: { tenantId: user.tenantId },
     });
   }
 
@@ -691,26 +812,26 @@ export class SmartSchedulingService {
         tenantId_resourceType_resourceId: {
           tenantId: user.tenantId,
           resourceType: dto.resourceType,
-          resourceId: dto.resourceId
-        }
+          resourceId: dto.resourceId,
+        },
       },
       update: {
         beforeMinutes: dto.beforeMinutes,
-        afterMinutes: dto.afterMinutes
+        afterMinutes: dto.afterMinutes,
       },
       create: {
         tenantId: user.tenantId,
         resourceType: dto.resourceType,
         resourceId: dto.resourceId,
         beforeMinutes: dto.beforeMinutes,
-        afterMinutes: dto.afterMinutes
-      }
+        afterMinutes: dto.afterMinutes,
+      },
     });
   }
 
   async deleteResourceBuffer(user: AuthenticatedUser, id: string) {
     const buf = await this.prisma.resourceBuffer.findFirst({
-      where: { id, tenantId: user.tenantId }
+      where: { id, tenantId: user.tenantId },
     });
     if (!buf) throw new NotFoundException('Resource buffer not found');
     await this.prisma.resourceBuffer.delete({ where: { id } });
@@ -718,7 +839,12 @@ export class SmartSchedulingService {
   }
 
   // Availability Cache Helper
-  private async invalidateAvailabilityCache(tenantId: string, employeeId: string, branchId: string, date: Date) {
+  private async invalidateAvailabilityCache(
+    tenantId: string,
+    employeeId: string,
+    branchId: string,
+    date: Date,
+  ) {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     try {
@@ -727,8 +853,8 @@ export class SmartSchedulingService {
           tenantId,
           employeeId,
           branchId,
-          date: startOfDay
-        }
+          date: startOfDay,
+        },
       });
     } catch (err: any) {
       console.error(`Failed to invalidate availability cache: ${err.message}`);
@@ -747,11 +873,12 @@ export class SmartSchedulingService {
     const employees = query.employeeId
       ? [{ id: query.employeeId }]
       : await this.prisma.employee.findMany({
-          where: { tenantId: user.tenantId, status: 'ACTIVE' }
+          where: { tenantId: user.tenantId, status: 'ACTIVE' },
         });
 
     const duration = query.serviceId
-      ? (await this.prisma.service.findUnique({ where: { id: query.serviceId } }))?.durationMinutes ?? 30
+      ? ((await this.prisma.service.findUnique({ where: { id: query.serviceId } }))
+          ?.durationMinutes ?? 30)
       : 30;
 
     const availableSlots: string[] = [];
@@ -763,11 +890,11 @@ export class SmartSchedulingService {
           tenantId: user.tenantId,
           employeeId: emp.id,
           branchId: query.branchId,
-          date: startOfDay
-        }
+          date: startOfDay,
+        },
       });
 
-      if (cache && (Date.now() - new Date(cache.recalculatedAt).getTime() < 5 * 60 * 1000)) {
+      if (cache && Date.now() - new Date(cache.recalculatedAt).getTime() < 5 * 60 * 1000) {
         const cachedSlots = cache.availableSlotsJson as string[];
         availableSlots.push(...cachedSlots);
         continue;
@@ -776,7 +903,13 @@ export class SmartSchedulingService {
       // 2. Otherwise compute on-the-fly
       const employeeSlots: string[] = [];
       const schedules = await this.prisma.workingSchedule.findMany({
-        where: { tenantId: user.tenantId, entityType: 'employee', entityId: emp.id, weekday, isActive: true }
+        where: {
+          tenantId: user.tenantId,
+          entityType: 'employee',
+          entityId: emp.id,
+          weekday,
+          isActive: true,
+        },
       });
       if (schedules.length === 0) continue;
 
@@ -802,7 +935,7 @@ export class SmartSchedulingService {
                 query.branchId,
                 query.serviceId,
                 currentSlotStart,
-                slotEnd
+                slotEnd,
               );
               roomId = resolved.roomId;
               equipmentIds = resolved.equipmentIds;
@@ -816,13 +949,13 @@ export class SmartSchedulingService {
               slotEnd,
               undefined,
               roomId,
-              equipmentIds
+              equipmentIds,
             );
 
             // Double check if slot is temporarily reserved
             const slotKey = `${query.branchId}:${emp.id}:${currentSlotStart.toISOString()}:${slotEnd.toISOString()}`;
             const reserved = await this.prisma.appointmentReservation.findFirst({
-              where: { tenantId: user.tenantId, slotKey, expiresAt: { gt: new Date() } }
+              where: { tenantId: user.tenantId, slotKey, expiresAt: { gt: new Date() } },
             });
 
             if (!reserved) {
@@ -842,12 +975,12 @@ export class SmartSchedulingService {
               tenantId: user.tenantId,
               employeeId: emp.id,
               branchId: query.branchId,
-              date: startOfDay
-            }
+              date: startOfDay,
+            },
           },
           update: {
             availableSlotsJson: employeeSlots,
-            recalculatedAt: new Date()
+            recalculatedAt: new Date(),
           },
           create: {
             tenantId: user.tenantId,
@@ -855,8 +988,8 @@ export class SmartSchedulingService {
             branchId: query.branchId,
             date: startOfDay,
             availableSlotsJson: employeeSlots,
-            recalculatedAt: new Date()
-          }
+            recalculatedAt: new Date(),
+          },
         });
       } catch (err: any) {
         console.error(`Failed to write to availability cache: ${err.message}`);
@@ -867,7 +1000,6 @@ export class SmartSchedulingService {
 
     return { date: query.date, slots: Array.from(new Set(availableSlots)).sort() };
   }
-
 
   async onlineBookingReserve(user: AuthenticatedUser, dto: OnlineBookingReserveDto) {
     this.assertBranchAccess(user, dto.branchId);
@@ -883,7 +1015,7 @@ export class SmartSchedulingService {
         dto.branchId,
         dto.serviceId,
         startAt,
-        endAt
+        endAt,
       );
       roomId = resolved.roomId;
       equipmentIds = resolved.equipmentIds;
@@ -897,7 +1029,7 @@ export class SmartSchedulingService {
       endAt,
       undefined,
       roomId,
-      equipmentIds
+      equipmentIds,
     );
 
     const slotKey = `${dto.branchId}:${dto.employeeId}:${dto.startAt}:${dto.endAt}`;
@@ -908,8 +1040,8 @@ export class SmartSchedulingService {
         tenantId: user.tenantId,
         slotKey,
         reservedBy: dto.patientId,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000)
-      }
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
     });
 
     const token = createHash('sha256').update(`${slotKey}:${Date.now()}`).digest('hex');
@@ -918,8 +1050,8 @@ export class SmartSchedulingService {
         tenantId: user.tenantId,
         patientId: dto.patientId,
         token,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000)
-      }
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
     });
 
     const code = String(randomInt(1000, 9999));
@@ -934,14 +1066,18 @@ export class SmartSchedulingService {
     }
 
     const bookingToken = await this.prisma.onlineBookingToken.findFirst({
-      where: { token: dto.token, tenantId: user.tenantId, expiresAt: { gt: new Date() } }
+      where: { token: dto.token, tenantId: user.tenantId, expiresAt: { gt: new Date() } },
     });
     if (!bookingToken) {
       throw new BadRequestException('Online booking token expired or invalid');
     }
 
     const reservation = await this.prisma.appointmentReservation.findFirst({
-      where: { tenantId: user.tenantId, reservedBy: bookingToken.patientId, expiresAt: { gt: new Date() } }
+      where: {
+        tenantId: user.tenantId,
+        reservedBy: bookingToken.patientId,
+        expiresAt: { gt: new Date() },
+      },
     });
     if (!reservation) {
       throw new BadRequestException('Reservation expired. Please start over.');
@@ -959,7 +1095,7 @@ export class SmartSchedulingService {
       endAt: endAt.toISOString(),
       bookingSource: 'ONLINE_WIDGET',
       appointmentType: 'CONSULTATION',
-      notes: 'Online booking self-registration'
+      notes: 'Online booking self-registration',
     });
 
     await this.prisma.onlineBookingToken.delete({ where: { id: bookingToken.id } });
@@ -979,7 +1115,7 @@ export class SmartSchedulingService {
     const updated = await this.update(user, id, {
       startAt: dto.newStartAt,
       endAt: dto.newEndAt,
-      status: 'RESCHEDULED'
+      status: 'RESCHEDULED',
     });
 
     // Then transition back to SCHEDULED
@@ -987,7 +1123,7 @@ export class SmartSchedulingService {
       const app = await tx.appointment.update({
         where: { id },
         data: { status: 'SCHEDULED' },
-        include: { patient: { include: { contacts: true } }, service: true, branch: true }
+        include: { patient: { include: { contacts: true } }, service: true, branch: true },
       });
       await tx.appointmentStatusHistory.create({
         data: {
@@ -996,14 +1132,24 @@ export class SmartSchedulingService {
           oldStatus: 'RESCHEDULED',
           newStatus: 'SCHEDULED',
           changedBy: user.userId,
-          reason: dto.reason ?? 'Rescheduled'
-        }
+          reason: dto.reason ?? 'Rescheduled',
+        },
       });
       return app;
     });
 
-    this.realtime.emitAppointmentEvent('appointment.updated', user.tenantId, current.branchId, rescheduled);
-    await this.invalidateAvailabilityCache(user.tenantId, rescheduled.employeeId, rescheduled.branchId, rescheduled.startAt);
+    this.realtime.emitAppointmentEvent(
+      'appointment.updated',
+      user.tenantId,
+      current.branchId,
+      rescheduled,
+    );
+    await this.invalidateAvailabilityCache(
+      user.tenantId,
+      rescheduled.employeeId,
+      rescheduled.branchId,
+      rescheduled.startAt,
+    );
     return rescheduled;
   }
 
@@ -1015,8 +1161,10 @@ export class SmartSchedulingService {
     const maxOccurrences = 52; // safety limit
     const appointments: any[] = [];
 
-    let currentDate = new Date(startAt);
-    const limitDate = recurrence.endDate ? new Date(recurrence.endDate) : new Date(startAt.getTime() + 365 * 24 * 60 * 60 * 1000);
+    const currentDate = new Date(startAt);
+    const limitDate = recurrence.endDate
+      ? new Date(recurrence.endDate)
+      : new Date(startAt.getTime() + 365 * 24 * 60 * 60 * 1000);
 
     for (let i = 0; i < maxOccurrences && currentDate <= limitDate; i++) {
       const slotStart = new Date(currentDate);
@@ -1026,7 +1174,7 @@ export class SmartSchedulingService {
         const created = await this.create(user, {
           ...appointmentData,
           startAt: slotStart.toISOString(),
-          endAt: slotEnd.toISOString()
+          endAt: slotEnd.toISOString(),
         });
 
         // Link recurrence rule to first appointment
@@ -1037,8 +1185,8 @@ export class SmartSchedulingService {
               appointmentId: created.id,
               recurrenceType: recurrence.recurrenceType,
               interval: recurrence.interval,
-              endDate: recurrence.endDate ? new Date(recurrence.endDate) : null
-            }
+              endDate: recurrence.endDate ? new Date(recurrence.endDate) : null,
+            },
           });
         }
 
@@ -1076,7 +1224,7 @@ export class SmartSchedulingService {
           branchId: query.branchId,
           employeeId: query.employeeId,
           serviceId: query.serviceId,
-          date: dateStr
+          date: dateStr,
         });
         days.push({ date: dateStr, slots: result.slots, slotsCount: result.slots.length });
       } catch {
@@ -1094,31 +1242,39 @@ export class SmartSchedulingService {
     dateTo.setUTCHours(23, 59, 59, 999);
 
     const rooms = await this.prisma.room.findMany({
-      where: { tenantId: user.tenantId, branchId: query.branchId, isActive: true }
+      where: { tenantId: user.tenantId, branchId: query.branchId, isActive: true },
     });
 
     const resources = await this.prisma.appointmentResource.findMany({
       where: {
         tenantId: user.tenantId,
         resourceType: 'ROOM',
-        resourceId: { in: rooms.map(r => r.id) },
+        resourceId: { in: rooms.map((r) => r.id) },
         reservedFrom: { gte: dateFrom },
         reservedTo: { lte: dateTo },
-        appointment: { status: { in: ['SCHEDULED', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED'] } }
+        appointment: {
+          status: { in: ['SCHEDULED', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED'] },
+        },
       },
-      include: { appointment: true }
+      include: { appointment: true },
     });
 
-    const totalDays = Math.max(1, Math.ceil((dateTo.getTime() - dateFrom.getTime()) / (24 * 60 * 60 * 1000)));
+    const totalDays = Math.max(
+      1,
+      Math.ceil((dateTo.getTime() - dateFrom.getTime()) / (24 * 60 * 60 * 1000)),
+    );
     const workingHoursPerDay = 10; // 08:00-18:00
     const totalMinutesAvailable = totalDays * workingHoursPerDay * 60;
 
-    return rooms.map(room => {
-      const roomResources = resources.filter(r => r.resourceId === room.id);
+    return rooms.map((room) => {
+      const roomResources = resources.filter((r) => r.resourceId === room.id);
       const totalMinutesBooked = roomResources.reduce((sum, r) => {
         return sum + Math.round((r.reservedTo.getTime() - r.reservedFrom.getTime()) / 60000);
       }, 0);
-      const utilizationPercent = Math.min(100, Math.round((totalMinutesBooked / totalMinutesAvailable) * 100));
+      const utilizationPercent = Math.min(
+        100,
+        Math.round((totalMinutesBooked / totalMinutesAvailable) * 100),
+      );
 
       return {
         roomId: room.id,
@@ -1127,7 +1283,7 @@ export class SmartSchedulingService {
         totalAppointments: roomResources.length,
         totalMinutesBooked,
         totalMinutesAvailable,
-        utilizationPercent
+        utilizationPercent,
       };
     });
   }
@@ -1141,26 +1297,50 @@ export class SmartSchedulingService {
       ...(query.employeeId ? { employeeId: query.employeeId } : {}),
       ...(query.status ? { status: query.status } : {}),
       ...(query.dateFrom || query.dateTo
-        ? { startAt: { ...(query.dateFrom ? { gte: new Date(query.dateFrom) } : {}), ...(query.dateTo ? { lte: new Date(query.dateTo) } : {}) } }
-        : {})
+        ? {
+            startAt: {
+              ...(query.dateFrom ? { gte: new Date(query.dateFrom) } : {}),
+              ...(query.dateTo ? { lte: new Date(query.dateTo) } : {}),
+            },
+          }
+        : {}),
     };
   }
 
   private async nextAppointmentNumber(tenantId: string): Promise<string> {
+    const exists = await this.redis.exists(`tenant:${tenantId}:appointment_seq`);
+    if (!exists) {
+      const lastApp = await this.prisma.appointment.findFirst({
+        where: { tenantId },
+        orderBy: { appointmentNumber: 'desc' },
+      });
+      let seq = 0;
+      if (lastApp) {
+        const match = lastApp.appointmentNumber.match(/\d+/);
+        if (match) {
+          seq = parseInt(match[0], 10);
+        }
+      }
+      await this.redis.set(`tenant:${tenantId}:appointment_seq`, seq);
+    }
     const seq = await this.redis.incr(`tenant:${tenantId}:appointment_seq`);
     return `A-${String(seq).padStart(6, '0')}`;
   }
 
   private async assertPatientAccess(user: AuthenticatedUser, patientId: string, branchId: string) {
     const patient = await this.prisma.patient.findFirst({
-      where: { id: patientId, tenantId: user.tenantId, OR: [{ registrationBranchId: null }, { registrationBranchId: branchId }] }
+      where: {
+        id: patientId,
+        tenantId: user.tenantId,
+        OR: [{ registrationBranchId: null }, { registrationBranchId: branchId }],
+      },
     });
     if (!patient) throw new BadRequestException('Patient is not available in this branch');
   }
 
   private async getForUser(user: AuthenticatedUser, id: string) {
     const appointment = await this.prisma.appointment.findFirst({
-      where: { id, tenantId: user.tenantId, branchId: { in: user.branchIds } }
+      where: { id, tenantId: user.tenantId, branchId: { in: user.branchIds } },
     });
     if (!appointment) throw new NotFoundException('Appointment not found');
     return appointment;
@@ -1172,23 +1352,24 @@ export class SmartSchedulingService {
 
   async recalculateMetrics(tenantId: string, patientId: string) {
     const appointments = await this.prisma.appointment.findMany({
-      where: { tenantId, patientId }
+      where: { tenantId, patientId },
     });
 
-    const completed = appointments.filter(a => a.status === 'COMPLETED');
-    const cancellations = appointments.filter(a => a.status === 'CANCELLED').length;
-    const missed = appointments.filter(a => a.status === 'NO_SHOW').length;
+    const completed = appointments.filter((a) => a.status === 'COMPLETED');
+    const cancellations = appointments.filter((a) => a.status === 'CANCELLED').length;
+    const missed = appointments.filter((a) => a.status === 'NO_SHOW').length;
     const totalVisits = completed.length;
 
     const invoices = await this.prisma.invoice.findMany({
-      where: { tenantId, patientId, status: 'PAID' }
+      where: { tenantId, patientId, status: 'PAID' },
     });
     const totalRevenue = invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
     const averageCheck = totalVisits > 0 ? totalRevenue / totalVisits : 0;
 
-    const lastVisit = completed.length > 0
-      ? new Date(Math.max(...completed.map(c => c.startAt.getTime())))
-      : null;
+    const lastVisit =
+      completed.length > 0
+        ? new Date(Math.max(...completed.map((c) => c.startAt.getTime())))
+        : null;
 
     await this.prisma.patientCrmMetric.upsert({
       where: { patientId },
@@ -1199,7 +1380,7 @@ export class SmartSchedulingService {
         averageCheck: new Prisma.Decimal(averageCheck),
         missedAppointments: missed,
         cancellations,
-        lastVisitAt: lastVisit
+        lastVisitAt: lastVisit,
       },
       create: {
         tenantId,
@@ -1210,8 +1391,8 @@ export class SmartSchedulingService {
         averageCheck: new Prisma.Decimal(averageCheck),
         missedAppointments: missed,
         cancellations,
-        lastVisitAt: lastVisit
-      }
+        lastVisitAt: lastVisit,
+      },
     });
   }
 }

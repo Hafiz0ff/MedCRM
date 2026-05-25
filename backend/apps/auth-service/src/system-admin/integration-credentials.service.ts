@@ -1,20 +1,20 @@
 import { createHash, randomBytes } from 'node:crypto';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { PrismaService } from '@core/database/prisma.service';
+import { AuthenticatedUser } from '@core/security/jwt-payload';
 import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from '@nestjs/common';
-import * as argon2 from 'argon2';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '@core/database/prisma.service';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
-import { AuthenticatedUser } from '@core/security/jwt-payload';
+import * as argon2 from 'argon2';
 import { RealtimeGateway } from '../smart-scheduling/realtime.gateway';
 import {
   CreateIntegrationProviderDto,
-  UpdateIntegrationProviderDto
+  UpdateIntegrationProviderDto,
 } from './dto/integration-credentials.dto';
 
 type StoredCredentialState = {
@@ -37,13 +37,13 @@ export class IntegrationCredentialsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditLoggerService,
-    private readonly realtime: RealtimeGateway
+    private readonly realtime: RealtimeGateway,
   ) {}
 
   async listProviders(user: AuthenticatedUser) {
     const providers = await this.prisma.integrationProvider.findMany({
       where: { tenantId: user.tenantId },
-      orderBy: [{ providerType: 'asc' }, { providerCode: 'asc' }]
+      orderBy: [{ providerType: 'asc' }, { providerCode: 'asc' }],
     });
     return providers.map((p) => ({
       id: p.id,
@@ -55,17 +55,17 @@ export class IntegrationCredentialsService {
       isActive: p.isActive,
       createdAt: p.createdAt,
       apiKeyPrefix: extractCredentialState(p.configurationJson).apiKeyPrefix ?? null,
-      configuration: redactCredentials(p.configurationJson)
+      configuration: redactCredentials(p.configurationJson),
     }));
   }
 
   async createProvider(user: AuthenticatedUser, dto: CreateIntegrationProviderDto) {
     const conflict = await this.prisma.integrationProvider.findFirst({
-      where: { tenantId: user.tenantId, providerCode: dto.providerCode }
+      where: { tenantId: user.tenantId, providerCode: dto.providerCode },
     });
     if (conflict) {
       throw new ConflictException(
-        `Integration provider with code "${dto.providerCode}" already exists`
+        `Integration provider with code "${dto.providerCode}" already exists`,
       );
     }
 
@@ -80,8 +80,8 @@ export class IntegrationCredentialsService {
         authenticationType: dto.authenticationType,
         rateLimitPerMinute: dto.rateLimitPerMinute ?? 60,
         configurationJson: configuration as Prisma.InputJsonValue,
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     await this.audit.log({
@@ -95,14 +95,14 @@ export class IntegrationCredentialsService {
         providerCode: provider.providerCode,
         providerName: provider.providerName,
         authenticationType: provider.authenticationType,
-        apiKeyPrefix: (configuration as StoredCredentialState).apiKeyPrefix
-      }
+        apiKeyPrefix: (configuration as StoredCredentialState).apiKeyPrefix,
+      },
     });
 
     this.realtime.emitTenantSystemEvent('tenant.integration.created', user.tenantId, {
       tenantId: user.tenantId,
       providerId: provider.id,
-      providerCode: provider.providerCode
+      providerCode: provider.providerCode,
     });
 
     return {
@@ -113,21 +113,21 @@ export class IntegrationCredentialsService {
       authenticationType: provider.authenticationType,
       apiKey,
       apiKeyPrefix: (configuration as StoredCredentialState).apiKeyPrefix,
-      issuedAt: (configuration as StoredCredentialState).apiKeyIssuedAt
+      issuedAt: (configuration as StoredCredentialState).apiKeyIssuedAt,
     };
   }
 
   async updateProvider(
     user: AuthenticatedUser,
     providerId: string,
-    dto: UpdateIntegrationProviderDto
+    dto: UpdateIntegrationProviderDto,
   ) {
     const existing = await this.assertOwnedProvider(user.tenantId, providerId);
     const existingState = extractCredentialState(existing.configurationJson);
 
     const mergedConfig: StoredCredentialState = {
       ...(existing.configurationJson as Record<string, unknown>),
-      ...(dto.configuration ?? {})
+      ...(dto.configuration ?? {}),
     };
     // Forbid overwriting credential metadata via free-form configuration.
     mergedConfig.apiKeyHash = existingState.apiKeyHash;
@@ -144,8 +144,8 @@ export class IntegrationCredentialsService {
           ? { rateLimitPerMinute: dto.rateLimitPerMinute }
           : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
-        configurationJson: mergedConfig as Prisma.InputJsonValue
-      }
+        configurationJson: mergedConfig as Prisma.InputJsonValue,
+      },
     });
 
     await this.audit.log({
@@ -157,32 +157,28 @@ export class IntegrationCredentialsService {
       oldValuesJson: {
         providerName: existing.providerName,
         rateLimitPerMinute: existing.rateLimitPerMinute,
-        isActive: existing.isActive
+        isActive: existing.isActive,
       },
       newValuesJson: {
         providerName: updated.providerName,
         rateLimitPerMinute: updated.rateLimitPerMinute,
-        isActive: updated.isActive
-      }
+        isActive: updated.isActive,
+      },
     });
 
-    this.realtime.emitTenantSystemEvent(
-      'tenant.integration.updated',
-      user.tenantId,
-      {
-        tenantId: user.tenantId,
-        providerId,
-        providerCode: updated.providerCode,
-        isActive: updated.isActive
-      }
-    );
+    this.realtime.emitTenantSystemEvent('tenant.integration.updated', user.tenantId, {
+      tenantId: user.tenantId,
+      providerId,
+      providerCode: updated.providerCode,
+      isActive: updated.isActive,
+    });
 
     return {
       id: updated.id,
       providerName: updated.providerName,
       rateLimitPerMinute: updated.rateLimitPerMinute,
       isActive: updated.isActive,
-      configuration: redactCredentials(updated.configurationJson)
+      configuration: redactCredentials(updated.configurationJson),
     };
   }
 
@@ -192,12 +188,12 @@ export class IntegrationCredentialsService {
 
     const { apiKey, configuration } = await this.generateApiKey(
       (existing.configurationJson as Record<string, unknown>) ?? {},
-      { rotated: true }
+      { rotated: true },
     );
 
     const updated = await this.prisma.integrationProvider.update({
       where: { id: providerId },
-      data: { configurationJson: configuration as Prisma.InputJsonValue }
+      data: { configurationJson: configuration as Prisma.InputJsonValue },
     });
 
     await this.audit.log({
@@ -208,26 +204,22 @@ export class IntegrationCredentialsService {
       entityId: providerId,
       oldValuesJson: { apiKeyPrefix: previousState.apiKeyPrefix ?? null },
       newValuesJson: {
-        apiKeyPrefix: (configuration as StoredCredentialState).apiKeyPrefix
-      }
+        apiKeyPrefix: (configuration as StoredCredentialState).apiKeyPrefix,
+      },
     });
 
-    this.realtime.emitTenantSystemEvent(
-      'tenant.integration.key.rotated',
-      user.tenantId,
-      {
-        tenantId: user.tenantId,
-        providerId,
-        providerCode: existing.providerCode,
-        apiKeyPrefix: (configuration as StoredCredentialState).apiKeyPrefix
-      }
-    );
+    this.realtime.emitTenantSystemEvent('tenant.integration.key.rotated', user.tenantId, {
+      tenantId: user.tenantId,
+      providerId,
+      providerCode: existing.providerCode,
+      apiKeyPrefix: (configuration as StoredCredentialState).apiKeyPrefix,
+    });
 
     return {
       id: updated.id,
       apiKey,
       apiKeyPrefix: (configuration as StoredCredentialState).apiKeyPrefix,
-      rotatedAt: (configuration as StoredCredentialState).apiKeyLastRotatedAt
+      rotatedAt: (configuration as StoredCredentialState).apiKeyLastRotatedAt,
     };
   }
 
@@ -244,19 +236,15 @@ export class IntegrationCredentialsService {
       entityId: providerId,
       oldValuesJson: {
         providerType: existing.providerType,
-        providerCode: existing.providerCode
-      }
+        providerCode: existing.providerCode,
+      },
     });
 
-    this.realtime.emitTenantSystemEvent(
-      'tenant.integration.deleted',
-      user.tenantId,
-      {
-        tenantId: user.tenantId,
-        providerId,
-        providerCode: existing.providerCode
-      }
-    );
+    this.realtime.emitTenantSystemEvent('tenant.integration.deleted', user.tenantId, {
+      tenantId: user.tenantId,
+      providerId,
+      providerCode: existing.providerCode,
+    });
 
     return { ok: true };
   }
@@ -272,7 +260,7 @@ export class IntegrationCredentialsService {
     const fingerprint = createHash('sha256').update(apiKey).digest('hex').slice(0, 32);
 
     const candidates = await this.prisma.integrationProvider.findMany({
-      where: { tenantId, isActive: true }
+      where: { tenantId, isActive: true },
     });
     for (const candidate of candidates) {
       const state = extractCredentialState(candidate.configurationJson);
@@ -282,7 +270,7 @@ export class IntegrationCredentialsService {
           return {
             providerId: candidate.id,
             providerCode: candidate.providerCode,
-            providerType: candidate.providerType
+            providerType: candidate.providerType,
           };
         }
       }
@@ -292,7 +280,7 @@ export class IntegrationCredentialsService {
 
   private async assertOwnedProvider(tenantId: string, providerId: string) {
     const provider = await this.prisma.integrationProvider.findUnique({
-      where: { id: providerId }
+      where: { id: providerId },
     });
     if (!provider) {
       throw new NotFoundException('Integration provider not found');
@@ -305,7 +293,7 @@ export class IntegrationCredentialsService {
 
   private async generateApiKey(
     baseConfig: Record<string, unknown>,
-    options: { rotated?: boolean } = {}
+    options: { rotated?: boolean } = {},
   ) {
     const secret = randomBytes(32).toString('base64url');
     const apiKey = `mck_live_${secret}`;
@@ -320,9 +308,11 @@ export class IntegrationCredentialsService {
       apiKeyPrefix,
       apiKeyFingerprint,
       apiKeyIssuedAt: options.rotated
-        ? (baseConfig.apiKeyIssuedAt as string | undefined) ?? now
+        ? ((baseConfig.apiKeyIssuedAt as string | undefined) ?? now)
         : now,
-      apiKeyLastRotatedAt: options.rotated ? now : (baseConfig.apiKeyLastRotatedAt as string | undefined) ?? undefined
+      apiKeyLastRotatedAt: options.rotated
+        ? now
+        : ((baseConfig.apiKeyLastRotatedAt as string | undefined) ?? undefined),
     };
 
     return { apiKey, configuration };

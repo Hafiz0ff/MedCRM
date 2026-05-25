@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter } from 'node:events';
+import { Injectable, Logger } from '@nestjs/common';
 
 export type DomainEvent<T = any> = {
   eventName: string;

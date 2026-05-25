@@ -1,15 +1,26 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards, UsePipes, Headers, Query, BadRequestException } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { RequirePermissions } from '@core/security/permissions.decorator';
 import { RequireModule } from '@core/security/modules.decorator';
+import { RequirePermissions } from '@core/security/permissions.decorator';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+  UsePipes,
+  Headers,
+  Query,
+  BadRequestException,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ModuleEnabledGuard } from '../auth/guards/module-enabled.guard';
 import { RbacGuard } from '../auth/guards/rbac.guard';
-import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
-import { IntegrationGatewayService } from './integration.service';
-import { Request } from 'express';
 import {
   CreateLabOrderSchema,
   CreateLabOrderDto,
@@ -20,8 +31,9 @@ import {
   CallEventWebhookSchema,
   CallEventWebhookDto,
   DeviceMeasurementSchema,
-  DeviceMeasurementDto
+  DeviceMeasurementDto,
 } from './dto/integration.dto';
+import { IntegrationGatewayService } from './integration.service';
 
 @ApiTags('integration')
 @ApiBearerAuth()
@@ -40,7 +52,7 @@ export class IntegrationGatewayController {
     @Param('type') webhookType: string,
     @Headers('x-signature-sha256') signature: string,
     @Headers() headers: Record<string, string>,
-    @Body() payload: any
+    @Body() payload: any,
   ) {
     return this.gateway.handleIncomingWebhook(
       user.tenantId,
@@ -48,7 +60,7 @@ export class IntegrationGatewayController {
       webhookType,
       headers,
       payload,
-      signature
+      signature,
     );
   }
 
@@ -66,7 +78,7 @@ export class IntegrationGatewayController {
   submitLabResult(
     @CurrentUser() user: AuthenticatedUser,
     @Param('provider') providerCode: string,
-    @Body() dto: SubmitLabResultDto
+    @Body() dto: SubmitLabResultDto,
   ) {
     return this.gateway.submitLabResult(user.tenantId, providerCode, dto);
   }
@@ -92,7 +104,7 @@ export class IntegrationGatewayController {
   processTelephonyWebhook(
     @CurrentUser() user: AuthenticatedUser,
     @Param('provider') providerCode: string,
-    @Body() dto: CallEventWebhookDto
+    @Body() dto: CallEventWebhookDto,
   ) {
     if (dto.providerCode !== providerCode) {
       throw new BadRequestException('Несоответствие кода провайдера телефонии');
@@ -104,7 +116,10 @@ export class IntegrationGatewayController {
   @Post('devices/measurements')
   @RequirePermissions('integration.gateway.manage')
   @UsePipes(new ZodValidationPipe(DeviceMeasurementSchema))
-  recordDeviceMeasurement(@CurrentUser() user: AuthenticatedUser, @Body() dto: DeviceMeasurementDto) {
+  recordDeviceMeasurement(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: DeviceMeasurementDto,
+  ) {
     return this.gateway.recordDeviceMeasurement(user, dto);
   }
 

@@ -1,20 +1,20 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { BranchDto } from '../dto/organization-structure.schemas';
 
 @Injectable()
 export class BranchesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly audit: AuditLoggerService
+    private readonly audit: AuditLoggerService,
   ) {}
 
   async list(user: AuthenticatedUser) {
     return this.prisma.branch.findMany({
       where: { tenantId: user.tenantId },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -27,8 +27,8 @@ export class BranchesService {
         address: dto.address,
         phone: dto.phone,
         timezone: dto.timezone,
-        status: dto.isActive ? 'active' : 'inactive'
-      }
+        status: dto.isActive ? 'active' : 'inactive',
+      },
     });
 
     await this.audit.log({
@@ -38,7 +38,7 @@ export class BranchesService {
       action: 'branch.created',
       entityType: 'branch',
       entityId: branch.id,
-      newValuesJson: branch
+      newValuesJson: branch,
     });
 
     return branch;
@@ -46,7 +46,7 @@ export class BranchesService {
 
   async update(user: AuthenticatedUser, id: string, dto: BranchDto) {
     const current = await this.prisma.branch.findFirst({
-      where: { id, tenantId: user.tenantId }
+      where: { id, tenantId: user.tenantId },
     });
     if (!current) throw new NotFoundException('Branch not found');
 
@@ -58,8 +58,8 @@ export class BranchesService {
         address: dto.address,
         phone: dto.phone,
         timezone: dto.timezone,
-        status: dto.isActive ? 'active' : 'inactive'
-      }
+        status: dto.isActive ? 'active' : 'inactive',
+      },
     });
 
     await this.audit.log({
@@ -70,7 +70,7 @@ export class BranchesService {
       entityType: 'branch',
       entityId: branch.id,
       oldValuesJson: current,
-      newValuesJson: branch
+      newValuesJson: branch,
     });
 
     return branch;
@@ -78,7 +78,7 @@ export class BranchesService {
 
   async delete(user: AuthenticatedUser, id: string) {
     const branch = await this.prisma.branch.findFirst({
-      where: { id, tenantId: user.tenantId }
+      where: { id, tenantId: user.tenantId },
     });
     if (!branch) throw new NotFoundException('Branch not found');
 
@@ -90,7 +90,7 @@ export class BranchesService {
       userId: user.userId,
       action: 'branch.deleted',
       entityType: 'branch',
-      entityId: branch.id
+      entityId: branch.id,
     });
 
     return { success: true };

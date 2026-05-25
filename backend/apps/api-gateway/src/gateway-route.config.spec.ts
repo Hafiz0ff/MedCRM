@@ -1,6 +1,11 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { compatibilityRoutes, internalRoutes, publicRoutes, websocketRoutes } from './gateway-route.config';
+import { describe, it } from 'node:test';
+import {
+  compatibilityRoutes,
+  internalRoutes,
+  publicRoutes,
+  websocketRoutes,
+} from './gateway-route.config';
 
 describe('gateway route config', () => {
   it('proxies every implemented backend domain through the public v1 API', () => {
@@ -31,7 +36,7 @@ describe('gateway route config', () => {
       '/api/v1/services',
       '/api/v1/slots',
       '/api/v1/system',
-      '/api/v1/waiting-list'
+      '/api/v1/waiting-list',
     ]);
   });
 
@@ -47,6 +52,9 @@ describe('gateway route config', () => {
   });
 
   it('declares websocket proxy routes explicitly', () => {
-    assert.deepEqual(websocketRoutes.map((route) => route.gatewayPrefix), ['/socket.io', '/realtime']);
+    assert.deepEqual(
+      websocketRoutes.map((route) => route.gatewayPrefix),
+      ['/socket.io', '/realtime'],
+    );
   });
 });

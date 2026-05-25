@@ -1,3 +1,7 @@
+import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
+import { CurrentUser } from '@core/security/current-user.decorator';
+import { AuthenticatedUser } from '@core/security/jwt-payload';
+import { RequirePermissions } from '@core/security/permissions.decorator';
 import {
   Body,
   Controller,
@@ -9,25 +13,19 @@ import {
   Put,
   Query,
   UseGuards,
-  UsePipes
+  UsePipes,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser } from '@core/security/current-user.decorator';
-import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { RequirePermissions } from '@core/security/permissions.decorator';
-import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../auth/guards/rbac.guard';
-import { TenantSettingsService } from './tenant-settings.service';
-import { RoleManagementService } from './role-management.service';
-import { IntegrationCredentialsService } from './integration-credentials.service';
 import { AuditLogService } from './audit-log.service';
+import { AuditLogQueryDto, AuditLogQuerySchema } from './dto/audit-log.dto';
 import {
-  UpdateTenantModuleDto,
-  UpdateTenantModuleSchema,
-  UpdateTenantProfileDto,
-  UpdateTenantProfileSchema
-} from './dto/tenant-settings.dto';
+  CreateIntegrationProviderDto,
+  CreateIntegrationProviderSchema,
+  UpdateIntegrationProviderDto,
+  UpdateIntegrationProviderSchema,
+} from './dto/integration-credentials.dto';
 import {
   AssignUserRolesDto,
   AssignUserRolesSchema,
@@ -36,15 +34,17 @@ import {
   SetRolePermissionsDto,
   SetRolePermissionsSchema,
   UpdateRoleDto,
-  UpdateRoleSchema
+  UpdateRoleSchema,
 } from './dto/role-management.dto';
 import {
-  CreateIntegrationProviderDto,
-  CreateIntegrationProviderSchema,
-  UpdateIntegrationProviderDto,
-  UpdateIntegrationProviderSchema
-} from './dto/integration-credentials.dto';
-import { AuditLogQueryDto, AuditLogQuerySchema } from './dto/audit-log.dto';
+  UpdateTenantModuleDto,
+  UpdateTenantModuleSchema,
+  UpdateTenantProfileDto,
+  UpdateTenantProfileSchema,
+} from './dto/tenant-settings.dto';
+import { IntegrationCredentialsService } from './integration-credentials.service';
+import { RoleManagementService } from './role-management.service';
+import { TenantSettingsService } from './tenant-settings.service';
 
 @ApiTags('system-admin')
 @ApiBearerAuth()
@@ -55,7 +55,7 @@ export class SystemAdminController {
     private readonly settings: TenantSettingsService,
     private readonly roles: RoleManagementService,
     private readonly integrations: IntegrationCredentialsService,
-    private readonly auditLog: AuditLogService
+    private readonly auditLog: AuditLogService,
   ) {}
 
   // Tenant profile & modules ------------------------------------------------
@@ -69,10 +69,7 @@ export class SystemAdminController {
   @Patch('tenant')
   @RequirePermissions('system.settings.manage')
   @UsePipes(new ZodValidationPipe(UpdateTenantProfileSchema))
-  updateTenantProfile(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: UpdateTenantProfileDto
-  ) {
+  updateTenantProfile(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateTenantProfileDto) {
     return this.settings.updateTenantProfile(user, dto);
   }
 
@@ -88,7 +85,7 @@ export class SystemAdminController {
   updateTenantModule(
     @CurrentUser() user: AuthenticatedUser,
     @Param('moduleCode') moduleCode: string,
-    @Body() dto: UpdateTenantModuleDto
+    @Body() dto: UpdateTenantModuleDto,
   ) {
     return this.settings.updateTenantModule(user, moduleCode, dto);
   }
@@ -120,7 +117,7 @@ export class SystemAdminController {
   updateRole(
     @CurrentUser() user: AuthenticatedUser,
     @Param('roleId') roleId: string,
-    @Body() dto: UpdateRoleDto
+    @Body() dto: UpdateRoleDto,
   ) {
     return this.roles.updateRole(user, roleId, dto);
   }
@@ -137,7 +134,7 @@ export class SystemAdminController {
   setRolePermissions(
     @CurrentUser() user: AuthenticatedUser,
     @Param('roleId') roleId: string,
-    @Body() dto: SetRolePermissionsDto
+    @Body() dto: SetRolePermissionsDto,
   ) {
     return this.roles.setRolePermissions(user, roleId, dto);
   }
@@ -160,7 +157,7 @@ export class SystemAdminController {
   assignUserRoles(
     @CurrentUser() user: AuthenticatedUser,
     @Param('userId') userId: string,
-    @Body() dto: AssignUserRolesDto
+    @Body() dto: AssignUserRolesDto,
   ) {
     return this.roles.assignUserRoles(user, userId, dto);
   }
@@ -178,7 +175,7 @@ export class SystemAdminController {
   @UsePipes(new ZodValidationPipe(CreateIntegrationProviderSchema))
   createIntegration(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: CreateIntegrationProviderDto
+    @Body() dto: CreateIntegrationProviderDto,
   ) {
     return this.integrations.createProvider(user, dto);
   }
@@ -189,7 +186,7 @@ export class SystemAdminController {
   updateIntegration(
     @CurrentUser() user: AuthenticatedUser,
     @Param('providerId') providerId: string,
-    @Body() dto: UpdateIntegrationProviderDto
+    @Body() dto: UpdateIntegrationProviderDto,
   ) {
     return this.integrations.updateProvider(user, providerId, dto);
   }
@@ -198,7 +195,7 @@ export class SystemAdminController {
   @RequirePermissions('integration.gateway.manage')
   rotateIntegrationKey(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('providerId') providerId: string
+    @Param('providerId') providerId: string,
   ) {
     return this.integrations.rotateApiKey(user, providerId);
   }
@@ -207,7 +204,7 @@ export class SystemAdminController {
   @RequirePermissions('integration.gateway.manage')
   deleteIntegration(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('providerId') providerId: string
+    @Param('providerId') providerId: string,
   ) {
     return this.integrations.deleteProvider(user, providerId);
   }
@@ -218,7 +215,7 @@ export class SystemAdminController {
   @RequirePermissions('system.audit.read')
   listAuditLogs(
     @CurrentUser() user: AuthenticatedUser,
-    @Query(new ZodValidationPipe(AuditLogQuerySchema)) query: AuditLogQueryDto
+    @Query(new ZodValidationPipe(AuditLogQuerySchema)) query: AuditLogQueryDto,
   ) {
     return this.auditLog.list(user, query);
   }

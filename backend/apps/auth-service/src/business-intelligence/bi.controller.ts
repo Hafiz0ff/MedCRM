@@ -1,13 +1,23 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards, UsePipes, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { RequirePermissions } from '@core/security/permissions.decorator';
 import { RequireModule } from '@core/security/modules.decorator';
+import { RequirePermissions } from '@core/security/permissions.decorator';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+  UsePipes,
+  Query,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ModuleEnabledGuard } from '../auth/guards/module-enabled.guard';
 import { RbacGuard } from '../auth/guards/rbac.guard';
-import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { BusinessIntelligenceService } from './bi.service';
 import {
   AnalyticsFilterSchema,
@@ -15,7 +25,7 @@ import {
   CreateScheduledReportSchema,
   CreateScheduledReportDto,
   RecalculateMetricsSchema,
-  RecalculateMetricsDto
+  RecalculateMetricsDto,
 } from './dto/bi.dto';
 
 @ApiTags('analytics')
@@ -31,7 +41,7 @@ export class BusinessIntelligenceController {
   @RequirePermissions('analytics.financial.view')
   getFinancialBoard(
     @CurrentUser() user: AuthenticatedUser,
-    @Query(new ZodValidationPipe(AnalyticsFilterSchema)) filters: AnalyticsFilterDto
+    @Query(new ZodValidationPipe(AnalyticsFilterSchema)) filters: AnalyticsFilterDto,
   ) {
     return this.bi.getFinancialBoard(user.tenantId, filters);
   }
@@ -41,7 +51,7 @@ export class BusinessIntelligenceController {
   @RequirePermissions('analytics.marketing.view')
   getMarketingAnalytics(
     @CurrentUser() user: AuthenticatedUser,
-    @Query(new ZodValidationPipe(AnalyticsFilterSchema)) filters: AnalyticsFilterDto
+    @Query(new ZodValidationPipe(AnalyticsFilterSchema)) filters: AnalyticsFilterDto,
   ) {
     return this.bi.getMarketingAnalytics(user.tenantId, filters);
   }
@@ -51,7 +61,7 @@ export class BusinessIntelligenceController {
   @RequirePermissions('analytics.operations.view')
   getOperationalMetrics(
     @CurrentUser() user: AuthenticatedUser,
-    @Query(new ZodValidationPipe(AnalyticsFilterSchema)) filters: AnalyticsFilterDto
+    @Query(new ZodValidationPipe(AnalyticsFilterSchema)) filters: AnalyticsFilterDto,
   ) {
     return this.bi.getOperationalMetrics(user.tenantId, filters);
   }
@@ -61,7 +71,7 @@ export class BusinessIntelligenceController {
   @RequirePermissions('analytics.operations.view')
   getDoctorKpis(
     @CurrentUser() user: AuthenticatedUser,
-    @Query(new ZodValidationPipe(AnalyticsFilterSchema)) filters: AnalyticsFilterDto
+    @Query(new ZodValidationPipe(AnalyticsFilterSchema)) filters: AnalyticsFilterDto,
   ) {
     return this.bi.getDoctorKpis(user.tenantId, filters);
   }
@@ -79,7 +89,7 @@ export class BusinessIntelligenceController {
   @UsePipes(new ZodValidationPipe(CreateScheduledReportSchema))
   createScheduledReport(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: CreateScheduledReportDto
+    @Body() dto: CreateScheduledReportDto,
   ) {
     return this.bi.createScheduledReport(user, dto);
   }
@@ -88,7 +98,7 @@ export class BusinessIntelligenceController {
   @RequirePermissions('analytics.reports.manage')
   triggerScheduledReportGeneration(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('id') id: string
+    @Param('id') id: string,
   ) {
     return this.bi.triggerScheduledReportGeneration(user.tenantId, id);
   }
@@ -97,10 +107,7 @@ export class BusinessIntelligenceController {
   @Post('recalculate')
   @RequirePermissions('analytics.reports.manage')
   @UsePipes(new ZodValidationPipe(RecalculateMetricsSchema))
-  recalculateMetrics(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: RecalculateMetricsDto
-  ) {
+  recalculateMetrics(@CurrentUser() user: AuthenticatedUser, @Body() dto: RecalculateMetricsDto) {
     return this.bi.syncOltpToDwh(user.tenantId, dto);
   }
 }

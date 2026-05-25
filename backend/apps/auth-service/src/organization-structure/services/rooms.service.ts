@@ -1,14 +1,14 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { RoomDto, EmployeeRoomAssignmentDto } from '../dto/organization-structure.schemas';
 
 @Injectable()
 export class RoomsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly audit: AuditLoggerService
+    private readonly audit: AuditLoggerService,
   ) {}
 
   async list(user: AuthenticatedUser, branchId?: string) {
@@ -17,14 +17,14 @@ export class RoomsService {
     return this.prisma.room.findMany({
       where: {
         tenantId: user.tenantId,
-        branchId: branchId ? branchId : { in: user.branchIds }
+        branchId: branchId ? branchId : { in: user.branchIds },
       },
       include: {
         roomType: true,
         specialties: { include: { specialty: true } },
-        equipment: { include: { category: true } }
+        equipment: { include: { category: true } },
       },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -38,10 +38,10 @@ export class RoomsService {
         assignments: {
           include: {
             employee: true,
-            specialty: true
-          }
-        }
-      }
+            specialty: true,
+          },
+        },
+      },
     });
 
     if (!room) throw new NotFoundException('Room not found');
@@ -66,8 +66,8 @@ export class RoomsService {
         description: dto.description,
         scheduleJson: dto.scheduleJson ?? undefined,
         status: dto.status,
-        isActive: dto.isActive
-      }
+        isActive: dto.isActive,
+      },
     });
 
     if (dto.specialtyIds) {
@@ -81,7 +81,7 @@ export class RoomsService {
       action: 'room.created',
       entityType: 'room',
       entityId: room.id,
-      newValuesJson: room
+      newValuesJson: room,
     });
 
     return this.get(user, room.id);
@@ -103,8 +103,8 @@ export class RoomsService {
         description: dto.description,
         scheduleJson: dto.scheduleJson ?? undefined,
         status: dto.status,
-        isActive: dto.isActive
-      }
+        isActive: dto.isActive,
+      },
     });
 
     if (dto.specialtyIds) {
@@ -119,7 +119,7 @@ export class RoomsService {
       entityType: 'room',
       entityId: room.id,
       oldValuesJson: current,
-      newValuesJson: room
+      newValuesJson: room,
     });
 
     return this.get(user, room.id);
@@ -136,7 +136,7 @@ export class RoomsService {
       userId: user.userId,
       action: 'room.deleted',
       entityType: 'room',
-      entityId: room.id
+      entityId: room.id,
     });
 
     return { success: true };
@@ -149,8 +149,8 @@ export class RoomsService {
       where: { tenantId: user.tenantId, roomId },
       include: {
         employee: true,
-        specialty: true
-      }
+        specialty: true,
+      },
     });
   }
 
@@ -168,8 +168,8 @@ export class RoomsService {
         specialtyId: dto.specialtyId,
         activeFrom: dto.activeFrom ? new Date(dto.activeFrom) : undefined,
         activeTo: dto.activeTo ? new Date(dto.activeTo) : null,
-        workScheduleJson: dto.workScheduleJson ?? undefined
-      }
+        workScheduleJson: dto.workScheduleJson ?? undefined,
+      },
     });
 
     await this.audit.log({
@@ -179,7 +179,7 @@ export class RoomsService {
       action: 'room.employee.assigned',
       entityType: 'employee_room_assignment',
       entityId: assignment.id,
-      newValuesJson: assignment
+      newValuesJson: assignment,
     });
 
     return assignment;
@@ -187,7 +187,7 @@ export class RoomsService {
 
   async removeEmployeeAssignment(user: AuthenticatedUser, assignmentId: string) {
     const current = await this.prisma.employeeRoomAssignment.findFirst({
-      where: { id: assignmentId, tenantId: user.tenantId }
+      where: { id: assignmentId, tenantId: user.tenantId },
     });
     if (!current) throw new NotFoundException('Assignment not found');
 
@@ -201,7 +201,7 @@ export class RoomsService {
       userId: user.userId,
       action: 'room.employee.unassigned',
       entityType: 'employee_room_assignment',
-      entityId: assignmentId
+      entityId: assignmentId,
     });
 
     return { success: true };
@@ -212,15 +212,15 @@ export class RoomsService {
     await this.prisma.roomSpecialty.deleteMany({
       where: {
         roomId,
-        specialtyId: { notIn: specialtyIds }
-      }
+        specialtyId: { notIn: specialtyIds },
+      },
     });
 
     for (const specId of specialtyIds) {
       await this.prisma.roomSpecialty.upsert({
         where: { roomId_specialtyId: { roomId, specialtyId: specId } },
         update: {},
-        create: { roomId, specialtyId: specId }
+        create: { roomId, specialtyId: specId },
       });
     }
   }

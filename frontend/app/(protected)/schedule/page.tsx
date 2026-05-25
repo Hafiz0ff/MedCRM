@@ -8,4 +8,3 @@ export default async function Page() {
   if (!bootstrap || !can(bootstrap, 'scheduling.appointments.read')) redirect('/dashboard');
   return <CalendarPage bootstrap={bootstrap} />;
 }
-
