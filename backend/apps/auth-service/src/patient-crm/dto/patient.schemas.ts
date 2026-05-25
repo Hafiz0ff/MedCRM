@@ -24,7 +24,29 @@ export const updatePatientSchema = createPatientSchema.partial().extend({
   status: z.enum(['NEW', 'ACTIVE', 'SLEEPING', 'VIP', 'BLOCKED', 'ARCHIVED']).optional()
 });
 
+export const createContactSchema = z.object({
+  type: z.enum(['PHONE', 'EMAIL', 'TELEGRAM', 'VIBER', 'OTHER']),
+  value: z.string().trim().min(3).max(80),
+  isPrimary: z.boolean().optional().default(false)
+});
+
+export const updateContactSchema = createContactSchema.partial();
+
+export const mergePatientsSchema = z.object({
+  primaryPatientId: z.string().uuid(),
+  secondaryPatientId: z.string().uuid()
+});
+
+export const patientStatusTransitionSchema = z.object({
+  status: z.enum(['NEW', 'ACTIVE', 'SLEEPING', 'VIP', 'BLOCKED', 'ARCHIVED'])
+});
+
 export type PatientListQuery = z.infer<typeof patientListQuerySchema>;
 export type CreatePatientDto = z.infer<typeof createPatientSchema>;
 export type UpdatePatientDto = z.infer<typeof updatePatientSchema>;
+export type CreateContactDto = z.infer<typeof createContactSchema>;
+export type UpdateContactDto = z.infer<typeof updateContactSchema>;
+export type MergePatientsDto = z.infer<typeof mergePatientsSchema>;
+export type PatientStatusTransitionDto = z.infer<typeof patientStatusTransitionSchema>;
+
 

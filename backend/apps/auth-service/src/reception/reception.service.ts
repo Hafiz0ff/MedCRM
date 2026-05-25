@@ -1,5 +1,6 @@
 import { Injectable, Inject, NotFoundException, ForbiddenException, BadRequestException, forwardRef } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
@@ -46,12 +47,10 @@ export class ReceptionService {
     return age;
   }
 
-  private getServicePrice(code: string): number {
-    const prices: Record<string, number> = {
-      'consultation': 1500,
-      'procedure': 3000,
-    };
-    return prices[code.toLowerCase()] ?? 1000;
+  private async getServicePrice(serviceId: string | null): Promise<number> {
+    if (!serviceId) return 0;
+    const service = await this.prisma.service.findUnique({ where: { id: serviceId } });
+    return service?.basePrice ? Number(service.basePrice) : 0;
   }
 
   async getDashboard(user: AuthenticatedUser, branchId?: string, dateStr?: string) {
@@ -170,10 +169,30 @@ export class ReceptionService {
       }
     }
 
+    const counters = {
+      total: appointments.length,
+      waiting: (columns.WAITING?.length ?? 0),
+      checkedIn: (columns.CHECKED_IN?.length ?? 0),
+      inProgress: (columns.IN_PROGRESS?.length ?? 0),
+      completedPendingPayment: (columns.COMPLETED_PENDING_PAYMENT?.length ?? 0),
+      completed: (columns.COMPLETED?.length ?? 0),
+      cancelled: (columns.CANCELLED?.length ?? 0),
+      noShow: (columns.NO_SHOW?.length ?? 0)
+    };
+
+    const queue = [...(columns.CHECKED_IN ?? [])].sort((a: any, b: any) => {
+      const aPriority = a.isVip ? 0 : 2;
+      const bPriority = b.isVip ? 0 : 2;
+      if (aPriority !== bPriority) return aPriority - bPriority;
+      return new Date(a.startAt).getTime() - new Date(b.startAt).getTime();
+    });
+
     const dashboardJson = {
       branchId,
       date: dateStr,
       columns,
+      counters,
+      queue,
       recalculatedAt: new Date().toISOString()
     };
 
@@ -415,7 +434,7 @@ export class ReceptionService {
     });
     if (existing) return;
 
-    const unitPrice = this.getServicePrice(app.service.code);
+    const unitPrice = await this.getServicePrice(app.serviceId);
     const subtotalAmount = unitPrice;
     const totalAmount = unitPrice;
 
@@ -641,6 +660,19 @@ export class ReceptionService {
         data: { status: 'PAID' }
       });
 
+      await tx.payment.create({
+        data: {
+          tenantId: user.tenantId,
+          branchId: invoice.branchId,
+          invoiceId: invoice.id,
+          patientId: invoice.patientId,
+          paymentMethod: dto.paymentMethod,
+          amount: invoice.totalAmount,
+          cashierUserId: user.userId,
+          status: 'COMPLETED'
+        }
+      });
+
       // If tied to an appointment, transition the appointment status to COMPLETED
       if (invoice.appointmentId) {
         const app = await tx.appointment.findUnique({ where: { id: invoice.appointmentId } });
@@ -682,6 +714,8 @@ export class ReceptionService {
     // Invalidate dashboard cache
     const dateStr = invoice.createdAt.toISOString().slice(0, 10);
     await this.recalculateDashboard(user.tenantId, invoice.branchId, dateStr);
+
+    await this.recalculateMetrics(user.tenantId, invoice.patientId);
 
     await this.audit.log({
       tenantId: user.tenantId,
@@ -778,5 +812,119 @@ export class ReceptionService {
     });
 
     return app;
+  }
+
+  async getPatientPreview(user: AuthenticatedUser, patientId: string) {
+    const patient = await this.prisma.patient.findFirst({
+      where: { id: patientId, tenantId: user.tenantId },
+      include: {
+        contacts: true,
+        tags: { include: { tag: true } },
+        metrics: true,
+        familyMembers: {
+          include: { familyGroup: { include: { members: { include: { patient: true } } } } }
+        },
+        invoices: {
+          where: { status: { in: ['DRAFT', 'PENDING_PAYMENT'] } },
+          orderBy: { createdAt: 'desc' },
+          take: 5
+        }
+      }
+    });
+    if (!patient) throw new NotFoundException('Пациент не найден');
+
+    const recentAppointments = await this.prisma.appointment.findMany({
+      where: { patientId, tenantId: user.tenantId },
+      include: { service: true },
+      orderBy: { startAt: 'desc' },
+      take: 5
+    });
+
+    const debt = patient.invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+    const isVip = patient.tags.some(t => t.tag.code === 'VIP' || t.tag.name.toLowerCase() === 'vip');
+    const age = patient.birthDate ? this.calculateAge(patient.birthDate) : null;
+    const primaryPhone = patient.contacts.find(c => c.isPrimary)?.value || patient.contacts[0]?.value || null;
+
+    const familyMembers = patient.familyMembers.flatMap(fm =>
+      fm.familyGroup.members
+        .filter(m => m.patientId !== patientId)
+        .map(m => ({
+          id: m.patient.id,
+          name: m.patient.fullName,
+          relation: fm.relationType
+        }))
+    );
+
+    return {
+      id: patient.id,
+      fullName: patient.fullName,
+      patientCode: patient.patientCode,
+      age,
+      gender: patient.gender,
+      phone: primaryPhone,
+      isVip,
+      status: patient.status,
+      debt,
+      tags: patient.tags.map(t => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color })),
+      metrics: patient.metrics ? {
+        totalVisits: patient.metrics.totalVisits,
+        totalRevenue: Number(patient.metrics.totalRevenue),
+        ltv: Number(patient.metrics.ltv),
+        averageCheck: Number(patient.metrics.averageCheck),
+        retentionScore: patient.metrics.retentionScore
+      } : null,
+      familyMembers,
+      recentAppointments: recentAppointments.map(a => ({
+        id: a.id,
+        date: a.startAt.toISOString(),
+        service: a.service?.name ?? 'Без услуги',
+        status: a.status
+      }))
+    };
+  }
+
+  async recalculateMetrics(tenantId: string, patientId: string) {
+    const appointments = await this.prisma.appointment.findMany({
+      where: { tenantId, patientId }
+    });
+
+    const completed = appointments.filter(a => a.status === 'COMPLETED');
+    const cancellations = appointments.filter(a => a.status === 'CANCELLED').length;
+    const missed = appointments.filter(a => a.status === 'NO_SHOW').length;
+    const totalVisits = completed.length;
+
+    const invoices = await this.prisma.invoice.findMany({
+      where: { tenantId, patientId, status: 'PAID' }
+    });
+    const totalRevenue = invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+    const averageCheck = totalVisits > 0 ? totalRevenue / totalVisits : 0;
+
+    const lastVisit = completed.length > 0
+      ? new Date(Math.max(...completed.map(c => c.startAt.getTime())))
+      : null;
+
+    await this.prisma.patientCrmMetric.upsert({
+      where: { patientId },
+      update: {
+        totalVisits,
+        totalRevenue: new Prisma.Decimal(totalRevenue),
+        ltv: new Prisma.Decimal(totalRevenue),
+        averageCheck: new Prisma.Decimal(averageCheck),
+        missedAppointments: missed,
+        cancellations,
+        lastVisitAt: lastVisit
+      },
+      create: {
+        tenantId,
+        patientId,
+        totalVisits,
+        totalRevenue: new Prisma.Decimal(totalRevenue),
+        ltv: new Prisma.Decimal(totalRevenue),
+        averageCheck: new Prisma.Decimal(averageCheck),
+        missedAppointments: missed,
+        cancellations,
+        lastVisitAt: lastVisit
+      }
+    });
   }
 }

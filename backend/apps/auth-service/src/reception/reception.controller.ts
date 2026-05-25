@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Patch, Query, UseGuards, UsePipes } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
 import { RequirePermissions } from '@core/security/permissions.decorator';
@@ -127,5 +127,12 @@ export class ReceptionController {
     @Body() dto: PayInvoiceDto
   ) {
     return this.reception.payInvoice(user, id, dto);
+  }
+
+  @Get('patient-preview/:patientId')
+  @RequirePermissions('reception.dashboard.read')
+  @ApiOperation({ summary: 'Quick patient preview for reception' })
+  patientPreview(@CurrentUser() user: AuthenticatedUser, @Param('patientId') patientId: string) {
+    return this.reception.getPatientPreview(user, patientId);
   }
 }

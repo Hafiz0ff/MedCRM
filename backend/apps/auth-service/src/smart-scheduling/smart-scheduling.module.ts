@@ -4,13 +4,11 @@ import { SmartSchedulingController } from './smart-scheduling.controller';
 import { SmartSchedulingService } from './smart-scheduling.service';
 import { RealtimeGateway } from './realtime.gateway';
 import { RemindersService } from './reminders.service';
-import { ReceptionController } from '../reception/reception.controller';
-import { ReceptionService } from '../reception/reception.service';
 
 @Module({
   imports: [JwtModule.register({})],
-  controllers: [SmartSchedulingController, ReceptionController],
-  providers: [SmartSchedulingService, RealtimeGateway, RemindersService, ReceptionService],
+  controllers: [SmartSchedulingController],
+  providers: [SmartSchedulingService, RealtimeGateway, RemindersService],
   exports: [SmartSchedulingService, RealtimeGateway]
 })
 export class SmartSchedulingModule {}

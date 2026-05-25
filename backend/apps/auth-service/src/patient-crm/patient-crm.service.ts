@@ -1,9 +1,12 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { CreatePatientDto, PatientListQuery, UpdatePatientDto } from './dto/patient.schemas';
+import Redis from 'ioredis';
+import { REDIS_CLIENT } from '@core/cache/redis.module';
+import { CreatePatientDto, PatientListQuery, UpdatePatientDto, CreateContactDto, UpdateContactDto, MergePatientsDto, PatientStatusTransitionDto } from './dto/patient.schemas';
 import {
   CrmTagDto,
   FamilyGroupDto,
@@ -18,7 +21,8 @@ import {
 export class PatientCrmService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly audit: AuditLoggerService
+    private readonly audit: AuditLoggerService,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis
   ) {}
 
   async list(user: AuthenticatedUser, query: PatientListQuery) {
@@ -179,8 +183,8 @@ export class PatientCrmService {
   }
 
   private async nextPatientCode(tenantId: string): Promise<string> {
-    const count = await this.prisma.patient.count({ where: { tenantId } });
-    return `P-${String(count + 1).padStart(6, '0')}`;
+    const seq = await this.redis.incr(`tenant:${tenantId}:patient_seq`);
+    return `P-${String(seq).padStart(6, '0')}`;
   }
 
   private contactCreate(tenantId: string, type: string, value: string, isPrimary: boolean) {
@@ -452,6 +456,236 @@ export class PatientCrmService {
         utmContent: dto.utmContent,
         utmTerm: dto.utmTerm,
         conversionAt: dto.conversionAt ? new Date(dto.conversionAt) : null
+      }
+    });
+  }
+
+  async addContact(user: AuthenticatedUser, patientId: string, dto: CreateContactDto) {
+    const patient = await this.get(user, patientId);
+    const normalized = this.normalize(dto.value);
+    const hash = this.hash(normalized);
+
+    if (dto.isPrimary) {
+      await this.prisma.patientContact.updateMany({
+        where: { tenantId: user.tenantId, patientId, isPrimary: true },
+        data: { isPrimary: false }
+      });
+    }
+
+    const contact = await this.prisma.patientContact.create({
+      data: {
+        tenantId: user.tenantId,
+        patientId,
+        type: dto.type,
+        value: dto.value,
+        normalizedValueHash: hash,
+        isPrimary: dto.isPrimary ?? false
+      }
+    });
+
+    await this.addTimelineEvent(user, patientId, {
+      eventType: 'CONTACT_ADDED',
+      eventSource: 'SYSTEM',
+      title: `Добавлен контакт: ${dto.type}`,
+      description: dto.value
+    });
+
+    return contact;
+  }
+
+  async updateContact(user: AuthenticatedUser, patientId: string, contactId: string, dto: UpdateContactDto) {
+    await this.get(user, patientId);
+    const contact = await this.prisma.patientContact.findFirst({
+      where: { id: contactId, patientId, tenantId: user.tenantId }
+    });
+    if (!contact) throw new NotFoundException('Contact not found');
+
+    if (dto.isPrimary) {
+      await this.prisma.patientContact.updateMany({
+        where: { tenantId: user.tenantId, patientId, isPrimary: true },
+        data: { isPrimary: false }
+      });
+    }
+
+    const normalized = dto.value ? this.normalize(dto.value) : undefined;
+    const hash = normalized ? this.hash(normalized) : undefined;
+
+    const updated = await this.prisma.patientContact.update({
+      where: { id: contactId },
+      data: {
+        type: dto.type,
+        value: dto.value,
+        normalizedValueHash: hash,
+        isPrimary: dto.isPrimary
+      }
+    });
+
+    await this.addTimelineEvent(user, patientId, {
+      eventType: 'CONTACT_UPDATED',
+      eventSource: 'SYSTEM',
+      title: `Обновлен контакт: ${updated.type}`,
+      description: updated.value
+    });
+
+    return updated;
+  }
+
+  async deleteContact(user: AuthenticatedUser, patientId: string, contactId: string) {
+    await this.get(user, patientId);
+    const contact = await this.prisma.patientContact.findFirst({
+      where: { id: contactId, patientId, tenantId: user.tenantId }
+    });
+    if (!contact) throw new NotFoundException('Contact not found');
+
+    await this.prisma.patientContact.delete({
+      where: { id: contactId }
+    });
+
+    await this.addTimelineEvent(user, patientId, {
+      eventType: 'CONTACT_DELETED',
+      eventSource: 'SYSTEM',
+      title: `Удален контакт: ${contact.type}`,
+      description: contact.value
+    });
+
+    return { success: true };
+  }
+
+  async updateStatus(user: AuthenticatedUser, patientId: string, dto: PatientStatusTransitionDto) {
+    const current = await this.get(user, patientId);
+    const updated = await this.prisma.patient.update({
+      where: { id: patientId },
+      data: { status: dto.status }
+    });
+
+    await this.addTimelineEvent(user, patientId, {
+      eventType: 'STATUS_CHANGED',
+      eventSource: 'SYSTEM',
+      title: `Статус изменен: ${dto.status}`,
+      description: `Предыдущий статус: ${current.status}`
+    });
+
+    await this.audit.log({
+      tenantId: user.tenantId,
+      branchId: current.registrationBranchId ?? undefined,
+      userId: user.userId,
+      action: 'patient.status.updated',
+      entityType: 'patient',
+      entityId: patientId,
+      oldValuesJson: { status: current.status },
+      newValuesJson: { status: dto.status }
+    });
+
+    return updated;
+  }
+
+  async mergePatients(user: AuthenticatedUser, dto: MergePatientsDto) {
+    const primary = await this.get(user, dto.primaryPatientId);
+    const secondary = await this.get(user, dto.secondaryPatientId);
+
+    if (primary.tenantId !== user.tenantId || secondary.tenantId !== user.tenantId) {
+      throw new ForbiddenException('Tenant mismatch');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.appointment.updateMany({
+        where: { tenantId: user.tenantId, patientId: dto.secondaryPatientId },
+        data: { patientId: dto.primaryPatientId }
+      });
+
+      await tx.patientContact.updateMany({
+        where: { tenantId: user.tenantId, patientId: dto.secondaryPatientId },
+        data: { patientId: dto.primaryPatientId, isPrimary: false }
+      });
+
+      await tx.patientNote.updateMany({
+        where: { tenantId: user.tenantId, patientId: dto.secondaryPatientId },
+        data: { patientId: dto.primaryPatientId }
+      });
+
+      await tx.invoice.updateMany({
+        where: { tenantId: user.tenantId, patientId: dto.secondaryPatientId },
+        data: { patientId: dto.primaryPatientId }
+      });
+
+      await tx.patientTimelineEvent.updateMany({
+        where: { tenantId: user.tenantId, patientId: dto.secondaryPatientId },
+        data: { patientId: dto.primaryPatientId }
+      });
+
+      await tx.patient.update({
+        where: { id: dto.secondaryPatientId },
+        data: { status: 'ARCHIVED', archivedAt: new Date() }
+      });
+
+      await tx.patientTimelineEvent.create({
+        data: {
+          tenantId: user.tenantId,
+          patientId: dto.primaryPatientId,
+          eventType: 'PATIENT_MERGED',
+          eventSource: 'SYSTEM',
+          title: `Пациент объединен с ${secondary.fullName}`,
+          description: `Данные из карточки ${secondary.patientCode} были перенесены сюда.`,
+          createdBy: user.userId
+        }
+      });
+    });
+
+    await this.audit.log({
+      tenantId: user.tenantId,
+      branchId: primary.registrationBranchId ?? undefined,
+      userId: user.userId,
+      action: 'patient.merged',
+      entityType: 'patient',
+      entityId: dto.primaryPatientId,
+      oldValuesJson: { secondaryPatientId: dto.secondaryPatientId },
+      newValuesJson: { primaryPatientId: dto.primaryPatientId }
+    });
+
+    return { success: true };
+  }
+
+  async recalculateMetrics(tenantId: string, patientId: string) {
+    const appointments = await this.prisma.appointment.findMany({
+      where: { tenantId, patientId }
+    });
+
+    const completed = appointments.filter(a => a.status === 'COMPLETED');
+    const cancellations = appointments.filter(a => a.status === 'CANCELLED').length;
+    const missed = appointments.filter(a => a.status === 'NO_SHOW').length;
+    const totalVisits = completed.length;
+
+    const invoices = await this.prisma.invoice.findMany({
+      where: { tenantId, patientId, status: 'PAID' }
+    });
+    const totalRevenue = invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+    const averageCheck = totalVisits > 0 ? totalRevenue / totalVisits : 0;
+
+    const lastVisit = completed.length > 0
+      ? new Date(Math.max(...completed.map(c => c.startAt.getTime())))
+      : null;
+
+    await this.prisma.patientCrmMetric.upsert({
+      where: { patientId },
+      update: {
+        totalVisits,
+        totalRevenue: new Prisma.Decimal(totalRevenue),
+        ltv: new Prisma.Decimal(totalRevenue),
+        averageCheck: new Prisma.Decimal(averageCheck),
+        missedAppointments: missed,
+        cancellations,
+        lastVisitAt: lastVisit
+      },
+      create: {
+        tenantId,
+        patientId,
+        totalVisits,
+        totalRevenue: new Prisma.Decimal(totalRevenue),
+        ltv: new Prisma.Decimal(totalRevenue),
+        averageCheck: new Prisma.Decimal(averageCheck),
+        missedAppointments: missed,
+        cancellations,
+        lastVisitAt: lastVisit
       }
     });
   }

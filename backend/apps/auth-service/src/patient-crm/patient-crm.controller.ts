@@ -15,7 +15,15 @@ import {
   UpdatePatientDto,
   createPatientSchema,
   patientListQuerySchema,
-  updatePatientSchema
+  updatePatientSchema,
+  CreateContactDto,
+  UpdateContactDto,
+  MergePatientsDto,
+  PatientStatusTransitionDto,
+  createContactSchema,
+  updateContactSchema,
+  mergePatientsSchema,
+  patientStatusTransitionSchema
 } from './dto/patient.schemas';
 import {
   CrmTagDto,
@@ -39,6 +47,14 @@ import {
 @Controller('patients')
 export class PatientCrmController {
   constructor(private readonly patients: PatientCrmService) {}
+
+  @Post()
+  @RequirePermissions('patients.create')
+  @ApiOperation({ summary: 'Create a new patient' })
+  @UsePipes(new ZodValidationPipe(createPatientSchema))
+  createPatient(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreatePatientDto) {
+    return this.patients.create(user, dto);
+  }
 
   @Get()
   @RequirePermissions('patients.read')
@@ -200,6 +216,65 @@ export class PatientCrmController {
     @Body() dto: PatientLeadDto
   ) {
     return this.patients.trackLead(user, patientId, dto);
+  }
+
+  @Post('merge')
+  @RequirePermissions('patients.update')
+  @ApiOperation({ summary: 'Merge two duplicate patients' })
+  @UsePipes(new ZodValidationPipe(mergePatientsSchema))
+  merge(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: MergePatientsDto
+  ) {
+    return this.patients.mergePatients(user, dto);
+  }
+
+  @Post(':id/contacts')
+  @RequirePermissions('patients.update')
+  @ApiOperation({ summary: 'Add a new contact to a patient' })
+  @UsePipes(new ZodValidationPipe(createContactSchema))
+  addContact(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') patientId: string,
+    @Body() dto: CreateContactDto
+  ) {
+    return this.patients.addContact(user, patientId, dto);
+  }
+
+  @Patch(':id/contacts/:contactId')
+  @RequirePermissions('patients.update')
+  @ApiOperation({ summary: 'Update a patient contact' })
+  @UsePipes(new ZodValidationPipe(updateContactSchema))
+  updateContact(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') patientId: string,
+    @Param('contactId') contactId: string,
+    @Body() dto: UpdateContactDto
+  ) {
+    return this.patients.updateContact(user, patientId, contactId, dto);
+  }
+
+  @Delete(':id/contacts/:contactId')
+  @RequirePermissions('patients.update')
+  @ApiOperation({ summary: 'Remove a patient contact' })
+  deleteContact(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') patientId: string,
+    @Param('contactId') contactId: string
+  ) {
+    return this.patients.deleteContact(user, patientId, contactId);
+  }
+
+  @Patch(':id/status')
+  @RequirePermissions('patients.update')
+  @ApiOperation({ summary: 'Transition patient status' })
+  @UsePipes(new ZodValidationPipe(patientStatusTransitionSchema))
+  updateStatus(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') patientId: string,
+    @Body() dto: PatientStatusTransitionDto
+  ) {
+    return this.patients.updateStatus(user, patientId, dto);
   }
 }
 

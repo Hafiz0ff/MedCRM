@@ -28,7 +28,15 @@ import {
   resourceBufferSchema,
   publicSlotsQuerySchema,
   onlineBookingReserveSchema,
-  onlineBookingConfirmSchema
+  onlineBookingConfirmSchema,
+  RescheduleDto,
+  rescheduleSchema,
+  CreateRecurringDto,
+  createRecurringSchema,
+  WeekAvailabilityQuery,
+  weekAvailabilityQuerySchema,
+  RoomUtilizationQuery,
+  roomUtilizationQuerySchema
 } from './dto/appointment.schemas';
 import { SmartSchedulingService } from './smart-scheduling.service';
 
@@ -76,6 +84,66 @@ export class SmartSchedulingController {
   @RequirePermissions('scheduling.appointments.cancel')
   cancel(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() body: { reason?: string }) {
     return this.scheduling.transition(user, id, 'CANCELLED', body.reason);
+  }
+
+  @Post('appointments/:id/start')
+  @RequirePermissions('scheduling.appointments.update')
+  @ApiOperation({ summary: 'Start appointment (transition to IN_PROGRESS)' })
+  start(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.scheduling.transition(user, id, 'IN_PROGRESS');
+  }
+
+  @Post('appointments/:id/complete')
+  @RequirePermissions('scheduling.appointments.update')
+  @ApiOperation({ summary: 'Complete appointment' })
+  complete(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.scheduling.transition(user, id, 'COMPLETED');
+  }
+
+  @Post('appointments/:id/no-show')
+  @RequirePermissions('scheduling.appointments.update')
+  @ApiOperation({ summary: 'Mark as no-show' })
+  noShow(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.scheduling.transition(user, id, 'NO_SHOW');
+  }
+
+  @Post('appointments/:id/reschedule')
+  @RequirePermissions('scheduling.appointments.update')
+  @ApiOperation({ summary: 'Reschedule appointment to new time' })
+  reschedule(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(rescheduleSchema)) dto: RescheduleDto
+  ) {
+    return this.scheduling.reschedule(user, id, dto);
+  }
+
+  @Post('appointments/recurring')
+  @RequirePermissions('scheduling.appointments.create')
+  @ApiOperation({ summary: 'Create recurring appointment series' })
+  @UsePipes(new ZodValidationPipe(createRecurringSchema))
+  createRecurring(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateRecurringDto) {
+    return this.scheduling.createRecurring(user, dto);
+  }
+
+  @Get('availability/week')
+  @RequirePermissions('scheduling.availability.read')
+  @ApiOperation({ summary: 'Get 7-day availability grid' })
+  weekAvailability(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query(new ZodValidationPipe(weekAvailabilityQuerySchema)) query: WeekAvailabilityQuery
+  ) {
+    return this.scheduling.getWeekAvailability(user, query);
+  }
+
+  @Get('rooms/utilization')
+  @RequirePermissions('scheduling.availability.read')
+  @ApiOperation({ summary: 'Get room utilization statistics' })
+  roomUtilization(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query(new ZodValidationPipe(roomUtilizationQuerySchema)) query: RoomUtilizationQuery
+  ) {
+    return this.scheduling.getRoomUtilization(user, query);
   }
 
   @Get('availability')

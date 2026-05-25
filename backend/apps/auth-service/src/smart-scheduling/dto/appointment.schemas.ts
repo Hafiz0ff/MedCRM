@@ -86,6 +86,29 @@ export const onlineBookingConfirmSchema = z.object({
   code: z.string().min(4)
 });
 
+export const rescheduleSchema = z.object({
+  newStartAt: z.string().datetime(),
+  newEndAt: z.string().datetime(),
+  reason: z.string().max(500).optional()
+});
+
+export const weekAvailabilityQuerySchema = z.object({
+  branchId: z.string().uuid(),
+  employeeId: z.string().uuid().optional(),
+  serviceId: z.string().uuid().optional(),
+  startDate: z.string().date()
+});
+
+export const roomUtilizationQuerySchema = z.object({
+  branchId: z.string().uuid(),
+  dateFrom: z.string().date(),
+  dateTo: z.string().date()
+});
+
+export const createRecurringSchema = createAppointmentSchema.extend({
+  recurrence: recurrenceRuleSchema
+});
+
 export type AppointmentListQuery = z.infer<typeof appointmentListQuerySchema>;
 export type CreateAppointmentDto = z.infer<typeof createAppointmentSchema>;
 export type UpdateAppointmentDto = z.infer<typeof updateAppointmentSchema>;
@@ -98,4 +121,8 @@ export type RecurrenceRuleDto = z.infer<typeof recurrenceRuleSchema>;
 export type PublicSlotsQueryDto = z.infer<typeof publicSlotsQuerySchema>;
 export type OnlineBookingReserveDto = z.infer<typeof onlineBookingReserveSchema>;
 export type OnlineBookingConfirmDto = z.infer<typeof onlineBookingConfirmSchema>;
+export type RescheduleDto = z.infer<typeof rescheduleSchema>;
+export type WeekAvailabilityQuery = z.infer<typeof weekAvailabilityQuerySchema>;
+export type RoomUtilizationQuery = z.infer<typeof roomUtilizationQuerySchema>;
+export type CreateRecurringDto = z.infer<typeof createRecurringSchema>;
 

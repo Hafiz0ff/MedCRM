@@ -216,27 +216,33 @@ async function main(): Promise<void> {
 
   const serviceConsultation = await prisma.service.upsert({
     where: { tenantId_code: { tenantId: tenant.id, code: 'consultation' } },
-    update: {},
+    update: {
+      basePrice: new Prisma.Decimal(1500)
+    },
     create: {
       tenantId: tenant.id,
       code: 'consultation',
       name: 'Консультация',
       durationMinutes: 30,
       color: '#0f766e',
-      isOnlineBookable: true
+      isOnlineBookable: true,
+      basePrice: new Prisma.Decimal(1500)
     }
   });
 
   const serviceProcedure = await prisma.service.upsert({
     where: { tenantId_code: { tenantId: tenant.id, code: 'procedure' } },
-    update: {},
+    update: {
+      basePrice: new Prisma.Decimal(3000)
+    },
     create: {
       tenantId: tenant.id,
       code: 'procedure',
       name: 'Процедура',
       durationMinutes: 45,
       color: '#7c3aed',
-      isOnlineBookable: true
+      isOnlineBookable: true,
+      basePrice: new Prisma.Decimal(3000)
     }
   });
 

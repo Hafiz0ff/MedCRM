@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException, Inject } from '@nestjs/common';
-import { createHash } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { AuditLoggerService } from '@core/audit/audit-logger.service';
@@ -16,7 +17,11 @@ import {
   RecurrenceRuleDto,
   PublicSlotsQueryDto,
   OnlineBookingReserveDto,
-  OnlineBookingConfirmDto
+  OnlineBookingConfirmDto,
+  RescheduleDto,
+  WeekAvailabilityQuery,
+  RoomUtilizationQuery,
+  CreateRecurringDto
 } from './dto/appointment.schemas';
 import { RealtimeGateway } from './realtime.gateway';
 import { RemindersService } from './reminders.service';
@@ -56,6 +61,7 @@ export class SmartSchedulingService {
           patient: { include: { contacts: true } },
           service: true,
           branch: true,
+          employee: true,
           statusHistory: { orderBy: { createdAt: 'desc' }, take: 3 }
         },
         orderBy: { startAt: 'asc' },
@@ -156,6 +162,7 @@ export class SmartSchedulingService {
         newValuesJson: appointment
       });
       this.realtime.emitAppointmentEvent('appointment.created', user.tenantId, appointment.branchId, appointment);
+      await this.invalidateAvailabilityCache(user.tenantId, appointment.employeeId, appointment.branchId, appointment.startAt);
       return appointment;
     } finally {
       await this.releaseLock(lockKey);
@@ -255,6 +262,10 @@ export class SmartSchedulingService {
         newValuesJson: updated
       });
       this.realtime.emitAppointmentEvent('appointment.updated', user.tenantId, branchId, updated);
+      await this.invalidateAvailabilityCache(user.tenantId, updated.employeeId, updated.branchId, updated.startAt);
+      if (current.employeeId !== updated.employeeId || current.startAt.getTime() !== updated.startAt.getTime() || current.branchId !== updated.branchId) {
+        await this.invalidateAvailabilityCache(user.tenantId, current.employeeId, current.branchId, current.startAt);
+      }
       return updated;
     } finally {
       await this.releaseLock(lockKey);
@@ -296,8 +307,11 @@ export class SmartSchedulingService {
       newValuesJson: updated
     });
 
-    const event = status === 'CHECKED_IN' ? 'appointment.checked_in' : 'appointment.updated';
+    await this.recalculateMetrics(user.tenantId, updated.patientId);
+
+     const event = status === 'CHECKED_IN' ? 'appointment.checked_in' : 'appointment.updated';
     this.realtime.emitAppointmentEvent(event, user.tenantId, updated.branchId, updated);
+    await this.invalidateAvailabilityCache(user.tenantId, updated.employeeId, updated.branchId, updated.startAt);
 
     // If cancelled, trigger Waiting List slot matching flow
     if (status === 'CANCELLED') {
@@ -682,11 +696,31 @@ export class SmartSchedulingService {
     return { success: true };
   }
 
+  // Availability Cache Helper
+  private async invalidateAvailabilityCache(tenantId: string, employeeId: string, branchId: string, date: Date) {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    try {
+      await this.prisma.availabilityCache.deleteMany({
+        where: {
+          tenantId,
+          employeeId,
+          branchId,
+          date: startOfDay
+        }
+      });
+    } catch (err: any) {
+      console.error(`Failed to invalidate availability cache: ${err.message}`);
+    }
+  }
+
   // Public Booking Engine
   async getPublicSlots(user: AuthenticatedUser, query: PublicSlotsQueryDto) {
     this.assertBranchAccess(user, query.branchId);
 
     const targetDate = new Date(query.date);
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
     const weekday = targetDate.getDay() === 0 ? 7 : targetDate.getDay();
 
     const employees = query.employeeId
@@ -702,6 +736,24 @@ export class SmartSchedulingService {
     const availableSlots: string[] = [];
 
     for (const emp of employees) {
+      // 1. Try to fetch from AvailabilityCache
+      const cache = await this.prisma.availabilityCache.findFirst({
+        where: {
+          tenantId: user.tenantId,
+          employeeId: emp.id,
+          branchId: query.branchId,
+          date: startOfDay
+        }
+      });
+
+      if (cache && (Date.now() - new Date(cache.recalculatedAt).getTime() < 5 * 60 * 1000)) {
+        const cachedSlots = cache.availableSlotsJson as string[];
+        availableSlots.push(...cachedSlots);
+        continue;
+      }
+
+      // 2. Otherwise compute on-the-fly
+      const employeeSlots: string[] = [];
       const schedules = await this.prisma.workingSchedule.findMany({
         where: { tenantId: user.tenantId, entityType: 'employee', entityId: emp.id, weekday, isActive: true }
       });
@@ -753,17 +805,48 @@ export class SmartSchedulingService {
             });
 
             if (!reserved) {
-              availableSlots.push(currentSlotStart.toISOString());
+              employeeSlots.push(currentSlotStart.toISOString());
             }
           } catch {}
 
           currentSlotStart.setTime(currentSlotStart.getTime() + 30 * 60 * 1000); // step by 30 mins
         }
       }
+
+      // 3. Save computed slots to AvailabilityCache
+      try {
+        await this.prisma.availabilityCache.upsert({
+          where: {
+            tenantId_employeeId_branchId_date: {
+              tenantId: user.tenantId,
+              employeeId: emp.id,
+              branchId: query.branchId,
+              date: startOfDay
+            }
+          },
+          update: {
+            availableSlotsJson: employeeSlots,
+            recalculatedAt: new Date()
+          },
+          create: {
+            tenantId: user.tenantId,
+            employeeId: emp.id,
+            branchId: query.branchId,
+            date: startOfDay,
+            availableSlotsJson: employeeSlots,
+            recalculatedAt: new Date()
+          }
+        });
+      } catch (err: any) {
+        console.error(`Failed to write to availability cache: ${err.message}`);
+      }
+
+      availableSlots.push(...employeeSlots);
     }
 
     return { date: query.date, slots: Array.from(new Set(availableSlots)).sort() };
   }
+
 
   async onlineBookingReserve(user: AuthenticatedUser, dto: OnlineBookingReserveDto) {
     this.assertBranchAccess(user, dto.branchId);
@@ -818,12 +901,14 @@ export class SmartSchedulingService {
       }
     });
 
-    // Mock generated verification code "1234"
-    return { token, code: '1234', expiresAt: new Date(Date.now() + 10 * 60 * 1000) };
+    const code = String(randomInt(1000, 9999));
+    await this.redis.setex(`otp:${token}`, 600, code);
+    return { token, code, expiresAt: new Date(Date.now() + 10 * 60 * 1000) };
   }
 
   async onlineBookingConfirm(user: AuthenticatedUser, dto: OnlineBookingConfirmDto) {
-    if (dto.code !== '1234') {
+    const storedCode = await this.redis.get(`otp:${dto.token}`);
+    if (!storedCode || dto.code !== storedCode) {
       throw new BadRequestException('Invalid confirmation code');
     }
 
@@ -862,6 +947,170 @@ export class SmartSchedulingService {
     return newAppointment;
   }
 
+  async reschedule(user: AuthenticatedUser, id: string, dto: RescheduleDto) {
+    const current = await this.getForUser(user, id);
+    this.assertBranchAccess(user, current.branchId);
+    const newStartAt = new Date(dto.newStartAt);
+    const newEndAt = new Date(dto.newEndAt);
+    if (newEndAt <= newStartAt) throw new BadRequestException('newEndAt must be after newStartAt');
+
+    // Use full update path with conflict checking
+    const updated = await this.update(user, id, {
+      startAt: dto.newStartAt,
+      endAt: dto.newEndAt,
+      status: 'RESCHEDULED'
+    });
+
+    // Then transition back to SCHEDULED
+    const rescheduled = await this.prisma.$transaction(async (tx) => {
+      const app = await tx.appointment.update({
+        where: { id },
+        data: { status: 'SCHEDULED' },
+        include: { patient: { include: { contacts: true } }, service: true, branch: true }
+      });
+      await tx.appointmentStatusHistory.create({
+        data: {
+          tenantId: user.tenantId,
+          appointmentId: id,
+          oldStatus: 'RESCHEDULED',
+          newStatus: 'SCHEDULED',
+          changedBy: user.userId,
+          reason: dto.reason ?? 'Rescheduled'
+        }
+      });
+      return app;
+    });
+
+    this.realtime.emitAppointmentEvent('appointment.updated', user.tenantId, current.branchId, rescheduled);
+    await this.invalidateAvailabilityCache(user.tenantId, rescheduled.employeeId, rescheduled.branchId, rescheduled.startAt);
+    return rescheduled;
+  }
+
+  async createRecurring(user: AuthenticatedUser, dto: CreateRecurringDto) {
+    const { recurrence, ...appointmentData } = dto;
+    const startAt = new Date(appointmentData.startAt);
+    const endAt = new Date(appointmentData.endAt);
+    const durationMs = endAt.getTime() - startAt.getTime();
+    const maxOccurrences = 52; // safety limit
+    const appointments: any[] = [];
+
+    let currentDate = new Date(startAt);
+    const limitDate = recurrence.endDate ? new Date(recurrence.endDate) : new Date(startAt.getTime() + 365 * 24 * 60 * 60 * 1000);
+
+    for (let i = 0; i < maxOccurrences && currentDate <= limitDate; i++) {
+      const slotStart = new Date(currentDate);
+      const slotEnd = new Date(slotStart.getTime() + durationMs);
+
+      try {
+        const created = await this.create(user, {
+          ...appointmentData,
+          startAt: slotStart.toISOString(),
+          endAt: slotEnd.toISOString()
+        });
+
+        // Link recurrence rule to first appointment
+        if (i === 0) {
+          await this.prisma.appointmentRecurrenceRule.create({
+            data: {
+              tenantId: user.tenantId,
+              appointmentId: created.id,
+              recurrenceType: recurrence.recurrenceType,
+              interval: recurrence.interval,
+              endDate: recurrence.endDate ? new Date(recurrence.endDate) : null
+            }
+          });
+        }
+
+        appointments.push(created);
+      } catch {
+        // Skip conflicting slots silently
+      }
+
+      // Advance date
+      const interval = recurrence.interval;
+      if (recurrence.recurrenceType === 'DAILY') {
+        currentDate.setDate(currentDate.getDate() + interval);
+      } else if (recurrence.recurrenceType === 'WEEKLY') {
+        currentDate.setDate(currentDate.getDate() + 7 * interval);
+      } else if (recurrence.recurrenceType === 'MONTHLY') {
+        currentDate.setMonth(currentDate.getMonth() + interval);
+      }
+    }
+
+    return { total: appointments.length, appointments };
+  }
+
+  async getWeekAvailability(user: AuthenticatedUser, query: WeekAvailabilityQuery) {
+    this.assertBranchAccess(user, query.branchId);
+    const startDate = new Date(query.startDate);
+    const days: any[] = [];
+
+    for (let d = 0; d < 7; d++) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + d);
+      const dateStr = date.toISOString().slice(0, 10);
+
+      try {
+        const result = await this.getPublicSlots(user, {
+          branchId: query.branchId,
+          employeeId: query.employeeId,
+          serviceId: query.serviceId,
+          date: dateStr
+        });
+        days.push({ date: dateStr, slots: result.slots, slotsCount: result.slots.length });
+      } catch {
+        days.push({ date: dateStr, slots: [], slotsCount: 0 });
+      }
+    }
+
+    return { startDate: query.startDate, days };
+  }
+
+  async getRoomUtilization(user: AuthenticatedUser, query: RoomUtilizationQuery) {
+    this.assertBranchAccess(user, query.branchId);
+    const dateFrom = new Date(query.dateFrom);
+    const dateTo = new Date(query.dateTo);
+    dateTo.setUTCHours(23, 59, 59, 999);
+
+    const rooms = await this.prisma.room.findMany({
+      where: { tenantId: user.tenantId, branchId: query.branchId, isActive: true }
+    });
+
+    const resources = await this.prisma.appointmentResource.findMany({
+      where: {
+        tenantId: user.tenantId,
+        resourceType: 'ROOM',
+        resourceId: { in: rooms.map(r => r.id) },
+        reservedFrom: { gte: dateFrom },
+        reservedTo: { lte: dateTo },
+        appointment: { status: { in: ['SCHEDULED', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED'] } }
+      },
+      include: { appointment: true }
+    });
+
+    const totalDays = Math.max(1, Math.ceil((dateTo.getTime() - dateFrom.getTime()) / (24 * 60 * 60 * 1000)));
+    const workingHoursPerDay = 10; // 08:00-18:00
+    const totalMinutesAvailable = totalDays * workingHoursPerDay * 60;
+
+    return rooms.map(room => {
+      const roomResources = resources.filter(r => r.resourceId === room.id);
+      const totalMinutesBooked = roomResources.reduce((sum, r) => {
+        return sum + Math.round((r.reservedTo.getTime() - r.reservedFrom.getTime()) / 60000);
+      }, 0);
+      const utilizationPercent = Math.min(100, Math.round((totalMinutesBooked / totalMinutesAvailable) * 100));
+
+      return {
+        roomId: room.id,
+        roomName: room.name,
+        roomCode: room.code,
+        totalAppointments: roomResources.length,
+        totalMinutesBooked,
+        totalMinutesAvailable,
+        utilizationPercent
+      };
+    });
+  }
+
   private buildWhere(user: AuthenticatedUser, query: AppointmentListQuery) {
     if (query.branchId) this.assertBranchAccess(user, query.branchId);
     return {
@@ -877,8 +1126,8 @@ export class SmartSchedulingService {
   }
 
   private async nextAppointmentNumber(tenantId: string): Promise<string> {
-    const count = await this.prisma.appointment.count({ where: { tenantId } });
-    return `A-${String(count + 1).padStart(6, '0')}`;
+    const seq = await this.redis.incr(`tenant:${tenantId}:appointment_seq`);
+    return `A-${String(seq).padStart(6, '0')}`;
   }
 
   private async assertPatientAccess(user: AuthenticatedUser, patientId: string, branchId: string) {
@@ -898,5 +1147,50 @@ export class SmartSchedulingService {
 
   private assertBranchAccess(user: AuthenticatedUser, branchId: string): void {
     if (!user.branchIds.includes(branchId)) throw new ForbiddenException('Branch access denied');
+  }
+
+  async recalculateMetrics(tenantId: string, patientId: string) {
+    const appointments = await this.prisma.appointment.findMany({
+      where: { tenantId, patientId }
+    });
+
+    const completed = appointments.filter(a => a.status === 'COMPLETED');
+    const cancellations = appointments.filter(a => a.status === 'CANCELLED').length;
+    const missed = appointments.filter(a => a.status === 'NO_SHOW').length;
+    const totalVisits = completed.length;
+
+    const invoices = await this.prisma.invoice.findMany({
+      where: { tenantId, patientId, status: 'PAID' }
+    });
+    const totalRevenue = invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+    const averageCheck = totalVisits > 0 ? totalRevenue / totalVisits : 0;
+
+    const lastVisit = completed.length > 0
+      ? new Date(Math.max(...completed.map(c => c.startAt.getTime())))
+      : null;
+
+    await this.prisma.patientCrmMetric.upsert({
+      where: { patientId },
+      update: {
+        totalVisits,
+        totalRevenue: new Prisma.Decimal(totalRevenue),
+        ltv: new Prisma.Decimal(totalRevenue),
+        averageCheck: new Prisma.Decimal(averageCheck),
+        missedAppointments: missed,
+        cancellations,
+        lastVisitAt: lastVisit
+      },
+      create: {
+        tenantId,
+        patientId,
+        totalVisits,
+        totalRevenue: new Prisma.Decimal(totalRevenue),
+        ltv: new Prisma.Decimal(totalRevenue),
+        averageCheck: new Prisma.Decimal(averageCheck),
+        missedAppointments: missed,
+        cancellations,
+        lastVisitAt: lastVisit
+      }
+    });
   }
 }

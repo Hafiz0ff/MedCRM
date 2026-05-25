@@ -483,6 +483,7 @@ model Service {
   color              String?  @db.VarChar(40)
   isOnlineBookable   Boolean  @default(false) @map("is_online_bookable")
   isActive           Boolean  @default(true) @map("is_active")
+  basePrice          Decimal  @default(0.0) @map("base_price") @db.Decimal(12, 2)
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -530,6 +531,7 @@ model Appointment {
   branch             Branch   @relation(fields: [branchId], references: [id])
   patient            Patient  @relation(fields: [patientId], references: [id])
   service            Service? @relation(fields: [serviceId], references: [id])
+  employee           Employee @relation(fields: [employeeId], references: [id])
   creator            User?    @relation("AppointmentCreatedBy", fields: [createdBy], references: [id])
   statusHistory      AppointmentStatusHistory[]
   resources          AppointmentResource[]
@@ -695,6 +697,7 @@ model Employee {
   user           User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
   positions      EmployeePosition[]
   roomAssignments EmployeeRoomAssignment[]
+  appointments   Appointment[]
 
   waitingLists       WaitingList[]
   availabilityCaches AvailabilityCache[]
