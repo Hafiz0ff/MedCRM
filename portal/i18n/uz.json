@@ -1,0 +1,38 @@
+{
+  "auth": {
+    "login": {
+      "title": "Shaxsiy kabinetga kirish",
+      "phoneLabel": "Telefon raqami",
+      "phonePlaceholder": "+992931234567",
+      "sendCode": "Kodni olish",
+      "enterCode": "6 xonali tasdiqlash kodini kiriting",
+      "codeLabel": "SMS yoki Telegram orqali kelgan kod",
+      "verify": "Tizimga kirish",
+      "errorPhone": "Telefon raqami formati noto'g'ri",
+      "errorCode": "Kod 6 ta raqamdan iborat bo'lishi kerak",
+      "successTitle": "Tizimga kirildi",
+      "signupTitle": "Ro'yxatdan o'tishni yakunlash",
+      "firstName": "Ism",
+      "lastName": "Familiya",
+      "birthDate": "Tug'ilgan sana",
+      "gender": "Jins",
+      "genderMale": "Erkak",
+      "genderFemale": "Ayol",
+      "complete": "Yakunlash",
+      "agreeToTerms": "Shaxsiy ma'lumotlarni qayta ishlashga roziman"
+    }
+  },
+  "cabinet": {
+    "dashboard": {
+      "title": "Bemorning shaxsiy kabineti",
+      "welcome": "Xush kelibsiz, {name}!",
+      "noVisits": "Sizda rejalashtirilgan tashriflar yo'q",
+      "upcoming": "Yaqin orada tashrif",
+      "debt": "To'lov muddati",
+      "payNow": "To'lash",
+      "history": "Tashriflar tarixi",
+      "profile": "Mening profilim",
+      "logout": "Chiqish"
+    }
+  }
+}

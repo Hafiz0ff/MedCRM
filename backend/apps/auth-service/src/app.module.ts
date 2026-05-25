@@ -17,6 +17,7 @@ import { IntegrationGatewayModule } from './integration-gateway/integration.modu
 import { InventoryModule } from './inventory-warehouse/inventory.module';
 import { OrganizationStructureModule } from './organization-structure/organization-structure.module';
 import { PatientCrmModule } from './patient-crm/patient-crm.module';
+import { PatientPortalModule } from './patient-portal/patient-portal.module';
 import { ReceptionModule } from './reception/reception.module';
 import { SmartSchedulingModule } from './smart-scheduling/smart-scheduling.module';
 import { SystemAdminModule } from './system-admin/system-admin.module';
@@ -41,6 +42,7 @@ import { SystemAdminModule } from './system-admin/system-admin.module';
     BusinessIntelligenceModule,
     InventoryModule,
     SystemAdminModule,
+    PatientPortalModule,
   ],
   controllers: [HealthController],
   providers: [

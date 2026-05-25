@@ -144,6 +144,7 @@ model Tenant {
   stockAlertRules       StockAlertRule[]
   stockAlerts           StockAlert[]
   integrationOutboxes   IntegrationOutbox[]
+  portalGrants          PatientPortalGrant[]
 
   @@map("tenants")
 }
@@ -439,6 +440,7 @@ model Patient {
 
   waitingLists        WaitingList[]
   onlineBookingTokens OnlineBookingToken[]
+  portalGrants        PatientPortalGrant[]
 
   incomingCalls IncomingCall[]
   invoices      Invoice[]
@@ -3142,4 +3144,74 @@ model IntegrationOutbox {
   @@index([state, scheduledAt])
   @@index([tenantId, aggregateType, aggregateId])
   @@map("integration_outbox")
+}
+
+model PatientPortalAccount {
+  id              String    @id @default(uuid()) @db.Uuid
+  phoneE164       String    @unique @map("phone_e164") @db.VarChar(20)
+  phoneBi         String    @map("phone_bi") @db.VarChar(64)
+  emailE164       String?   @unique @map("email_e164") @db.VarChar(255)
+  firstName       String?   @map("first_name") @db.VarChar(120)
+  lastName        String?   @map("last_name") @db.VarChar(120)
+  birthDate       DateTime? @map("birth_date") @db.Date
+  gender          String?   @db.VarChar(16)
+  twofaEnabled    Boolean   @default(false) @map("twofa_enabled")
+  twofaSecretHash String?   @map("twofa_secret_hash")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sessions PatientPortalSession[]
+  grants   PatientPortalGrant[]
+
+  @@map("patient_portal_accounts")
+}
+
+model PatientPortalGrant {
+  id         String    @id @default(uuid()) @db.Uuid
+  accountId  String    @map("account_id") @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  patientId  String    @map("patient_id") @db.Uuid
+  state      String    @default("ACTIVE") @db.VarChar(20)
+  grantedVia String?   @map("granted_via") @db.VarChar(40)
+  grantedAt  DateTime  @default(now()) @map("granted_at") @db.Timestamptz(6)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(6)
+
+  account PatientPortalAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  tenant  Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, tenantId, patientId])
+  @@index([tenantId, patientId])
+  @@map("patient_portal_grants")
+}
+
+model PatientPortalSession {
+  id                String    @id @default(uuid()) @db.Uuid
+  accountId         String    @map("account_id") @db.Uuid
+  deviceFingerprint String?   @map("device_fingerprint") @db.VarChar(128)
+  ipAddress         String?   @map("ip_address") @db.Inet
+  userAgent         String?   @map("user_agent")
+  refreshHash       String    @map("refresh_hash")
+  expiresAt         DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(6)
+  lastActiveAt      DateTime  @default(now()) @map("last_active_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  account PatientPortalAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("patient_portal_sessions")
+}
+
+model PatientPortalOtp {
+  id         String    @id @default(uuid()) @db.Uuid
+  phoneE164  String    @map("phone_e164") @db.VarChar(20)
+  codeHash   String    @map("code_hash")
+  attempts   Int       @default(0)
+  channel    String    @db.VarChar(20) // SMS | TELEGRAM
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([phoneE164, createdAt])
+  @@map("patient_portal_otps")
 }

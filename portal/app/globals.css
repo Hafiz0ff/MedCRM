@@ -1,0 +1,186 @@
+@import 'tailwindcss';
+
+@theme inline {
+  --color-transparent: transparent;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  --color-brand-50: #e7f8f5;
+  --color-brand-100: #bff0e8;
+  --color-brand-300: #7fdcca;
+  --color-brand: var(--brand);
+  --color-brand-500: #3fb9a3;
+  --color-brand-600: #079685;
+  --color-brand-700: #04786b;
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-soft: var(--surface-soft);
+  --color-surface-muted: var(--surface-muted);
+  --color-ink: var(--ink);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-violet: var(--violet);
+  --color-violet-soft: var(--violet-soft);
+
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+:root[data-theme='light'],
+:root:not([data-theme]) {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-soft: #f6f8fb;
+  --surface-muted: #eef2f6;
+  --ink: #101828;
+  --text: #1d2939;
+  --muted: #667085;
+  --faint: #98a2b3;
+  --line: #e4e7ec;
+  --line-strong: #cfd6df;
+  --border: var(--line);
+  --border-strong: var(--line-strong);
+  --brand: #079685;
+  --brand-strong: #04786b;
+  --brand-soft: #e7f8f5;
+  --brand-contrast: #052c28;
+  --info: #2563eb;
+  --info-soft: #eff6ff;
+  --success: #15803d;
+  --success-soft: #ecfdf3;
+  --warning: #b45309;
+  --warning-soft: #fffbeb;
+  --danger: #b42318;
+  --danger-soft: #fef3f2;
+  --violet: #6d28d9;
+  --violet-soft: #f5f3ff;
+  --shadow-sm: 0 8px 22px rgba(16, 24, 40, 0.07);
+  --shadow-md: 0 18px 48px rgba(16, 24, 40, 0.1);
+}
+
+:root[data-theme='dark'] {
+  --bg: #0b1220;
+  --surface: #111827;
+  --surface-soft: #1f2937;
+  --surface-muted: #374151;
+  --ink: #f9fafb;
+  --text: #f3f4f6;
+  --muted: #9ca3af;
+  --faint: #6b7280;
+  --line: #1f2937;
+  --line-strong: #374151;
+  --border: var(--line);
+  --border-strong: var(--line-strong);
+  --brand: #3fb9a3;
+  --brand-strong: #7fdcca;
+  --brand-soft: rgba(7, 150, 133, 0.15);
+  --brand-contrast: #06201d;
+  --info: #3b82f6;
+  --info-soft: rgba(37, 99, 235, 0.15);
+  --success: #22c55e;
+  --success-soft: rgba(21, 128, 61, 0.15);
+  --warning: #f59e0b;
+  --warning-soft: rgba(180, 83, 9, 0.15);
+  --danger: #ef4444;
+  --danger-soft: rgba(180, 35, 24, 0.15);
+  --violet: #8b5cf6;
+  --violet-soft: rgba(109, 40, 217, 0.15);
+  --shadow-sm: 0 8px 22px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 18px 48px rgba(0, 0, 0, 0.4);
+}
+
+/* Base Body Styles */
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Premium Visual Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--faint);
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+  background: rgba(var(--surface), 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(var(--line), 0.5);
+}
+
+/* Form Styles */
+input,
+select,
+textarea {
+  background-color: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  transition: all 0.2s ease-in-out;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+/* Premium Animation Classes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
