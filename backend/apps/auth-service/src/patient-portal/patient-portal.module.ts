@@ -15,6 +15,8 @@ import { PortalBookingService } from './booking/portal-booking.service';
 import { PaymentRegistryService } from './payments/payment-registry.service';
 import { AlifAdapter } from './payments/providers/alif.adapter';
 import { YooKassaAdapter } from './payments/providers/yookassa.adapter';
+import { PortalPublicController } from './public/portal-public.controller';
+import { PortalPublicService } from './public/portal-public.service';
 import { PortalVisitsController } from './visits/portal-visits.controller';
 import { PortalVisitsService } from './visits/portal-visits.service';
 
@@ -38,7 +40,12 @@ import { PortalVisitsService } from './visits/portal-visits.service';
       }),
     }),
   ],
-  controllers: [PortalAuthController, PortalBookingController, PortalVisitsController],
+  controllers: [
+    PortalAuthController,
+    PortalBookingController,
+    PortalVisitsController,
+    PortalPublicController,
+  ],
   providers: [
     PortalAuthService,
     PortalOtpService,
@@ -46,6 +53,7 @@ import { PortalVisitsService } from './visits/portal-visits.service';
     PatientJwtStrategy,
     PortalBookingService,
     PortalVisitsService,
+    PortalPublicService,
     PaymentRegistryService,
     YooKassaAdapter,
     AlifAdapter,
