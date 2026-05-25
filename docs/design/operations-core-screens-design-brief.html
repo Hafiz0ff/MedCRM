@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ТЗ на дизайн: MedCRM Operations Core Screens</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #111827;
+      --muted: #5f6b7a;
+      --soft: #f4f7fa;
+      --surface: #ffffff;
+      --line: #d8e0ea;
+      --brand: #0f766e;
+      --brand-soft: #d9f3ef;
+      --blue: #2563eb;
+      --amber: #b7791f;
+      --red: #b42318;
+      --green: #15803d;
+      --nav: #0b1f2a;
+      --shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #edf3f7;
+      color: var(--ink);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      line-height: 1.58;
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 40px));
+      margin: 32px auto;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      padding: 48px 56px 40px;
+      background:
+        linear-gradient(135deg, rgba(15, 118, 110, 0.16), rgba(37, 99, 235, 0.08)),
+        #fbfdff;
+      border-bottom: 1px solid var(--line);
+    }
+
+    main { padding: 36px 56px 60px; }
+
+    h1, h2, h3, h4 {
+      margin: 0;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 860px;
+      font-size: 42px;
+      font-weight: 780;
+    }
+
+    h2 {
+      margin-top: 44px;
+      padding-top: 28px;
+      border-top: 1px solid var(--line);
+      font-size: 27px;
+    }
+
+    h3 {
+      margin-top: 28px;
+      font-size: 20px;
+    }
+
+    h4 {
+      margin-top: 20px;
+      font-size: 16px;
+    }
+
+    p { margin: 12px 0 0; }
+
+    ul, ol {
+      margin: 12px 0 0;
+      padding-left: 22px;
+    }
+
+    li { margin: 7px 0; }
+
+    code {
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: #eef2f6;
+      color: #0f172a;
+      font-size: 0.94em;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 14px;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: #f6f8fb;
+      font-weight: 720;
+    }
+
+    .lead {
+      max-width: 900px;
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border: 1px solid rgba(15, 118, 110, 0.22);
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.08);
+      color: #0f4f4a;
+      font-size: 13px;
+      font-weight: 680;
+    }
+
+    .note {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-left: 4px solid var(--brand);
+      background: #f5fbfa;
+      color: #24413f;
+    }
+
+    .warning {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-left: 4px solid var(--amber);
+      background: #fff8eb;
+      color: #55380c;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 4px 6px 0 0;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: #eef2f7;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 680;
+    }
+
+    .screen {
+      margin-top: 28px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fbfdff;
+    }
+
+    .screen h3 { margin-top: 0; }
+
+    .screen-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .priority {
+      color: var(--brand);
+      font-weight: 760;
+    }
+
+    .bad { color: var(--red); font-weight: 720; }
+    .good { color: var(--green); font-weight: 720; }
+
+    @media (max-width: 820px) {
+      .page { width: 100%; margin: 0; border: 0; }
+      header, main { padding: 28px 22px; }
+      h1 { font-size: 31px; }
+      h2 { font-size: 23px; }
+      .grid { grid-template-columns: 1fr; }
+      table { font-size: 13px; }
+      th, td { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <article class="page">
+    <header>
+      <h1>ТЗ на дизайн четырех операционных экранов MedCRM</h1>
+      <p class="lead">
+        Задача дизайнера: переработать UI для базового операционного контура клиники так, чтобы администратор, регистратор и оператор расписания могли быстро видеть состояние смены, находить пациента, управлять очередью и создавать запись без лишних переходов.
+      </p>
+      <div class="meta">
+        <span class="pill">Проект: MedCRM</span>
+        <span class="pill">Контур: Operations Core</span>
+        <span class="pill">Формат результата: Figma</span>
+        <span class="pill">Экраны: 4 desktop + responsive</span>
+      </div>
+    </header>
+
+    <main>
+      <section>
+        <h2>1. Контекст и цель</h2>
+        <p>
+          Сейчас интерфейс функционально уже показывает основные страницы, но визуально выглядит как технический прототип: много пустого пространства, слабая иерархия, разрозненные карточки, недостаточно плотности данных для рабочего SaaS-инструмента, слабая поддержка критических состояний смены. Нужно сделать дизайн не маркетинговым и не декоративным, а операционным: спокойным, плотным, предсказуемым, удобным для повторяющейся работы в клинике.
+        </p>
+        <div class="note">
+          Важно: дизайнеру нужно отрисовать не лендинг, а реальные рабочие поверхности. Первый экран каждой страницы должен сразу быть инструментом: таблица, очередь, календарь, KPI, фильтры, быстрые действия.
+        </div>
+
+        <h3>Экраны в scope</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Скриншот</th>
+              <th>Маршрут</th>
+              <th>Название</th>
+              <th>Основная роль</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Image #3</td>
+              <td><code>/dashboard</code></td>
+              <td>Операционная панель</td>
+              <td>Администратор / управляющий сменой</td>
+            </tr>
+            <tr>
+              <td>Image #1</td>
+              <td><code>/reception</code></td>
+              <td>Регистратура / Reception live board</td>
+              <td>Регистратор на стойке</td>
+            </tr>
+            <tr>
+              <td>Image #2</td>
+              <td><code>/patients</code></td>
+              <td>Пациенты / CRM база</td>
+              <td>Администратор, оператор, врач</td>
+            </tr>
+            <tr>
+              <td>Image #4</td>
+              <td><code>/schedule</code></td>
+              <td>Расписание / Smart scheduling</td>
+              <td>Оператор записи, регистратор</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Не входит в это ТЗ</h3>
+        <ul>
+          <li>Полный EMR/EHR workspace, медицинская карта, назначения, подпись приема.</li>
+          <li>Финансы, склад, BI, коммуникации, настройки.</li>
+          <li>Редизайн бизнес-логики или API. Дизайн должен учитывать текущие возможности, но может предложить более правильное расположение элементов.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>2. Главная дизайн-задача</h2>
+        <p>
+          Сделать интерфейс уровня production SaaS для клиники. Он должен выглядеть как инструмент, которым пользуются весь день: понятный с первого взгляда, быстрый, спокойный, с высокой плотностью полезной информации и четкими действиями.
+        </p>
+
+        <div class="grid">
+          <div class="card">
+            <strong>Визуальная гипотеза</strong>
+            Светлая медицинская операционная система: чистая поверхность, темная постоянная навигация, один основной teal-акцент, аккуратные статусы, компактные таблицы, понятные зоны действия.
+          </div>
+          <div class="card">
+            <strong>UX-гипотеза</strong>
+            Пользователь должен понимать состояние смены за 5 секунд, находить пациента за 10 секунд, создавать запись за 30-60 секунд, менять статус визита в 1-2 действия.
+          </div>
+          <div class="card">
+            <strong>Интеракционная гипотеза</strong>
+            Быстрые действия должны быть ближе к объекту действия: у пациента, визита, слота, очереди. Большие переходы оставляем только для полной карточки.
+          </div>
+          <div class="card">
+            <strong>Ограничение</strong>
+            Не делать интерфейс «красивой CRM-картинкой». Нужна утилитарная рабочая среда, где статус, время, пациент, врач и действие читаются быстрее декоративных элементов.
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>3. Общие требования ко всем четырем экранам</h2>
+
+        <h3>3.1. App Shell</h3>
+        <ul>
+          <li>Сохранить концепцию: темный левый сайдбар + светлая рабочая область.</li>
+          <li>Сайдбар должен быть компактным, но читаемым: логотип, клиника, группы меню, активный пункт, заблокированные/скоро-модули, статус активного модуля.</li>
+          <li>Активный пункт меню должен быть очевиден без сильного визуального шума.</li>
+          <li>Верхняя панель должна включать: текущая клиника/филиал, глобальный поиск, live-индикатор, уведомления, профиль.</li>
+          <li>Глобальный поиск должен визуально быть системным элементом, а не локальным полем страницы. Placeholder: «Найти пациента, запись или действие».</li>
+          <li>Высота верхней панели должна быть стабильной. Никакие состояния не должны прыгать при загрузке.</li>
+        </ul>
+
+        <h3>3.2. Layout и плотность</h3>
+        <ul>
+          <li>Основной desktop target: 1440 x 900. Также проверить 1366 x 768, 1280 x 800, 1024 x 768.</li>
+          <li>Рабочая область должна использовать ширину рационально. Не оставлять большие пустые зоны, если есть полезные данные или действия.</li>
+          <li>Для операционных экранов использовать максимум два уровня контейнеров. Не вкладывать карточки в карточки без необходимости.</li>
+          <li>Карточки использовать только для самостоятельных объектов: KPI, визит, пациент, слот, alert, форма. Секции лучше оформлять как панели/области.</li>
+          <li>Все таблицы и board-колонки должны иметь фиксированную структуру, чтобы пустое/загруженное состояние не меняло общую сетку.</li>
+        </ul>
+
+        <h3>3.3. Цвет и статусы</h3>
+        <ul>
+          <li>Основной акцент: teal/green для primary action и live/ready состояний.</li>
+          <li>Информационные статусы: blue. Предупреждения: amber. Ошибки/отмена: red. Нейтральные: slate/gray.</li>
+          <li>Статусы должны иметь единую систему бейджей на всех экранах: размер, фон, текст, иконка при необходимости.</li>
+          <li>Цвет не должен быть единственным способом различения статуса. Добавить текст, иконку или форму бейджа.</li>
+        </ul>
+
+        <h3>3.4. Typography</h3>
+        <ul>
+          <li>Типографика должна быть компактной: page title крупный, но без hero-ощущения; таблицы и панели плотные.</li>
+          <li>Не использовать огромные заголовки внутри рабочих панелей.</li>
+          <li>Лейблы, числа KPI, имя пациента, время визита и статус должны иметь четкую иерархию.</li>
+          <li>Нельзя использовать отрицательный letter-spacing. Текст должен помещаться в кнопки и бейджи на русском.</li>
+        </ul>
+
+        <h3>3.5. Состояния</h3>
+        <p>Для каждого экрана обязательно отрисовать следующие состояния:</p>
+        <ul>
+          <li>Loaded with data: нормальное заполненное состояние.</li>
+          <li>Empty: нет записей/нет пациентов/нет очереди, но layout остается стабильным.</li>
+          <li>Loading: skeleton для таблицы, KPI, board-колонок, правого сайдбара.</li>
+          <li>Error: недоступен backend, нет доступа, ошибка сохранения.</li>
+          <li>Permission-limited: действие скрыто или disabled, если у роли нет права.</li>
+          <li>Realtime update: мягкая подсветка обновленного визита/строки/счетчика.</li>
+        </ul>
+
+        <h3>3.6. Responsive</h3>
+        <ul>
+          <li>Desktop: основной рабочий режим.</li>
+          <li>Tablet 1024: сайдбар может стать уже, правые панели уходят ниже или в drawer.</li>
+          <li>Mobile 390: дизайн нужен как адаптивная спецификация, даже если основной сценарий desktop. Таблицы превращаются в списки, board получает горизонтальный scroll, формы становятся bottom sheet / full screen.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>4. Компонентная система</h2>
+        <p>
+          Дизайнер должен собрать минимальную дизайн-систему для этих экранов, чтобы разработчик мог переносить UI без разночтений.
+        </p>
+
+        <h3>Обязательные компоненты</h3>
+        <ul>
+          <li>App shell: sidebar, topbar, global search, branch selector/state, user menu, notification button.</li>
+          <li>Buttons: primary, secondary, ghost, icon-only, destructive, disabled, loading.</li>
+          <li>Inputs: text input, search input, select, date picker, time picker, textarea, phone input.</li>
+          <li>Filters: filter button, active filter chips, filter popover/panel, reset action.</li>
+          <li>Badges: appointment status, patient status, priority, live, payment, conflict.</li>
+          <li>KPI cards: normal, warning, critical, loading.</li>
+          <li>Data table: compact row, selected row, hover, empty, loading, pagination/virtualization hint.</li>
+          <li>Patient identity: avatar/initials, full name, patient code, contact line, tags.</li>
+          <li>Appointment card: time, patient, service, doctor, cabinet, status, quick actions.</li>
+          <li>Kanban/board column: header counter, empty, drag-over, overflow.</li>
+          <li>Calendar slot: empty, booked, conflict, outside working hours, blocked, selected.</li>
+          <li>Right panel: creation form, context summary, queue, utilization.</li>
+          <li>Slide-over / drawer: patient preview, appointment preview, filters, create appointment.</li>
+          <li>Toast / confirmation dialog: success, error, warning, cancel confirmation.</li>
+        </ul>
+
+        <h3>Figma tokens</h3>
+        <ul>
+          <li>Colors: background, surface, nav, border, muted text, primary, primary-hover, status colors.</li>
+          <li>Typography: page title, section title, table header, table body, meta text, badge text, button text.</li>
+          <li>Spacing: 4/8/12/16/20/24/32 scale.</li>
+          <li>Radii: small 6px, panel 8px, pill 999px. Не использовать большие «пузырьковые» радиусы для рабочих поверхностей.</li>
+          <li>Elevation: минимальные тени только для floating/drawer/dropdown; основные панели через border и фон.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>5. Экран 1: Операционная панель</h2>
+        <div class="screen">
+          <h3><code>/dashboard</code> - краткий контроль смены</h3>
+          <p>
+            Это стартовый экран после входа. Его задача - дать управляющему или администратору состояние дня: сколько записей, кто уже в клинике, есть ли конфликты, насколько загружены врачи, какие действия требуют внимания.
+          </p>
+          <div class="screen-meta">
+            <span class="tag">Image #3</span>
+            <span class="tag">Role: admin / shift manager</span>
+            <span class="tag">Priority: high</span>
+          </div>
+
+          <h4>Что сейчас не хватает</h4>
+          <ul>
+            <li>Слишком мало операционной информации для dashboard.</li>
+            <li>KPI выглядят как статичные карточки, но не помогают быстро перейти к проблеме.</li>
+            <li>Блок «Состояние системы» занимает много места и менее важен для ежедневной работы, чем риски смены.</li>
+            <li>Нет выраженного слоя alert/action queue: опоздания, конфликты, ожидание оплаты, не подтвержденные записи.</li>
+          </ul>
+
+          <h4>Новая структура экрана</h4>
+          <ol>
+            <li>Header: заголовок «Операционная панель», дата/филиал, primary action «Новая запись», secondary «Пациенты».</li>
+            <li>KPI strip: 4-6 компактных показателей в одну строку на desktop.</li>
+            <li>Operational alerts: список задач смены, сгруппированный по срочности.</li>
+            <li>Today flow: мини-воронка статусов визитов: запланировано, пришли, на приеме, к оплате, завершено, отмены.</li>
+            <li>Doctor/cabinet load: компактный список загрузки врачей или кабинетов с progress bar.</li>
+            <li>System readiness: сделать компактным secondary-блоком, не главным контентом.</li>
+          </ol>
+
+          <h4>KPI требования</h4>
+          <ul>
+            <li>«Записи сегодня» - число, подтвержденные, требуют звонка.</li>
+            <li>«Пациенты в клинике» - число, ожидают администратора, ожидают врача.</li>
+            <li>«Загрузка врачей» - процент, peak time.</li>
+            <li>«Очередь» - сколько ожидают и максимальное время ожидания.</li>
+            <li>«К оплате» - количество завершенных приемов без оплаты.</li>
+            <li>«Риски» - конфликты ресурсов, опоздания, неподтвержденные записи.</li>
+          </ul>
+
+          <h4>Интеракции</h4>
+          <ul>
+            <li>Клик по KPI ведет в соответствующий фильтр на `/reception` или `/schedule`.</li>
+            <li>Alert row имеет primary next action: «Проверить», «Позвонить», «Открыть запись», «Назначить кабинет».</li>
+            <li>Realtime обновление должно подсвечивать изменившийся KPI/alert на 1-2 секунды.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>6. Экран 2: Регистратура</h2>
+        <div class="screen">
+          <h3><code>/reception</code> - live board потока пациентов</h3>
+          <p>
+            Главный рабочий экран регистратора. Он должен показывать поток пациентов по статусам и давать быстрые действия без открытия полной карточки.
+          </p>
+          <div class="screen-meta">
+            <span class="tag">Image #1</span>
+            <span class="tag">Role: receptionist</span>
+            <span class="tag">Realtime board</span>
+          </div>
+
+          <h4>Что сейчас не хватает</h4>
+          <ul>
+            <li>При пустых данных почти весь экран занят пустыми колонками, нет ощущения полезного инструмента.</li>
+            <li>Канбан-колонки слишком растянуты и малоинформативны.</li>
+            <li>Правая очередь визуально оторвана от board и не показывает next actions.</li>
+            <li>Нет хорошо продуманной карточки визита: время, пациент, врач, услуга, кабинет, статус, быстрые действия.</li>
+          </ul>
+
+          <h4>Новая структура экрана</h4>
+          <ol>
+            <li>Header: «Регистратура», live indicator, поиск пациента, «Быстрая запись».</li>
+            <li>Counter strip: 6 счетчиков статусов, компактнее текущего варианта.</li>
+            <li>Main board: горизонтальные колонки статусов с фиксированной шириной и drag/drop.</li>
+            <li>Right context rail: очередь, последние check-in, звонки/быстрая связь, selected patient preview.</li>
+            <li>Bottom/secondary area: если данных мало, показать ближайшие записи и подсказки быстрых действий, а не большое пустое поле.</li>
+          </ol>
+
+          <h4>Колонки board</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>Колонка</th>
+                <th>Смысл</th>
+                <th>Быстрые действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>План</td>
+                <td>Запланированные и подтвержденные визиты.</td>
+                <td>Отметить приход, позвонить, отменить.</td>
+              </tr>
+              <tr>
+                <td>Ожидают</td>
+                <td>Пациенты уже в клинике.</td>
+                <td>Начать прием, повысить приоритет, открыть пациента.</td>
+              </tr>
+              <tr>
+                <td>На приеме</td>
+                <td>Активные приемы у врача.</td>
+                <td>Завершить, перейти к EMR, открыть запись.</td>
+              </tr>
+              <tr>
+                <td>К оплате</td>
+                <td>Прием завершен, нужна оплата.</td>
+                <td>Перейти к оплате, отправить счет.</td>
+              </tr>
+              <tr>
+                <td>Завершено</td>
+                <td>Завершенные визиты.</td>
+                <td>Открыть детали, повторная запись.</td>
+              </tr>
+              <tr>
+                <td>Отмены</td>
+                <td>Отмененные и no-show.</td>
+                <td>Перезаписать, отметить причину.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h4>Карточка визита</h4>
+          <ul>
+            <li>Верхняя строка: время и статус.</li>
+            <li>Основная строка: ФИО пациента + patient code.</li>
+            <li>Meta: услуга, врач, кабинет, источник записи.</li>
+            <li>Risk flags: опоздание, конфликт, VIP, долг, нет контакта, первая запись.</li>
+            <li>Actions: иконки или компактные кнопки. Основное действие видно, вторичные - в меню.</li>
+          </ul>
+
+          <h4>Drag and drop</h4>
+          <ul>
+            <li>Drag-over состояние колонки должно быть очевидным.</li>
+            <li>При недопустимом переносе показать предупреждение и объяснение.</li>
+            <li>После переноса статус обновляется optimistic UI + toast.</li>
+            <li>Нужен дизайн подтверждения отмены визита.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>7. Экран 3: Пациенты</h2>
+        <div class="screen">
+          <h3><code>/patients</code> - единый реестр и быстрый пациент</h3>
+          <p>
+            Экран должен работать как CRM-реестр: быстро найти пациента, увидеть статус/контакт/филиал, открыть карточку, создать нового пациента с минимальными полями и заметить возможные дубли.
+          </p>
+          <div class="screen-meta">
+            <span class="tag">Image #2</span>
+            <span class="tag">Role: receptionist / admin</span>
+            <span class="tag">Data table</span>
+          </div>
+
+          <h4>Что сейчас не хватает</h4>
+          <ul>
+            <li>Таблица выглядит технически и не показывает достаточно пациентского контекста.</li>
+            <li>Форма «Новый пациент» слишком простая, не учитывает дубль, источник, согласия, быстрый переход к записи.</li>
+            <li>Фильтры спрятаны, но активные фильтры не представлены как рабочий слой.</li>
+            <li>Нужно больше сценариев: создание, дубликаты, пустой поиск, ошибка, нет прав.</li>
+          </ul>
+
+          <h4>Новая структура экрана</h4>
+          <ol>
+            <li>Header: «Пациенты», count result, action «Создать пациента».</li>
+            <li>Search/filter bar: большой поиск, фильтры, активные chips, сортировка.</li>
+            <li>Patient table: основной список с плотными строками.</li>
+            <li>Right rail: новый пациент или selected patient preview, в зависимости от контекста.</li>
+            <li>Duplicate warning area: если найдены возможные дубли, показать отдельный компактный блок над таблицей.</li>
+          </ol>
+
+          <h4>Колонки таблицы</h4>
+          <ul>
+            <li>Пациент: avatar initials, ФИО, patient code, возраст/дата рождения при наличии.</li>
+            <li>Контакт: основной телефон, иконка канала, fallback «нет контакта».</li>
+            <li>Статус: новый, активный, спящий, VIP, ограничен.</li>
+            <li>Теги: 1-3 видимых тега + overflow.</li>
+            <li>Филиал: название филиала.</li>
+            <li>Последний визит / следующая запись: дата, если есть.</li>
+            <li>Действия: открыть, записать, меню.</li>
+          </ul>
+
+          <h4>Форма нового пациента</h4>
+          <ul>
+            <li>Минимальное состояние: имя, фамилия, телефон, филиал.</li>
+            <li>Расширенное состояние: дата рождения, пол, источник, комментарий, согласие на коммуникации.</li>
+            <li>При вводе телефона или ФИО показать inline duplicate check.</li>
+            <li>После создания предложить два действия: «Открыть карточку» и «Создать запись».</li>
+            <li>Ошибки валидации должны быть на уровне поля, не только toast.</li>
+          </ul>
+
+          <h4>Фильтры</h4>
+          <ul>
+            <li>Статус пациента.</li>
+            <li>Теги.</li>
+            <li>Филиал.</li>
+            <li>Есть долг / нет долга, если доступно.</li>
+            <li>Есть будущая запись / без записи.</li>
+            <li>Дата последнего визита.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>8. Экран 4: Расписание</h2>
+        <div class="screen">
+          <h3><code>/schedule</code> - календарь записи и загрузка кабинетов</h3>
+          <p>
+            Экран должен дать оператору быстрый способ выбрать день, увидеть расписание врачей/кабинетов, создать запись и отследить конфликты ресурсов.
+          </p>
+          <div class="screen-meta">
+            <span class="tag">Image #4</span>
+            <span class="tag">Role: scheduling operator</span>
+            <span class="tag">Calendar</span>
+          </div>
+
+          <h4>Что сейчас не хватает</h4>
+          <ul>
+            <li>При пустом дне большая центральная область почти бесполезна.</li>
+            <li>Нет плотного календарного grid для реального расписания.</li>
+            <li>Форма создания записи в правом rail слишком низко и может обрезаться.</li>
+            <li>Загрузка кабинетов отделена от календаря, хотя это ключевой фактор записи.</li>
+            <li>Нет визуального дизайна конфликтов: врач, кабинет, услуга, буфер, пересечение времени.</li>
+          </ul>
+
+          <h4>Новая структура экрана</h4>
+          <ol>
+            <li>Header: «Расписание», actions «Фильтры», «Создать запись».</li>
+            <li>Calendar toolbar: date picker, prev/next, today, day/week toggle, doctor/cabinet filters.</li>
+            <li>Main calendar: day view с колонками врачей или кабинетов; week view как compact schedule.</li>
+            <li>Right rail: selected slot/appointment details, create appointment form, room utilization.</li>
+            <li>All appointments list: ниже календаря или drawer, не должен конкурировать с основным календарем.</li>
+          </ol>
+
+          <h4>Calendar states</h4>
+          <ul>
+            <li>Empty day: показать рабочую сетку времени, availability hints и CTA создать запись, а не пустой блок.</li>
+            <li>Booked slot: пациент, услуга, статус, длительность, цвет статуса.</li>
+            <li>Selected slot: правый rail раскрывает форму создания записи с выбранным временем.</li>
+            <li>Conflict slot: красно/amber outline, tooltip/popover с причиной.</li>
+            <li>Blocked time: серый фон, причина блокировки.</li>
+            <li>Outside working hours: muted background.</li>
+            <li>Drag appointment: ghost preview, target slot highlight.</li>
+          </ul>
+
+          <h4>Форма создания записи</h4>
+          <ul>
+            <li>Пациент: searchable select + быстрый create patient.</li>
+            <li>Услуга: select с длительностью и ценой, если есть.</li>
+            <li>Врач: select с availability state.</li>
+            <li>Дата и время: prefilled из выбранного слота, ручное редактирование.</li>
+            <li>Кабинет: auto-selected/recommended + conflict warning.</li>
+            <li>Комментарий, источник записи, reminder option.</li>
+            <li>Primary action: «Создать запись». Secondary: «Создать и отметить приход» для walk-in сценария.</li>
+          </ul>
+
+          <h4>Room utilization</h4>
+          <ul>
+            <li>Показать utilization bar по кабинетам.</li>
+            <li>Показать минуты занятости и свободные окна.</li>
+            <li>Показать warning при перегрузке или конфликте.</li>
+            <li>Клик по кабинету фильтрует календарь.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>9. Продуктовые сценарии, которые нужно покрыть</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Сценарий</th>
+              <th>Где начинается</th>
+              <th>Ожидаемый UX</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Быстро записать нового пациента</td>
+              <td><code>/patients</code> или <code>/schedule</code></td>
+              <td>Создание пациента, проверка дубля, выбор слота, подтверждение записи.</td>
+            </tr>
+            <tr>
+              <td>Отметить приход пациента</td>
+              <td><code>/reception</code></td>
+              <td>Найти визит, one-click check-in, карточка переходит в «Ожидают».</td>
+            </tr>
+            <tr>
+              <td>Начать прием</td>
+              <td><code>/reception</code></td>
+              <td>Из колонки «Ожидают» перевести в «На приеме», показать next action к EMR.</td>
+            </tr>
+            <tr>
+              <td>Закрыть прием и отправить к оплате</td>
+              <td><code>/reception</code></td>
+              <td>Статус «К оплате», заметный financial handoff.</td>
+            </tr>
+            <tr>
+              <td>Найти свободный слот</td>
+              <td><code>/schedule</code></td>
+              <td>Фильтр по врачу/услуге/кабинету, визуальные свободные окна, создание записи из slot click.</td>
+            </tr>
+            <tr>
+              <td>Понять проблемы смены</td>
+              <td><code>/dashboard</code></td>
+              <td>Alerts + KPI показывают, где есть риски и куда перейти.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>10. Accessibility и usability</h2>
+        <ul>
+          <li>Контраст текста и статусов должен соответствовать WCAG AA.</li>
+          <li>Все кликабельные элементы минимум 32px по высоте на desktop и 40px на touch.</li>
+          <li>Иконки в icon-only buttons должны иметь tooltip/label.</li>
+          <li>Фокус-состояния обязательны для keyboard navigation.</li>
+          <li>Таблицы должны иметь понятные hover/selected/focus states.</li>
+          <li>Не использовать только цвет для статусов.</li>
+          <li>Все empty/error states должны объяснять следующий шаг.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>11. Требования к Figma deliverables</h2>
+        <ol>
+          <li>Page 1: Foundations - colors, typography, spacing, status system.</li>
+          <li>Page 2: Components - app shell, buttons, inputs, badges, tables, appointment cards, calendar slots, forms, drawers.</li>
+          <li>Page 3: Desktop screens - четыре основных экрана в 1440 x 900.</li>
+          <li>Page 4: Screen states - loading, empty, error, permission-limited, selected, drag-over, realtime update.</li>
+          <li>Page 5: Responsive - 1024 tablet and 390 mobile key adaptations.</li>
+          <li>Page 6: Prototype - основные переходы: dashboard to schedule, patients create, reception status transition, schedule create appointment.</li>
+          <li>Annotations - размеры, sticky behavior, scroll behavior, state rules, компонентные variants.</li>
+        </ol>
+
+        <div class="warning">
+          Без состояний и component variants дизайн считается неполным. Нужны не только четыре красивые картинки, а рабочая спецификация для реализации.
+        </div>
+      </section>
+
+      <section>
+        <h2>12. Критерии приемки дизайна</h2>
+        <ul>
+          <li><span class="good">Понятность:</span> по первому экрану ясно, что происходит в клинике сейчас.</li>
+          <li><span class="good">Скорость:</span> основные действия видны без поиска: создать запись, найти пациента, отметить приход, открыть карточку.</li>
+          <li><span class="good">Плотность:</span> интерфейс использует desktop-пространство как рабочий инструмент, не как лендинг.</li>
+          <li><span class="good">Единая система:</span> статусы, кнопки, поля, таблицы и карточки выглядят одинаково на всех экранах.</li>
+          <li><span class="good">Состояния:</span> есть дизайн для loading, empty, error, no permission, realtime update, drag/drop.</li>
+          <li><span class="good">Responsive:</span> есть понятное поведение для tablet/mobile.</li>
+          <li><span class="bad">Не принимается:</span> декоративные hero-блоки, огромные пустые карточки, непонятные цвета статусов, перегруженные тени/градиенты, дизайн только для одного идеального состояния.</li>
+        </ul>
+      </section>
+    </main>
+  </article>
+</body>
+</html>
