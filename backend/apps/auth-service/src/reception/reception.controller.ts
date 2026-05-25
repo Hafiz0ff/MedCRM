@@ -85,6 +85,16 @@ export class ReceptionController {
     return this.reception.updateQueueStatus(user, id, status, reason);
   }
 
+  @Patch('queue/:id/priority')
+  @RequirePermissions('reception.queue.manage')
+  updateQueuePriority(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body('priority') priority: string
+  ) {
+    return this.reception.updateQueuePriority(user, id, priority);
+  }
+
   @Post('fast-booking')
   @RequirePermissions('reception.fast_booking.create')
   @UsePipes(new ZodValidationPipe(FastBookingSchema))

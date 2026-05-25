@@ -145,6 +145,7 @@ export class PatientCrmService {
       tenantId: user.tenantId,
       archivedAt: null,
       ...(query.status ? { status: query.status } : {}),
+      ...(query.tagId ? { tags: { some: { tagId: query.tagId } } } : {}),
       AND: [
         {
           OR: query.branchId

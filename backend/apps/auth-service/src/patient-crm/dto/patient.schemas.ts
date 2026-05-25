@@ -5,7 +5,8 @@ export const patientListQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
   q: z.string().trim().optional(),
   branchId: z.string().uuid().optional(),
-  status: z.string().trim().optional()
+  status: z.string().trim().optional(),
+  tagId: z.string().uuid().optional()
 });
 
 export const createPatientSchema = z.object({

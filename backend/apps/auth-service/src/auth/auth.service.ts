@@ -253,6 +253,30 @@ export class AuthService {
     });
   }
 
+  async revokeAllOtherSessions(user: AuthenticatedUser): Promise<{ count: number }> {
+    const sessions = await this.prisma.userSession.findMany({
+      where: {
+        userId: user.userId,
+        tenantId: user.tenantId,
+        id: { not: user.sessionId },
+        revokedAt: null
+      }
+    });
+
+    for (const session of sessions) {
+      await this.revokeSession(session.id);
+    }
+
+    await this.audit.log({
+      tenantId: user.tenantId,
+      userId: user.userId,
+      action: 'auth.revoke_all_other_sessions',
+      newValuesJson: { count: sessions.length }
+    });
+
+    return { count: sessions.length };
+  }
+
   async bootstrap(user: AuthenticatedUser, branchId?: string): Promise<BootstrapPayload> {
     const context = await this.buildAuthContext(user.userId, user.tenantId, branchId);
     return this.bootstrapFromIds(user.userId, user.tenantId, context);

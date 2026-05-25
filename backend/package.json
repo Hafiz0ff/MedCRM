@@ -11,6 +11,7 @@
     "start:prod:api-gateway": "node dist/apps/api-gateway/main.js",
     "start:prod:auth-service": "node dist/apps/auth-service/main.js",
     "test:gateway": "tsx --test apps/api-gateway/src/*.spec.ts",
+    "test:e2e": "node -r ts-node/register -r tsconfig-paths/register --test apps/auth-service/src/test/*.e2e-spec.ts",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",

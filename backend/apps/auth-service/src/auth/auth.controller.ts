@@ -104,6 +104,14 @@ export class AuthController {
     return { ok: true };
   }
 
+  @Post('sessions/revoke-all')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Revoke all active sessions for current user except the current one' })
+  async revokeAllOtherSessions(@CurrentUser() user: AuthenticatedUser) {
+    return this.auth.revokeAllOtherSessions(user);
+  }
+
   @Get('bootstrap')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RbacGuard)

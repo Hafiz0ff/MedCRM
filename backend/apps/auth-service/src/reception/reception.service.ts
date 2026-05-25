@@ -147,6 +147,9 @@ export class ReceptionService {
         patientId: p.id,
         patientName: p.fullName,
         patientCode: p.patientCode,
+        patient: { fullName: p.fullName },
+        service: app.service,
+        appointmentNumber: app.appointmentNumber,
         age,
         phone: primaryContact,
         doctorName,
@@ -156,6 +159,7 @@ export class ReceptionService {
         status: app.status,
         appointmentType: app.appointmentType,
         isVip,
+        priority: app.priority,
         debt,
         lastVisitAt: p.metrics?.lastVisitAt?.toISOString() || null
       };
@@ -181,9 +185,11 @@ export class ReceptionService {
     };
 
     const queue = [...(columns.CHECKED_IN ?? [])].sort((a: any, b: any) => {
-      const aPriority = a.isVip ? 0 : 2;
-      const bPriority = b.isVip ? 0 : 2;
-      if (aPriority !== bPriority) return aPriority - bPriority;
+      const aPriority = a.priority ?? 'NORMAL';
+      const bPriority = b.priority ?? 'NORMAL';
+      if (aPriority !== bPriority) {
+        return bPriority.localeCompare(aPriority);
+      }
       return new Date(a.startAt).getTime() - new Date(b.startAt).getTime();
     });
 
@@ -511,6 +517,47 @@ export class ReceptionService {
       entityId: queueId,
       oldValuesJson: queueRecord,
       newValuesJson: { ...updated, reason }
+    });
+
+    return updated;
+  }
+
+  async updateQueuePriority(user: AuthenticatedUser, id: string, priority: string) {
+    let queueRecord = await this.prisma.visitQueue.findUnique({
+      where: { id }
+    });
+    if (!queueRecord) {
+      queueRecord = await this.prisma.visitQueue.findFirst({
+        where: { appointmentId: id, tenantId: user.tenantId }
+      });
+    }
+    if (!queueRecord) throw new NotFoundException('Запись очереди не найдена');
+    if (queueRecord.tenantId !== user.tenantId) throw new ForbiddenException();
+
+    const allowed = ['VIP', 'URGENT', 'NORMAL', 'LOW'];
+    if (!allowed.includes(priority)) {
+      throw new BadRequestException(`Недопустимый приоритет очереди: ${priority}`);
+    }
+
+    const updated = await this.prisma.visitQueue.update({
+      where: { id: queueRecord.id },
+      data: { priority }
+    });
+
+    this.realtime.emitAppointmentEvent('queue.updated', user.tenantId, queueRecord.branchId, updated);
+
+    const dateStr = queueRecord.createdAt.toISOString().slice(0, 10);
+    await this.recalculateDashboard(user.tenantId, queueRecord.branchId, dateStr);
+
+    await this.audit.log({
+      tenantId: user.tenantId,
+      branchId: queueRecord.branchId,
+      userId: user.userId,
+      action: 'receptionist.queue.priority_updated',
+      entityType: 'visit_queue',
+      entityId: queueRecord.id,
+      oldValuesJson: { priority: queueRecord.priority },
+      newValuesJson: { priority }
     });
 
     return updated;
