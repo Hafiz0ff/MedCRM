@@ -16,8 +16,12 @@ import { PortalBookingService } from './booking/portal-booking.service';
 import { PortalDocumentsController } from './documents/portal-documents.controller';
 import { PortalDocumentsService } from './documents/portal-documents.service';
 import { PaymentRegistryService } from './payments/payment-registry.service';
+import { PortalPaymentsController } from './payments/portal-payments.controller';
+import { PortalPaymentsService } from './payments/portal-payments.service';
 import { AlifAdapter } from './payments/providers/alif.adapter';
 import { YooKassaAdapter } from './payments/providers/yookassa.adapter';
+import { PortalProfileController } from './profile/portal-profile.controller';
+import { PortalProfileService } from './profile/portal-profile.service';
 import { PortalPublicController } from './public/portal-public.controller';
 import { PortalPublicService } from './public/portal-public.service';
 import { PortalVisitsController } from './visits/portal-visits.controller';
@@ -48,6 +52,8 @@ import { PortalVisitsService } from './visits/portal-visits.service';
     PortalAuthController,
     PortalBookingController,
     PortalDocumentsController,
+    PortalPaymentsController,
+    PortalProfileController,
     PortalVisitsController,
     PortalPublicController,
   ],
@@ -58,6 +64,8 @@ import { PortalVisitsService } from './visits/portal-visits.service';
     PatientJwtStrategy,
     PortalBookingService,
     PortalDocumentsService,
+    PortalPaymentsService,
+    PortalProfileService,
     PortalVisitsService,
     PortalPublicService,
     PaymentRegistryService,
