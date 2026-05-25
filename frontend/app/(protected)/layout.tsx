@@ -1,8 +1,8 @@
 import { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { Bell, Menu, RefreshCw, Search } from 'lucide-react';
+import { Bell, RefreshCw, Search } from 'lucide-react';
 import { getBootstrap } from '@/shared/api/server-api';
-import { Sidebar } from '@/modules/shell/components/sidebar';
+import { TopNav } from '@/modules/shell/components/top-nav';
 import { AppQueryProvider } from '@/shared/query/query-provider';
 import { formatDate } from '@/shared/ui/status';
 
@@ -16,38 +16,43 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
 
   return (
     <div className="shell">
-      <Sidebar bootstrap={bootstrap} />
-      <main className="main">
-        <header className="topbar">
-          <div className="topbar-left">
-            <button className="icon-button topbar-menu" type="button" aria-label="Открыть меню" title="Меню">
-              <Menu size={18} />
-            </button>
-            <span className="topbar-divider" aria-hidden="true" />
-            <span className="topbar-date">{formatDate(new Date())}</span>
-            <span className="topbar-branch">{branch ? branch.name : 'Филиал не выбран'}</span>
+      <TopNav bootstrap={bootstrap} />
+      <div className="context-bar">
+        <div className="context-bar-inner">
+          <div className="context-left">
+            <span className="context-date">{formatDate(new Date())}</span>
+            <span className="context-divider" aria-hidden="true" />
+            <span className="context-branch">{branch ? branch.name : 'Филиал не выбран'}</span>
           </div>
           <label className="global-search">
-            <Search size={18} />
+            <Search size={16} />
             <input placeholder="Найти пациента, запись или действие" aria-label="Глобальный поиск" />
+            <kbd className="global-search-kbd" aria-hidden="true">⌘K</kbd>
           </label>
-          <div className="topbar-actions">
-            <span className="realtime-pill">
+          <div className="context-actions">
+            <span className="realtime-pill" title="Соединение в реальном времени">
               <span className="dot" />
               Live
             </span>
             <button className="icon-button" type="button" aria-label="Обновить данные" title="Обновить данные">
-              <RefreshCw size={17} />
+              <RefreshCw size={16} />
             </button>
-            <button className="icon-button notification-button" type="button" aria-label="Уведомления" title="Уведомления">
-              <Bell size={18} />
+            <button
+              className="icon-button notification-button"
+              type="button"
+              aria-label="Уведомления"
+              title="Уведомления"
+            >
+              <Bell size={16} />
               <span className="notification-dot" aria-hidden="true" />
             </button>
             <button className="topbar-avatar" type="button" aria-label="Профиль" title={bootstrap.tenant.subscriptionPlan}>
               АД
             </button>
           </div>
-        </header>
+        </div>
+      </div>
+      <main className="main">
         <AppQueryProvider>{children}</AppQueryProvider>
       </main>
     </div>
