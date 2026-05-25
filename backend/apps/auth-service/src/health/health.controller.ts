@@ -1,6 +1,6 @@
+import { PrismaService } from '@core/database/prisma.service';
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { PrismaService } from '@core/database/prisma.service';
 
 @ApiTags('health')
 @Controller('health')
@@ -13,4 +13,3 @@ export class HealthController {
     return { status: 'ok', service: 'auth-service' };
   }
 }
-

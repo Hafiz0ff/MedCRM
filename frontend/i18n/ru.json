@@ -1,0 +1,72 @@
+{
+  "Common": {
+    "loading": "Загрузка...",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "actions": "Действия",
+    "search": "Поиск...",
+    "confirm": "Подтвердить",
+    "error": "Ошибка",
+    "success": "Успешно",
+    "noData": "Нет данных",
+    "theme": "Тема",
+    "density": "Плотность",
+    "language": "Язык"
+  },
+  "Auth": {
+    "title": "Вход в систему",
+    "subtitle": "MedCRM — Единое цифровое пространство клиники",
+    "tenantCode": "Код клиники",
+    "email": "Электронная почта / Логин",
+    "password": "Пароль",
+    "rememberMe": "Запомнить меня",
+    "signIn": "Войти",
+    "signingIn": "Вход...",
+    "errors": {
+      "invalid": "Неверный логин или пароль",
+      "required": "Это поле обязательно для заполнения",
+      "emailInvalid": "Некорректный адрес электронной почты"
+    }
+  },
+  "Dashboard": {
+    "title": "Панель управления",
+    "welcome": "Добро пожаловать в MedCRM",
+    "stats": {
+      "totalPatients": "Всего пациентов",
+      "appointments": "Приемы на сегодня",
+      "utilization": "Загрузка кабинетов",
+      "revenue": "Выручка"
+    }
+  },
+  "Reception": {
+    "title": "Рабочее место регистратуры",
+    "queue": "Очередь",
+    "vip": "VIP клиент",
+    "status": {
+      "waiting": "Ожидает",
+      "checkedIn": "Оформлен",
+      "inProgress": "На приеме",
+      "completed": "Завершен"
+    }
+  },
+  "Patients": {
+    "title": "Картотека пациентов",
+    "addPatient": "Добавить пациента",
+    "fullName": "ФИО",
+    "birthDate": "Дата рождения",
+    "gender": "Пол",
+    "phone": "Телефон",
+    "status": "Статус",
+    "vip": "VIP"
+  },
+  "Scheduling": {
+    "title": "Умное расписание",
+    "newAppointment": "Новая запись",
+    "calendar": "Календарь",
+    "timeSlot": "Временной слот",
+    "doctor": "Врач",
+    "service": "Услуга"
+  }
+}

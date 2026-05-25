@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { RealtimeGateway } from '../smart-scheduling/realtime.gateway';
 import {
   OpenShiftDto,
@@ -11,7 +16,7 @@ import {
   WalletTopUpDto,
   CreatePayrollRuleDto,
   CalculatePayrollDto,
-  CreateSubscriptionPlanDto
+  CreateSubscriptionPlanDto,
 } from './dto/finance.dto';
 
 @Injectable()
@@ -19,7 +24,7 @@ export class FinanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditLoggerService,
-    private readonly realtime: RealtimeGateway
+    private readonly realtime: RealtimeGateway,
   ) {}
 
   async getSummary(user: AuthenticatedUser) {
@@ -29,53 +34,61 @@ export class FinanceService {
     endOfDay.setDate(endOfDay.getDate() + 1);
 
     const branchFilter = { in: user.branchIds };
-    const [activeShift, todayInvoices, pendingInvoices, paidInvoices, payments, refunds, subscription] = await Promise.all([
+    const [
+      activeShift,
+      todayInvoices,
+      pendingInvoices,
+      paidInvoices,
+      payments,
+      refunds,
+      subscription,
+    ] = await Promise.all([
       this.getActiveShift(user),
       this.prisma.invoice.aggregate({
         where: {
           tenantId: user.tenantId,
           branchId: branchFilter,
-          invoiceDate: { gte: startOfDay, lt: endOfDay }
+          invoiceDate: { gte: startOfDay, lt: endOfDay },
         },
         _sum: { totalAmount: true, dueAmount: true, paidAmount: true },
-        _count: true
+        _count: true,
       }),
       this.prisma.invoice.aggregate({
         where: {
           tenantId: user.tenantId,
           branchId: branchFilter,
-          status: { in: ['DRAFT', 'PENDING_PAYMENT', 'PARTIALLY_PAID'] }
+          status: { in: ['DRAFT', 'PENDING_PAYMENT', 'PARTIALLY_PAID'] },
         },
         _sum: { dueAmount: true },
-        _count: true
+        _count: true,
       }),
       this.prisma.invoice.count({
         where: {
           tenantId: user.tenantId,
           branchId: branchFilter,
           status: 'PAID',
-          invoiceDate: { gte: startOfDay, lt: endOfDay }
-        }
+          invoiceDate: { gte: startOfDay, lt: endOfDay },
+        },
       }),
       this.prisma.payment.aggregate({
         where: {
           tenantId: user.tenantId,
           branchId: branchFilter,
-          paidAt: { gte: startOfDay, lt: endOfDay }
+          paidAt: { gte: startOfDay, lt: endOfDay },
         },
         _sum: { amount: true },
-        _count: true
+        _count: true,
       }),
       this.prisma.refund.aggregate({
         where: {
           tenantId: user.tenantId,
           invoice: { branchId: branchFilter },
-          refundedAt: { gte: startOfDay, lt: endOfDay }
+          refundedAt: { gte: startOfDay, lt: endOfDay },
         },
         _sum: { refundAmount: true },
-        _count: true
+        _count: true,
       }),
-      this.getSubscription(user)
+      this.getSubscription(user),
     ]);
 
     return {
@@ -89,15 +102,15 @@ export class FinanceService {
         refundsCount: refunds._count,
         pendingCount: pendingInvoices._count,
         pendingDueAmount: Number(pendingInvoices._sum.dueAmount ?? 0),
-        fullyPaidInvoicesCount: paidInvoices
+        fullyPaidInvoicesCount: paidInvoices,
       },
-      subscription
+      subscription,
     };
   }
 
   async listInvoices(
     user: AuthenticatedUser,
-    filters: { patientId?: string; status?: string; paymentMethod?: string }
+    filters: { patientId?: string; status?: string; paymentMethod?: string },
   ) {
     const status = filters.status?.trim().toUpperCase();
     const paymentMethod = filters.paymentMethod?.trim().toUpperCase();
@@ -108,7 +121,7 @@ export class FinanceService {
         branchId: { in: user.branchIds },
         ...(filters.patientId ? { patientId: filters.patientId } : {}),
         ...(status ? { status } : {}),
-        ...(paymentMethod ? { payments: { some: { paymentMethod } } } : {})
+        ...(paymentMethod ? { payments: { some: { paymentMethod } } } : {}),
       },
       include: {
         patient: {
@@ -117,23 +130,23 @@ export class FinanceService {
             patientCode: true,
             firstName: true,
             lastName: true,
-            middleName: true
-          }
+            middleName: true,
+          },
         },
         branch: { select: { id: true, name: true } },
         appointment: { select: { id: true, appointmentNumber: true, startAt: true, status: true } },
         items: {
           include: {
             service: { select: { id: true, name: true, code: true } },
-            performer: { select: { id: true, firstName: true, lastName: true } }
+            performer: { select: { id: true, firstName: true, lastName: true } },
           },
-          orderBy: { createdAt: 'asc' }
+          orderBy: { createdAt: 'asc' },
         },
         payments: { orderBy: { paidAt: 'desc' } },
-        refunds: { orderBy: { refundedAt: 'desc' } }
+        refunds: { orderBy: { refundedAt: 'desc' } },
       },
       orderBy: [{ invoiceDate: 'desc' }, { createdAt: 'desc' }],
-      take: 100
+      take: 100,
     });
 
     return { items: invoices, total: invoices.length };
@@ -143,7 +156,7 @@ export class FinanceService {
     const payments = await this.prisma.payment.findMany({
       where: {
         tenantId: user.tenantId,
-        branchId: { in: user.branchIds }
+        branchId: { in: user.branchIds },
       },
       include: {
         patient: {
@@ -152,15 +165,15 @@ export class FinanceService {
             patientCode: true,
             firstName: true,
             lastName: true,
-            middleName: true
-          }
+            middleName: true,
+          },
         },
         invoice: { select: { id: true, invoiceNumber: true, status: true, totalAmount: true } },
         cashier: { select: { id: true, email: true } },
-        refunds: true
+        refunds: true,
       },
       orderBy: { paidAt: 'desc' },
-      take: 50
+      take: 50,
     });
 
     return { items: payments, total: payments.length };
@@ -168,14 +181,15 @@ export class FinanceService {
 
   // 1. Cashier Shifts
   async openShift(user: AuthenticatedUser, dto: OpenShiftDto) {
-    if (!user.branchIds.includes(dto.branchId)) throw new ForbiddenException('Branch access denied');
+    if (!user.branchIds.includes(dto.branchId))
+      throw new ForbiddenException('Branch access denied');
 
     const active = await this.prisma.cashierShift.findFirst({
       where: {
         tenantId: user.tenantId,
         cashierUserId: user.userId,
-        closedAt: null
-      }
+        closedAt: null,
+      },
     });
     if (active) throw new BadRequestException('У вас уже есть открытая кассовая смена');
 
@@ -184,8 +198,8 @@ export class FinanceService {
         tenantId: user.tenantId,
         cashierUserId: user.userId,
         branchId: dto.branchId,
-        openingBalance: dto.openingBalance
-      }
+        openingBalance: dto.openingBalance,
+      },
     });
 
     await this.audit.log({
@@ -195,7 +209,7 @@ export class FinanceService {
       action: 'payment.shift_opened',
       entityType: 'cashier_shift',
       entityId: shift.id,
-      newValuesJson: shift
+      newValuesJson: shift,
     });
 
     return shift;
@@ -203,7 +217,7 @@ export class FinanceService {
 
   async closeShift(user: AuthenticatedUser, shiftId: string, dto: CloseShiftDto) {
     const shift = await this.prisma.cashierShift.findUnique({
-      where: { id: shiftId }
+      where: { id: shiftId },
     });
     if (!shift) throw new NotFoundException('Смена не найдена');
     if (shift.tenantId !== user.tenantId) throw new ForbiddenException();
@@ -216,9 +230,9 @@ export class FinanceService {
         cashierUserId: shift.cashierUserId,
         branchId: shift.branchId,
         paymentMethod: 'CASH',
-        paidAt: { gte: shift.openedAt }
+        paidAt: { gte: shift.openedAt },
       },
-      _sum: { amount: true }
+      _sum: { amount: true },
     });
 
     const refunds = await this.prisma.refund.aggregate({
@@ -226,9 +240,9 @@ export class FinanceService {
         tenantId: user.tenantId,
         refundedBy: shift.cashierUserId,
         refundMethod: 'CASH',
-        refundedAt: { gte: shift.openedAt }
+        refundedAt: { gte: shift.openedAt },
       },
-      _sum: { refundAmount: true }
+      _sum: { refundAmount: true },
     });
 
     const cashReceived = Number(payments._sum.amount ?? 0);
@@ -241,8 +255,8 @@ export class FinanceService {
       data: {
         closedAt: new Date(),
         closingBalance: dto.closingBalance,
-        discrepancyAmount: discrepancy
-      }
+        discrepancyAmount: discrepancy,
+      },
     });
 
     await this.audit.log({
@@ -253,7 +267,7 @@ export class FinanceService {
       entityType: 'cashier_shift',
       entityId: shiftId,
       oldValuesJson: shift,
-      newValuesJson: updated
+      newValuesJson: updated,
     });
 
     return updated;
@@ -265,8 +279,8 @@ export class FinanceService {
         tenantId: user.tenantId,
         cashierUserId: user.userId,
         branchId: { in: user.branchIds },
-        closedAt: null
-      }
+        closedAt: null,
+      },
     });
   }
 
@@ -274,7 +288,7 @@ export class FinanceService {
   async addPayment(user: AuthenticatedUser, invoiceId: string, dto: CreatePaymentDto) {
     const invoice = await this.prisma.invoice.findUnique({
       where: { id: invoiceId },
-      include: { items: true, patient: true }
+      include: { items: true, patient: true },
     });
     if (!invoice) throw new NotFoundException('Счет не найден');
     if (invoice.tenantId !== user.tenantId) throw new ForbiddenException();
@@ -292,7 +306,7 @@ export class FinanceService {
     // Deduct from wallet if method is WALLET or FAMILY_BALANCE
     if (dto.paymentMethod === 'WALLET') {
       const wallet = await this.prisma.patientWallet.findUnique({
-        where: { patientId_walletType: { patientId: invoice.patientId, walletType: 'DEPOSIT' } }
+        where: { patientId_walletType: { patientId: invoice.patientId, walletType: 'DEPOSIT' } },
       });
       if (!wallet || Number(wallet.balance) < payAmount) {
         throw new BadRequestException('Недостаточно средств на депозите пациента');
@@ -300,13 +314,15 @@ export class FinanceService {
     } else if (dto.paymentMethod === 'FAMILY_BALANCE') {
       const member = await this.prisma.familyMember.findFirst({
         where: { tenantId: user.tenantId, patientId: invoice.patientId },
-        include: { familyGroup: true }
+        include: { familyGroup: true },
       });
       if (!member || !member.familyGroup.sharedBalanceEnabled) {
         throw new BadRequestException('У пациента нет семейной группы или отключен общий баланс');
       }
       const famWallet = await this.prisma.familyWallet.findUnique({
-        where: { familyGroupId_walletType: { familyGroupId: member.familyGroupId, walletType: 'DEPOSIT' } }
+        where: {
+          familyGroupId_walletType: { familyGroupId: member.familyGroupId, walletType: 'DEPOSIT' },
+        },
       });
       if (!famWallet || Number(famWallet.balance) < payAmount) {
         throw new BadRequestException('Недостаточно средств на семейном депозите');
@@ -318,7 +334,7 @@ export class FinanceService {
       if (dto.paymentMethod === 'WALLET') {
         const wallet = await tx.patientWallet.update({
           where: { patientId_walletType: { patientId: invoice.patientId, walletType: 'DEPOSIT' } },
-          data: { balance: { decrement: payAmount } }
+          data: { balance: { decrement: payAmount } },
         });
         await tx.walletTransaction.create({
           data: {
@@ -328,16 +344,21 @@ export class FinanceService {
             amount: payAmount,
             currency: dto.currency,
             relatedInvoiceId: invoiceId,
-            performedBy: user.userId
-          }
+            performedBy: user.userId,
+          },
         });
       } else if (dto.paymentMethod === 'FAMILY_BALANCE') {
         const member = await tx.familyMember.findFirst({
-          where: { tenantId: user.tenantId, patientId: invoice.patientId }
+          where: { tenantId: user.tenantId, patientId: invoice.patientId },
         });
         const famWallet = await tx.familyWallet.update({
-          where: { familyGroupId_walletType: { familyGroupId: member!.familyGroupId, walletType: 'DEPOSIT' } },
-          data: { balance: { decrement: payAmount } }
+          where: {
+            familyGroupId_walletType: {
+              familyGroupId: member!.familyGroupId,
+              walletType: 'DEPOSIT',
+            },
+          },
+          data: { balance: { decrement: payAmount } },
         });
         await tx.walletTransaction.create({
           data: {
@@ -347,8 +368,8 @@ export class FinanceService {
             amount: payAmount,
             currency: dto.currency,
             relatedInvoiceId: invoiceId,
-            performedBy: user.userId
-          }
+            performedBy: user.userId,
+          },
         });
       }
 
@@ -364,8 +385,8 @@ export class FinanceService {
           amount: payAmount,
           currency: dto.currency,
           externalTransactionId: dto.externalTransactionId || null,
-          cashierUserId: user.userId
-        }
+          cashierUserId: user.userId,
+        },
       });
 
       // 3. Allocate payment to items (greedy split-payments logic)
@@ -376,7 +397,7 @@ export class FinanceService {
         // Find how much was already allocated to this item
         const allocated = await tx.paymentAllocation.aggregate({
           where: { invoiceItemId: item.id },
-          _sum: { allocatedAmount: true }
+          _sum: { allocatedAmount: true },
         });
         const alreadyAllocated = Number(allocated._sum.allocatedAmount ?? 0);
         const itemTotal = Number(item.totalAmount);
@@ -389,8 +410,8 @@ export class FinanceService {
               tenantId: user.tenantId,
               paymentId: payment.id,
               invoiceItemId: item.id,
-              allocatedAmount: allocate
-            }
+              allocatedAmount: allocate,
+            },
           });
           remainingAllocation -= allocate;
         }
@@ -409,17 +430,20 @@ export class FinanceService {
         data: {
           paidAmount: totalPaid,
           dueAmount: totalDue,
-          status: newStatus
-        }
+          status: newStatus,
+        },
       });
 
       // If PAID and tied to an appointment, transition the appointment status to COMPLETED
       if (newStatus === 'PAID' && invoice.appointmentId) {
         const app = await tx.appointment.findUnique({ where: { id: invoice.appointmentId } });
-        if (app && ['COMPLETED_PENDING_PAYMENT', 'CHECKED_IN', 'IN_PROGRESS'].includes(app.status)) {
+        if (
+          app &&
+          ['COMPLETED_PENDING_PAYMENT', 'CHECKED_IN', 'IN_PROGRESS'].includes(app.status)
+        ) {
           await tx.appointment.update({
             where: { id: invoice.appointmentId },
-            data: { status: 'COMPLETED', completedAt: new Date() }
+            data: { status: 'COMPLETED', completedAt: new Date() },
           });
           await tx.appointmentStatusHistory.create({
             data: {
@@ -428,8 +452,8 @@ export class FinanceService {
               oldStatus: app.status,
               newStatus: 'COMPLETED',
               changedBy: user.userId,
-              reason: 'Оплата счета завершена'
-            }
+              reason: 'Оплата счета завершена',
+            },
           });
           await tx.appointmentVisitState.create({
             data: {
@@ -438,8 +462,8 @@ export class FinanceService {
               oldState: app.status,
               newState: 'COMPLETED',
               changedBy: user.userId,
-              workstationType: 'RECEPTIONIST'
-            }
+              workstationType: 'RECEPTIONIST',
+            },
           });
         }
       }
@@ -447,7 +471,12 @@ export class FinanceService {
       return { payment, invoice: updatedInvoice };
     });
 
-    this.realtime.emitAppointmentEvent('payment.completed', user.tenantId, invoice.branchId, result.payment);
+    this.realtime.emitAppointmentEvent(
+      'payment.completed',
+      user.tenantId,
+      invoice.branchId,
+      result.payment,
+    );
 
     await this.audit.log({
       tenantId: user.tenantId,
@@ -456,7 +485,7 @@ export class FinanceService {
       action: 'payment.created',
       entityType: 'payment',
       entityId: result.payment.id,
-      newValuesJson: result
+      newValuesJson: result,
     });
 
     return result;
@@ -465,20 +494,20 @@ export class FinanceService {
   // 3. Refunds & Safeguards
   async refundPayment(user: AuthenticatedUser, invoiceId: string, dto: CreateRefundDto) {
     const invoice = await this.prisma.invoice.findUnique({
-      where: { id: invoiceId }
+      where: { id: invoiceId },
     });
     if (!invoice) throw new NotFoundException('Счет не найден');
     if (invoice.tenantId !== user.tenantId) throw new ForbiddenException();
 
     const payment = await this.prisma.payment.findUnique({
-      where: { id: dto.paymentId }
+      where: { id: dto.paymentId },
     });
     if (!payment || payment.invoiceId !== invoiceId) {
       throw new BadRequestException('Указанный платеж не найден или не связан с этим счетом');
     }
 
     const refundAmount = Number(dto.refundAmount);
-    
+
     // Safeguard: Check that refundAmount does not exceed already paidAmount
     if (refundAmount > Number(invoice.paidAmount)) {
       throw new BadRequestException('Сумма возврата превышает фактически оплаченную сумму');
@@ -487,12 +516,14 @@ export class FinanceService {
     // Safeguard: Check that refundAmount does not exceed this specific payment amount
     const alreadyRefundedAgg = await this.prisma.refund.aggregate({
       where: { paymentId: payment.id },
-      _sum: { refundAmount: true }
+      _sum: { refundAmount: true },
     });
     const alreadyRefunded = Number(alreadyRefundedAgg._sum.refundAmount ?? 0);
     const maxRefundable = Number(payment.amount) - alreadyRefunded;
     if (refundAmount > maxRefundable) {
-      throw new BadRequestException(`Нельзя вернуть больше, чем сумма транзакции (${maxRefundable} TJS)`);
+      throw new BadRequestException(
+        `Нельзя вернуть больше, чем сумма транзакции (${maxRefundable} TJS)`,
+      );
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -506,8 +537,8 @@ export class FinanceService {
           refundMethod: dto.refundMethod,
           reason: dto.reason || null,
           refundedBy: user.userId,
-          refundStatus: 'COMPLETED'
-        }
+          refundStatus: 'COMPLETED',
+        },
       });
 
       // 2. Return to deposit if refundMethod is WALLET
@@ -518,11 +549,11 @@ export class FinanceService {
             tenantId: user.tenantId,
             patientId: invoice.patientId,
             walletType: 'DEPOSIT',
-            balance: refundAmount
+            balance: refundAmount,
           },
           update: {
-            balance: { increment: refundAmount }
-          }
+            balance: { increment: refundAmount },
+          },
         });
         await tx.walletTransaction.create({
           data: {
@@ -533,8 +564,8 @@ export class FinanceService {
             currency: payment.currency,
             relatedInvoiceId: invoiceId,
             relatedRefundId: refund.id,
-            performedBy: user.userId
-          }
+            performedBy: user.userId,
+          },
         });
       }
 
@@ -551,8 +582,8 @@ export class FinanceService {
         data: {
           paidAmount: totalPaid,
           dueAmount: totalDue,
-          status: newStatus
-        }
+          status: newStatus,
+        },
       });
 
       return { refund, invoice: updatedInvoice };
@@ -565,7 +596,7 @@ export class FinanceService {
       action: 'refund.completed',
       entityType: 'refund',
       entityId: result.refund.id,
-      newValuesJson: result
+      newValuesJson: result,
     });
 
     return result;
@@ -580,11 +611,11 @@ export class FinanceService {
         patientId: dto.patientId,
         walletType: dto.walletType,
         balance: dto.amount,
-        currency: dto.currency
+        currency: dto.currency,
       },
       update: {
-        balance: { increment: dto.amount }
-      }
+        balance: { increment: dto.amount },
+      },
     });
 
     const tx = await this.prisma.walletTransaction.create({
@@ -594,8 +625,8 @@ export class FinanceService {
         transactionType: 'DEPOSIT_TOPUP',
         amount: dto.amount,
         currency: dto.currency,
-        performedBy: user.userId
-      }
+        performedBy: user.userId,
+      },
     });
 
     await this.audit.log({
@@ -604,7 +635,7 @@ export class FinanceService {
       action: 'wallet.deposit_topup',
       entityType: 'patient_wallet',
       entityId: wallet.id,
-      newValuesJson: { wallet, transaction: tx }
+      newValuesJson: { wallet, transaction: tx },
     });
 
     return wallet;
@@ -612,17 +643,18 @@ export class FinanceService {
 
   async getPatientWallet(user: AuthenticatedUser, patientId: string) {
     const patient = await this.prisma.patient.findUnique({ where: { id: patientId } });
-    if (!patient || patient.tenantId !== user.tenantId) throw new NotFoundException('Пациент не найден');
+    if (!patient || patient.tenantId !== user.tenantId)
+      throw new NotFoundException('Пациент не найден');
 
     return this.prisma.patientWallet.findMany({
-      where: { tenantId: user.tenantId, patientId }
+      where: { tenantId: user.tenantId, patientId },
     });
   }
 
   // 5. Revenue Share Payroll
   async calculatePayroll(user: AuthenticatedUser, dto: CalculatePayrollDto) {
     const employee = await this.prisma.employee.findUnique({
-      where: { id: dto.employeeId }
+      where: { id: dto.employeeId },
     });
     if (!employee) throw new NotFoundException('Сотрудник не найден');
     if (employee.tenantId !== user.tenantId) throw new ForbiddenException();
@@ -633,10 +665,11 @@ export class FinanceService {
         tenantId: user.tenantId,
         employeeId: dto.employeeId,
         isActive: true,
-        appliesFrom: { lte: new Date() }
-      }
+        appliesFrom: { lte: new Date() },
+      },
     });
-    if (!rule) throw new BadRequestException('У сотрудника нет активного правила начисления зарплаты');
+    if (!rule)
+      throw new BadRequestException('У сотрудника нет активного правила начисления зарплаты');
 
     // 2. Fetch all paid items performed by doctor in YYYY-MM period not yet calculated
     const start = new Date(`${dto.payrollPeriod}-01`);
@@ -650,10 +683,10 @@ export class FinanceService {
         payrollIncluded: false,
         invoice: {
           status: 'PAID',
-          createdAt: { gte: start, lt: end }
-        }
+          createdAt: { gte: start, lt: end },
+        },
       },
-      include: { invoice: true }
+      include: { invoice: true },
     });
 
     const calculations: any[] = [];
@@ -677,13 +710,13 @@ export class FinanceService {
             payrollAmount: payout,
             payrollPeriod: dto.payrollPeriod,
             calculationStatus: 'PENDING',
-            calculatedBy: user.userId
-          }
+            calculatedBy: user.userId,
+          },
         });
 
         await tx.invoiceItem.update({
           where: { id: item.id },
-          data: { payrollIncluded: true }
+          data: { payrollIncluded: true },
         });
 
         calculations.push(calc);
@@ -698,7 +731,7 @@ export class FinanceService {
       action: 'payroll.calculated',
       entityType: 'employee',
       entityId: dto.employeeId,
-      newValuesJson: { period: dto.payrollPeriod, itemsCount: items.length, calculations: result }
+      newValuesJson: { period: dto.payrollPeriod, itemsCount: items.length, calculations: result },
     });
 
     return result;
@@ -709,15 +742,15 @@ export class FinanceService {
       where: {
         id: dto.employeeId,
         tenantId: user.tenantId,
-        positions: { some: { branchId: { in: user.branchIds }, activeTo: null } }
-      }
+        positions: { some: { branchId: { in: user.branchIds }, activeTo: null } },
+      },
     });
     if (!employee) throw new NotFoundException('Сотрудник не найден');
 
     // Deactivate previous rules
     await this.prisma.payrollRule.updateMany({
       where: { tenantId: user.tenantId, employeeId: dto.employeeId, isActive: true },
-      data: { isActive: false }
+      data: { isActive: false },
     });
 
     const rule = await this.prisma.payrollRule.create({
@@ -730,8 +763,8 @@ export class FinanceService {
         deductMaterialCost: dto.deductMaterialCost,
         appliesFrom: new Date(dto.appliesFrom),
         appliesTo: dto.appliesTo ? new Date(dto.appliesTo) : null,
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     await this.audit.log({
@@ -740,7 +773,7 @@ export class FinanceService {
       action: 'payroll.rule_created',
       entityType: 'payroll_rule',
       entityId: rule.id,
-      newValuesJson: rule
+      newValuesJson: rule,
     });
 
     return rule;
@@ -751,8 +784,8 @@ export class FinanceService {
       where: {
         tenantId: user.tenantId,
         employee: {
-          positions: { some: { branchId: { in: user.branchIds }, activeTo: null } }
-        }
+          positions: { some: { branchId: { in: user.branchIds }, activeTo: null } },
+        },
       },
       include: {
         employee: {
@@ -761,11 +794,11 @@ export class FinanceService {
             firstName: true,
             lastName: true,
             middleName: true,
-            employeeNumber: true
-          }
-        }
+            employeeNumber: true,
+          },
+        },
       },
-      orderBy: [{ isActive: 'desc' }, { appliesFrom: 'desc' }]
+      orderBy: [{ isActive: 'desc' }, { appliesFrom: 'desc' }],
     });
 
     return { items: rules, total: rules.length };
@@ -774,17 +807,19 @@ export class FinanceService {
   // 6. SaaS Tenant Billing & Auto Restriction
   async checkLimits(tenantId: string, metricCode: string, incrementAmount = 1) {
     const metric = await this.prisma.tenantUsageMetric.findUnique({
-      where: { tenantId_metricCode: { tenantId, metricCode } }
+      where: { tenantId_metricCode: { tenantId, metricCode } },
     });
     if (!metric) return true; // Limit not tracked
 
     if (metric.currentUsage + incrementAmount > metric.limitValue) {
-      throw new BadRequestException(`Превышен лимит по тарифу: ${metricCode} (${metric.limitValue})`);
+      throw new BadRequestException(
+        `Превышен лимит по тарифу: ${metricCode} (${metric.limitValue})`,
+      );
     }
 
     await this.prisma.tenantUsageMetric.update({
       where: { id: metric.id },
-      data: { currentUsage: { increment: incrementAmount } }
+      data: { currentUsage: { increment: incrementAmount } },
     });
 
     return true;
@@ -793,13 +828,13 @@ export class FinanceService {
   async getSubscription(user: AuthenticatedUser) {
     return this.prisma.tenantSubscription.findFirst({
       where: { tenantId: user.tenantId },
-      include: { subscriptionPlan: true }
+      include: { subscriptionPlan: true },
     });
   }
 
   async setSubscription(tenantId: string, planCode: string) {
     const plan = await this.prisma.subscriptionPlan.findUnique({
-      where: { code: planCode }
+      where: { code: planCode },
     });
     if (!plan) throw new NotFoundException('Тарифный план не найден');
 
@@ -813,8 +848,8 @@ export class FinanceService {
         subscriptionPlanId: plan.id,
         subscriptionStatus: 'ACTIVE',
         startedAt,
-        expiresAt
-      }
+        expiresAt,
+      },
     });
 
     // Populate default metrics
@@ -826,11 +861,11 @@ export class FinanceService {
           tenantId,
           metricCode,
           currentUsage: 0,
-          limitValue
+          limitValue,
         },
         update: {
-          limitValue
-        }
+          limitValue,
+        },
       });
     }
 
@@ -845,13 +880,13 @@ export class FinanceService {
 
     const invoice = await this.prisma.invoice.findUnique({
       where: { id: invoiceId },
-      include: { items: true }
+      include: { items: true },
     });
     if (!invoice) throw new NotFoundException('Счет не найден');
 
     // Simulate authentication / signature verification
     const gateway = await this.prisma.paymentGateway.findFirst({
-      where: { tenantId: invoice.tenantId, code: gatewayCode, isActive: true }
+      where: { tenantId: invoice.tenantId, code: gatewayCode, isActive: true },
     });
     if (!gateway) throw new BadRequestException('Активный платежный шлюз не найден');
 
@@ -865,12 +900,14 @@ export class FinanceService {
           externalTransactionId: txId,
           requestPayload: payload,
           responsePayload: { ok: true, status: 'SUCCESS' },
-          transactionStatus: 'SUCCESS'
-        }
+          transactionStatus: 'SUCCESS',
+        },
       });
 
       // 2. Add split payment under platform user session
-      const cashier = await tx.user.findFirst({ where: { tenantId: invoice.tenantId, isSuperAdmin: false } });
+      const cashier = await tx.user.findFirst({
+        where: { tenantId: invoice.tenantId, isSuperAdmin: false },
+      });
 
       const payment = await tx.payment.create({
         data: {
@@ -883,8 +920,8 @@ export class FinanceService {
           amount,
           currency: invoice.currency,
           externalTransactionId: txId,
-          cashierUserId: cashier!.id
-        }
+          cashierUserId: cashier!.id,
+        },
       });
 
       // Allocate
@@ -893,7 +930,7 @@ export class FinanceService {
         if (remaining <= 0) break;
         const allocated = await tx.paymentAllocation.aggregate({
           where: { invoiceItemId: item.id },
-          _sum: { allocatedAmount: true }
+          _sum: { allocatedAmount: true },
         });
         const alreadyAllocated = Number(allocated._sum.allocatedAmount ?? 0);
         const itemTotal = Number(item.totalAmount);
@@ -906,8 +943,8 @@ export class FinanceService {
               tenantId: invoice.tenantId,
               paymentId: payment.id,
               invoiceItemId: item.id,
-              allocatedAmount: allocate
-            }
+              allocatedAmount: allocate,
+            },
           });
           remaining -= allocate;
         }
@@ -925,14 +962,19 @@ export class FinanceService {
         data: {
           paidAmount: totalPaid,
           dueAmount: totalDue,
-          status: newStatus
-        }
+          status: newStatus,
+        },
       });
 
       return { payment, invoice: updatedInvoice };
     });
 
-    this.realtime.emitAppointmentEvent('payment.completed', invoice.tenantId, invoice.branchId, result.payment);
+    this.realtime.emitAppointmentEvent(
+      'payment.completed',
+      invoice.tenantId,
+      invoice.branchId,
+      result.payment,
+    );
     return { ok: true, message: 'Платеж успешно обработан платежным шлюзом' };
   }
 }

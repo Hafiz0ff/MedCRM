@@ -9,4 +9,3 @@ export class HealthController {
     return { status: 'ok', service: 'api-gateway' };
   }
 }
-

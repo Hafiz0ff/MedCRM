@@ -1,21 +1,21 @@
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { PrismaService } from '@core/database/prisma.service';
+import { AuthenticatedUser } from '@core/security/jwt-payload';
 import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@core/database/prisma.service';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
-import { AuthenticatedUser } from '@core/security/jwt-payload';
 import { RealtimeGateway } from '../smart-scheduling/realtime.gateway';
-import { SessionInvalidatorService } from './session-invalidator.service';
 import {
   AssignUserRolesDto,
   CreateRoleDto,
   SetRolePermissionsDto,
-  UpdateRoleDto
+  UpdateRoleDto,
 } from './dto/role-management.dto';
+import { SessionInvalidatorService } from './session-invalidator.service';
 
 /**
  * Manages tenant-scoped roles, their permission bindings, and user→role
@@ -28,13 +28,13 @@ export class RoleManagementService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditLoggerService,
     private readonly realtime: RealtimeGateway,
-    private readonly sessions: SessionInvalidatorService
+    private readonly sessions: SessionInvalidatorService,
   ) {}
 
   async listPermissions() {
     const permissions = await this.prisma.permission.findMany({
       include: { module: true },
-      orderBy: [{ moduleCode: 'asc' }, { code: 'asc' }]
+      orderBy: [{ moduleCode: 'asc' }, { code: 'asc' }],
     });
     return permissions.map((p) => ({
       id: p.id,
@@ -42,17 +42,17 @@ export class RoleManagementService {
       name: p.name,
       description: p.description,
       moduleCode: p.moduleCode,
-      moduleName: p.module?.name ?? null
+      moduleName: p.module?.name ?? null,
     }));
   }
 
   async listRoles(user: AuthenticatedUser) {
     const roles = await this.prisma.role.findMany({
       where: {
-        OR: [{ tenantId: user.tenantId }, { tenantId: null, isSystem: true }]
+        OR: [{ tenantId: user.tenantId }, { tenantId: null, isSystem: true }],
       },
       include: { permissions: { include: { permission: true } } },
-      orderBy: [{ isSystem: 'desc' }, { code: 'asc' }]
+      orderBy: [{ isSystem: 'desc' }, { code: 'asc' }],
     });
     return roles.map((role) => ({
       id: role.id,
@@ -61,13 +61,13 @@ export class RoleManagementService {
       description: role.description,
       isSystem: role.isSystem,
       tenantId: role.tenantId,
-      permissions: role.permissions.map((rp) => rp.permission.code)
+      permissions: role.permissions.map((rp) => rp.permission.code),
     }));
   }
 
   async createRole(user: AuthenticatedUser, dto: CreateRoleDto) {
     const existing = await this.prisma.role.findUnique({
-      where: { tenantId_code: { tenantId: user.tenantId, code: dto.code } }
+      where: { tenantId_code: { tenantId: user.tenantId, code: dto.code } },
     });
     if (existing) {
       throw new ConflictException(`Role with code "${dto.code}" already exists`);
@@ -79,8 +79,8 @@ export class RoleManagementService {
         code: dto.code,
         name: dto.name,
         description: dto.description ?? null,
-        isSystem: false
-      }
+        isSystem: false,
+      },
     });
 
     await this.audit.log({
@@ -89,12 +89,12 @@ export class RoleManagementService {
       action: 'system.role.created',
       entityType: 'role',
       entityId: role.id,
-      newValuesJson: { code: role.code, name: role.name, description: role.description }
+      newValuesJson: { code: role.code, name: role.name, description: role.description },
     });
 
     this.realtime.emitTenantSystemEvent('tenant.role.created', user.tenantId, {
       tenantId: user.tenantId,
-      role: { id: role.id, code: role.code, name: role.name }
+      role: { id: role.id, code: role.code, name: role.name },
     });
 
     return role;
@@ -107,8 +107,8 @@ export class RoleManagementService {
       where: { id: roleId },
       data: {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
-        ...(dto.description !== undefined ? { description: dto.description } : {})
-      }
+        ...(dto.description !== undefined ? { description: dto.description } : {}),
+      },
     });
 
     await this.audit.log({
@@ -118,7 +118,7 @@ export class RoleManagementService {
       entityType: 'role',
       entityId: roleId,
       oldValuesJson: { name: existing.name, description: existing.description },
-      newValuesJson: { name: updated.name, description: updated.description }
+      newValuesJson: { name: updated.name, description: updated.description },
     });
 
     return updated;
@@ -128,11 +128,11 @@ export class RoleManagementService {
     const existing = await this.assertWritableRole(user.tenantId, roleId);
 
     const inUse = await this.prisma.userBranchRole.count({
-      where: { roleId, tenantId: user.tenantId, activeTo: null }
+      where: { roleId, tenantId: user.tenantId, activeTo: null },
     });
     if (inUse > 0) {
       throw new ConflictException(
-        `Role is assigned to ${inUse} active user(s); reassign them before deletion`
+        `Role is assigned to ${inUse} active user(s); reassign them before deletion`,
       );
     }
 
@@ -145,33 +145,27 @@ export class RoleManagementService {
       action: 'system.role.deleted',
       entityType: 'role',
       entityId: roleId,
-      oldValuesJson: { code: existing.code, name: existing.name }
+      oldValuesJson: { code: existing.code, name: existing.name },
     });
 
     return { ok: true };
   }
 
-  async setRolePermissions(
-    user: AuthenticatedUser,
-    roleId: string,
-    dto: SetRolePermissionsDto
-  ) {
+  async setRolePermissions(user: AuthenticatedUser, roleId: string, dto: SetRolePermissionsDto) {
     const role = await this.assertWritableRole(user.tenantId, roleId);
 
     const permissions = await this.prisma.permission.findMany({
-      where: { code: { in: dto.permissionCodes } }
+      where: { code: { in: dto.permissionCodes } },
     });
     const foundCodes = new Set(permissions.map((p) => p.code));
     const unknown = dto.permissionCodes.filter((code) => !foundCodes.has(code));
     if (unknown.length > 0) {
-      throw new BadRequestException(
-        `Unknown permission codes: ${unknown.join(', ')}`
-      );
+      throw new BadRequestException(`Unknown permission codes: ${unknown.join(', ')}`);
     }
 
     const existing = await this.prisma.rolePermission.findMany({
       where: { roleId },
-      include: { permission: true }
+      include: { permission: true },
     });
     const oldCodes = existing.map((rp) => rp.permission.code).sort();
 
@@ -179,8 +173,8 @@ export class RoleManagementService {
       this.prisma.rolePermission.deleteMany({ where: { roleId } }),
       this.prisma.rolePermission.createMany({
         data: permissions.map((p) => ({ roleId, permissionId: p.id })),
-        skipDuplicates: true
-      })
+        skipDuplicates: true,
+      }),
     ]);
 
     await this.audit.log({
@@ -190,7 +184,7 @@ export class RoleManagementService {
       entityType: 'role',
       entityId: roleId,
       oldValuesJson: { permissions: oldCodes },
-      newValuesJson: { permissions: dto.permissionCodes.slice().sort() }
+      newValuesJson: { permissions: dto.permissionCodes.slice().sort() },
     });
 
     // Revoke sessions for all users currently holding this role; their JWTs
@@ -198,13 +192,13 @@ export class RoleManagementService {
     const affectedUsers = await this.prisma.userBranchRole.findMany({
       where: { roleId, tenantId: user.tenantId, activeTo: null },
       select: { userId: true },
-      distinct: ['userId']
+      distinct: ['userId'],
     });
 
     let totalRevoked = 0;
     for (const { userId } of affectedUsers) {
       const result = await this.sessions.revokeAllSessionsForUser(userId, user.tenantId, {
-        reason: 'rbac.role.permissions.changed'
+        reason: 'rbac.role.permissions.changed',
       });
       totalRevoked += result.count;
     }
@@ -215,14 +209,14 @@ export class RoleManagementService {
       roleCode: role.code,
       permissions: dto.permissionCodes,
       affectedUserCount: affectedUsers.length,
-      revokedSessionCount: totalRevoked
+      revokedSessionCount: totalRevoked,
     });
 
     return {
       roleId,
       permissions: dto.permissionCodes,
       affectedUserCount: affectedUsers.length,
-      revokedSessionCount: totalRevoked
+      revokedSessionCount: totalRevoked,
     };
   }
 
@@ -245,11 +239,11 @@ export class RoleManagementService {
           select: {
             isPrimary: true,
             role: { select: { id: true, code: true, name: true } },
-            branch: { select: { id: true, code: true, name: true } }
-          }
-        }
+            branch: { select: { id: true, code: true, name: true } },
+          },
+        },
       },
-      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }]
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     });
 
     return users.map((u) => ({
@@ -261,17 +255,15 @@ export class RoleManagementService {
       lastLoginAt: u.lastLoginAt,
       activeAssignmentCount: u.branchRoles.length,
       primaryRole:
-        u.branchRoles.find((r) => r.isPrimary)?.role.name ??
-        u.branchRoles[0]?.role.name ??
-        null,
+        u.branchRoles.find((r) => r.isPrimary)?.role.name ?? u.branchRoles[0]?.role.name ?? null,
       branches: Array.from(
         new Map(
           u.branchRoles.map((r) => [
             r.branch.id,
-            { id: r.branch.id, code: r.branch.code, name: r.branch.name }
-          ])
-        ).values()
-      )
+            { id: r.branch.id, code: r.branch.code, name: r.branch.name },
+          ]),
+        ).values(),
+      ),
     }));
   }
 
@@ -281,9 +273,9 @@ export class RoleManagementService {
       where: { userId: targetUserId, tenantId: user.tenantId, activeTo: null },
       include: {
         role: true,
-        branch: { select: { id: true, code: true, name: true } }
+        branch: { select: { id: true, code: true, name: true } },
       },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: 'asc' },
     });
 
     return {
@@ -298,31 +290,25 @@ export class RoleManagementService {
         roleCode: a.role.code,
         roleName: a.role.name,
         isPrimary: a.isPrimary,
-        activeFrom: a.activeFrom
-      }))
+        activeFrom: a.activeFrom,
+      })),
     };
   }
 
-  async assignUserRoles(
-    user: AuthenticatedUser,
-    targetUserId: string,
-    dto: AssignUserRolesDto
-  ) {
+  async assignUserRoles(user: AuthenticatedUser, targetUserId: string, dto: AssignUserRolesDto) {
     if (targetUserId === user.userId) {
       // Prevent the manager from accidentally locking themselves out by
       // removing their own administrative roles in a single operation.
       const wouldLoseRoles = dto.assignments.length === 0;
       if (wouldLoseRoles) {
-        throw new ForbiddenException(
-          'You cannot remove all of your own role assignments'
-        );
+        throw new ForbiddenException('You cannot remove all of your own role assignments');
       }
     }
 
     await this.assertUserBelongsToTenant(user.tenantId, targetUserId);
 
     const branches = await this.prisma.branch.findMany({
-      where: { tenantId: user.tenantId, id: { in: dto.assignments.map((a) => a.branchId) } }
+      where: { tenantId: user.tenantId, id: { in: dto.assignments.map((a) => a.branchId) } },
     });
     if (branches.length !== new Set(dto.assignments.map((a) => a.branchId)).size) {
       throw new BadRequestException('One or more branches do not belong to this tenant');
@@ -331,21 +317,21 @@ export class RoleManagementService {
     const roles = await this.prisma.role.findMany({
       where: {
         id: { in: dto.assignments.map((a) => a.roleId) },
-        OR: [{ tenantId: user.tenantId }, { tenantId: null, isSystem: true }]
-      }
+        OR: [{ tenantId: user.tenantId }, { tenantId: null, isSystem: true }],
+      },
     });
     if (roles.length !== new Set(dto.assignments.map((a) => a.roleId)).size) {
       throw new BadRequestException('One or more roles do not belong to this tenant');
     }
 
     const previous = await this.prisma.userBranchRole.findMany({
-      where: { userId: targetUserId, tenantId: user.tenantId, activeTo: null }
+      where: { userId: targetUserId, tenantId: user.tenantId, activeTo: null },
     });
 
     await this.prisma.$transaction(async (tx) => {
       await tx.userBranchRole.updateMany({
         where: { userId: targetUserId, tenantId: user.tenantId, activeTo: null },
-        data: { activeTo: new Date() }
+        data: { activeTo: new Date() },
       });
       if (dto.assignments.length > 0) {
         await tx.userBranchRole.createMany({
@@ -354,8 +340,8 @@ export class RoleManagementService {
             tenantId: user.tenantId,
             branchId: a.branchId,
             roleId: a.roleId,
-            isPrimary: a.isPrimary ?? false
-          }))
+            isPrimary: a.isPrimary ?? false,
+          })),
         });
       }
     });
@@ -370,28 +356,26 @@ export class RoleManagementService {
         assignments: previous.map((p) => ({
           branchId: p.branchId,
           roleId: p.roleId,
-          isPrimary: p.isPrimary
-        }))
+          isPrimary: p.isPrimary,
+        })),
       },
-      newValuesJson: { assignments: dto.assignments }
+      newValuesJson: { assignments: dto.assignments },
     });
 
-    const revocation = await this.sessions.revokeAllSessionsForUser(
-      targetUserId,
-      user.tenantId,
-      { reason: 'rbac.user.roles.changed' }
-    );
+    const revocation = await this.sessions.revokeAllSessionsForUser(targetUserId, user.tenantId, {
+      reason: 'rbac.user.roles.changed',
+    });
 
     this.realtime.emitTenantSystemEvent('tenant.user.roles.updated', user.tenantId, {
       tenantId: user.tenantId,
       userId: targetUserId,
-      revokedSessionCount: revocation.count
+      revokedSessionCount: revocation.count,
     });
 
     return {
       userId: targetUserId,
       assignments: dto.assignments,
-      revokedSessionCount: revocation.count
+      revokedSessionCount: revocation.count,
     };
   }
 

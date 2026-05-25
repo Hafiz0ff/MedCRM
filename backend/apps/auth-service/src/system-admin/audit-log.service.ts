@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
+import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { AuditLogQueryDto } from './dto/audit-log.dto';
 
 /**
@@ -25,10 +25,10 @@ export class AuditLogService {
         ? {
             createdAt: {
               ...(query.dateFrom ? { gte: new Date(query.dateFrom) } : {}),
-              ...(query.dateTo ? { lte: new Date(query.dateTo) } : {})
-            }
+              ...(query.dateTo ? { lte: new Date(query.dateTo) } : {}),
+            },
           }
-        : {})
+        : {}),
     };
 
     const page = query.page;
@@ -43,9 +43,9 @@ export class AuditLogService {
         skip,
         take: pageSize,
         include: {
-          user: { select: { id: true, email: true } }
-        }
-      })
+          user: { select: { id: true, email: true } },
+        },
+      }),
     ]);
 
     return {
@@ -65,8 +65,8 @@ export class AuditLogService {
         requestId: row.requestId,
         oldValuesJson: row.oldValuesJson,
         newValuesJson: row.newValuesJson,
-        createdAt: row.createdAt
-      }))
+        createdAt: row.createdAt,
+      })),
     };
   }
 }

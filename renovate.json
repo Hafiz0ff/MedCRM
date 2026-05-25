@@ -1,0 +1,43 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices",
+    ":semanticCommits",
+    ":semanticCommitScope(deps)",
+    ":dependencyDashboard",
+    ":timezone(Asia/Dushanbe)"
+  ],
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "prHourlyLimit": 4,
+  "prConcurrentLimit": 10,
+  "packageRules": [
+    {
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "dev dependencies",
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "matchPackagePatterns": ["^@nestjs/"],
+      "groupName": "nestjs"
+    },
+    {
+      "matchPackagePatterns": ["^@prisma/", "^prisma$"],
+      "groupName": "prisma"
+    },
+    {
+      "matchPackagePatterns": ["^next$", "^react", "^@tanstack/"],
+      "groupName": "frontend core"
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  }
+}

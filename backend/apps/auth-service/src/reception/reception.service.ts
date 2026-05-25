@@ -1,11 +1,18 @@
-import { Injectable, Inject, NotFoundException, ForbiddenException, BadRequestException, forwardRef } from '@nestjs/common';
 import { createHash } from 'node:crypto';
-import { Prisma } from '@prisma/client';
-import Redis from 'ioredis';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { REDIS_CLIENT } from '@core/cache/redis.module';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  forwardRef,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import Redis from 'ioredis';
 import { RealtimeGateway } from '../smart-scheduling/realtime.gateway';
 import { SmartSchedulingService } from '../smart-scheduling/smart-scheduling.service';
 import {
@@ -13,10 +20,18 @@ import {
   FastBookingDto,
   IncomingCallDto,
   CreateInvoiceDto,
-  PayInvoiceDto
+  PayInvoiceDto,
 } from './dto/reception.dto';
 
-const BOARD_STATUSES = ['WAITING', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED_PENDING_PAYMENT', 'COMPLETED', 'NO_SHOW', 'CANCELLED'];
+const BOARD_STATUSES = [
+  'WAITING',
+  'CHECKED_IN',
+  'IN_PROGRESS',
+  'COMPLETED_PENDING_PAYMENT',
+  'COMPLETED',
+  'NO_SHOW',
+  'CANCELLED',
+];
 
 @Injectable()
 export class ReceptionService {
@@ -26,7 +41,7 @@ export class ReceptionService {
     private readonly realtime: RealtimeGateway,
     @Inject(forwardRef(() => SmartSchedulingService))
     private readonly scheduling: SmartSchedulingService,
-    @Inject(REDIS_CLIENT) private readonly redis: Redis
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
   private normalizePhone(value: string): string {
@@ -56,15 +71,15 @@ export class ReceptionService {
   async getDashboard(user: AuthenticatedUser, branchId?: string, dateStr?: string) {
     const targetBranchId = branchId ?? user.branchIds[0];
     const todayStr = dateStr ?? new Date().toISOString().slice(0, 10);
-    
+
     const cached = await this.prisma.receptionistDashboardCache.findUnique({
       where: {
         tenantId_branchId_dashboardDate: {
           tenantId: user.tenantId,
           branchId: targetBranchId,
-          dashboardDate: new Date(todayStr)
-        }
-      }
+          dashboardDate: new Date(todayStr),
+        },
+      },
     });
 
     if (cached) {
@@ -85,7 +100,7 @@ export class ReceptionService {
       where: {
         tenantId,
         branchId,
-        startAt: { gte: start, lte: end }
+        startAt: { gte: start, lte: end },
       },
       include: {
         patient: {
@@ -94,30 +109,30 @@ export class ReceptionService {
             tags: { include: { tag: true } },
             metrics: true,
             invoices: {
-              where: { status: { in: ['DRAFT', 'PENDING_PAYMENT'] } }
-            }
-          }
+              where: { status: { in: ['DRAFT', 'PENDING_PAYMENT'] } },
+            },
+          },
         },
         service: true,
-        resources: true
+        resources: true,
       },
-      orderBy: { startAt: 'asc' }
+      orderBy: { startAt: 'asc' },
     });
 
-    const employeeIds = [...new Set(appointments.map(a => a.employeeId))];
+    const employeeIds = [...new Set(appointments.map((a) => a.employeeId))];
     const employees = await this.prisma.employee.findMany({
-      where: { id: { in: employeeIds } }
+      where: { id: { in: employeeIds } },
     });
-    const employeeMap = new Map(employees.map(e => [e.id, e]));
+    const employeeMap = new Map(employees.map((e) => [e.id, e]));
 
     const roomIds = appointments
-      .flatMap(a => a.resources)
-      .filter(r => r.resourceType === 'ROOM')
-      .map(r => r.resourceId);
+      .flatMap((a) => a.resources)
+      .filter((r) => r.resourceType === 'ROOM')
+      .map((r) => r.resourceId);
     const rooms = await this.prisma.room.findMany({
-      where: { id: { in: roomIds } }
+      where: { id: { in: roomIds } },
     });
-    const roomMap = new Map(rooms.map(r => [r.id, r]));
+    const roomMap = new Map(rooms.map((r) => [r.id, r]));
 
     const columns: Record<string, any[]> = {
       WAITING: [],
@@ -126,21 +141,28 @@ export class ReceptionService {
       COMPLETED_PENDING_PAYMENT: [],
       COMPLETED: [],
       NO_SHOW: [],
-      CANCELLED: []
+      CANCELLED: [],
     };
 
     for (const app of appointments) {
       const p = app.patient;
-      const primaryContact = p.contacts.find(c => c.isPrimary)?.value || (p.contacts[0]?.value || null);
-      const isVip = p.tags.some(t => t.tag.code === 'VIP' || t.tag.name.toLowerCase() === 'vip');
+      const primaryContact =
+        p.contacts.find((c) => c.isPrimary)?.value || p.contacts[0]?.value || null;
+      const isVip = p.tags.some((t) => t.tag.code === 'VIP' || t.tag.name.toLowerCase() === 'vip');
       const debt = p.invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
       const age = p.birthDate ? this.calculateAge(p.birthDate) : null;
 
       const employee = employeeMap.get(app.employeeId);
-      const doctorName = employee ? `${employee.lastName} ${employee.firstName}` : 'Неизвестный врач';
+      const doctorName = employee
+        ? `${employee.lastName} ${employee.firstName}`
+        : 'Неизвестный врач';
 
-      const appRooms = app.resources.filter(r => r.resourceType === 'ROOM');
-      const roomName = appRooms.map(r => roomMap.get(r.resourceId)?.name).filter(Boolean).join(', ') || 'Нет кабинета';
+      const appRooms = app.resources.filter((r) => r.resourceType === 'ROOM');
+      const roomName =
+        appRooms
+          .map((r) => roomMap.get(r.resourceId)?.name)
+          .filter(Boolean)
+          .join(', ') || 'Нет кабинета';
 
       const card = {
         id: app.id,
@@ -161,7 +183,7 @@ export class ReceptionService {
         isVip,
         priority: app.priority,
         debt,
-        lastVisitAt: p.metrics?.lastVisitAt?.toISOString() || null
+        lastVisitAt: p.metrics?.lastVisitAt?.toISOString() || null,
       };
 
       if (app.status === 'SCHEDULED' || app.status === 'CONFIRMED') {
@@ -175,13 +197,13 @@ export class ReceptionService {
 
     const counters = {
       total: appointments.length,
-      waiting: (columns.WAITING?.length ?? 0),
-      checkedIn: (columns.CHECKED_IN?.length ?? 0),
-      inProgress: (columns.IN_PROGRESS?.length ?? 0),
-      completedPendingPayment: (columns.COMPLETED_PENDING_PAYMENT?.length ?? 0),
-      completed: (columns.COMPLETED?.length ?? 0),
-      cancelled: (columns.CANCELLED?.length ?? 0),
-      noShow: (columns.NO_SHOW?.length ?? 0)
+      waiting: columns.WAITING?.length ?? 0,
+      checkedIn: columns.CHECKED_IN?.length ?? 0,
+      inProgress: columns.IN_PROGRESS?.length ?? 0,
+      completedPendingPayment: columns.COMPLETED_PENDING_PAYMENT?.length ?? 0,
+      completed: columns.COMPLETED?.length ?? 0,
+      cancelled: columns.CANCELLED?.length ?? 0,
+      noShow: columns.NO_SHOW?.length ?? 0,
     };
 
     const queue = [...(columns.CHECKED_IN ?? [])].sort((a: any, b: any) => {
@@ -199,7 +221,7 @@ export class ReceptionService {
       columns,
       counters,
       queue,
-      recalculatedAt: new Date().toISOString()
+      recalculatedAt: new Date().toISOString(),
     };
 
     await this.prisma.receptionistDashboardCache.upsert({
@@ -207,43 +229,47 @@ export class ReceptionService {
         tenantId_branchId_dashboardDate: {
           tenantId,
           branchId,
-          dashboardDate: new Date(dateStr)
-        }
+          dashboardDate: new Date(dateStr),
+        },
       },
       create: {
         tenantId,
         branchId,
         dashboardDate: new Date(dateStr),
         dashboardJson: dashboardJson as any,
-        recalculatedAt: new Date()
+        recalculatedAt: new Date(),
       },
       update: {
         dashboardJson: dashboardJson as any,
-        recalculatedAt: new Date()
-      }
+        recalculatedAt: new Date(),
+      },
     });
 
-    this.realtime.emitAppointmentEvent('reception.dashboard.updated', tenantId, branchId, { dateStr });
+    this.realtime.emitAppointmentEvent('reception.dashboard.updated', tenantId, branchId, {
+      dateStr,
+    });
     return dashboardJson;
   }
 
   async checkIn(user: AuthenticatedUser, dto: CheckInDto) {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id: dto.appointmentId },
-      include: { patient: true }
+      include: { patient: true },
     });
     if (!appointment) throw new NotFoundException('Запись не найдена');
     if (appointment.tenantId !== user.tenantId) throw new ForbiddenException();
 
     const allowed = ['SCHEDULED', 'CONFIRMED'];
     if (!allowed.includes(appointment.status)) {
-      throw new BadRequestException(`Нельзя зарегистрировать визит со статусом ${appointment.status}`);
+      throw new BadRequestException(
+        `Нельзя зарегистрировать визит со статусом ${appointment.status}`,
+      );
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
       const app = await tx.appointment.update({
         where: { id: dto.appointmentId },
-        data: { status: 'CHECKED_IN', checkedInAt: new Date() }
+        data: { status: 'CHECKED_IN', checkedInAt: new Date() },
       });
 
       await tx.appointmentStatusHistory.create({
@@ -253,8 +279,8 @@ export class ReceptionService {
           oldStatus: appointment.status,
           newStatus: 'CHECKED_IN',
           changedBy: user.userId,
-          reason: 'Регистрация на ресепшене'
-        }
+          reason: 'Регистрация на ресепшене',
+        },
       });
 
       await tx.appointmentVisitState.create({
@@ -264,8 +290,8 @@ export class ReceptionService {
           oldState: appointment.status,
           newState: 'CHECKED_IN',
           changedBy: user.userId,
-          workstationType: 'RECEPTIONIST'
-        }
+          workstationType: 'RECEPTIONIST',
+        },
       });
 
       const startOfDay = new Date();
@@ -274,8 +300,8 @@ export class ReceptionService {
         where: {
           tenantId: user.tenantId,
           branchId: app.branchId,
-          createdAt: { gte: startOfDay }
-        }
+          createdAt: { gte: startOfDay },
+        },
       });
       const queueNumber = `Q-${String(queueCount + 1).padStart(3, '0')}`;
 
@@ -284,8 +310,8 @@ export class ReceptionService {
           tenantId: user.tenantId,
           branchId: app.branchId,
           queueStatus: { in: ['WAITING', 'CALLED'] },
-          appointment: { employeeId: app.employeeId }
-        }
+          appointment: { employeeId: app.employeeId },
+        },
       });
       const estimatedWaitTime = patientsAhead * 15;
 
@@ -297,8 +323,8 @@ export class ReceptionService {
           queueNumber,
           queueStatus: 'WAITING',
           priority: dto.priority,
-          estimatedWaitTime
-        }
+          estimatedWaitTime,
+        },
       });
 
       return { app, queueRecord };
@@ -310,9 +336,14 @@ export class ReceptionService {
     this.realtime.emitAppointmentEvent('patient.checked_in', user.tenantId, appointment.branchId, {
       appointmentId: appointment.id,
       patientName: appointment.patient.fullName,
-      queueNumber: result.queueRecord.queueNumber
+      queueNumber: result.queueRecord.queueNumber,
     });
-    this.realtime.emitAppointmentEvent('queue.updated', user.tenantId, appointment.branchId, result.queueRecord);
+    this.realtime.emitAppointmentEvent(
+      'queue.updated',
+      user.tenantId,
+      appointment.branchId,
+      result.queueRecord,
+    );
 
     await this.audit.log({
       tenantId: user.tenantId,
@@ -321,33 +352,40 @@ export class ReceptionService {
       action: 'receptionist.checkin',
       entityType: 'appointment',
       entityId: appointment.id,
-      newValuesJson: result
+      newValuesJson: result,
     });
 
     return result;
   }
 
-  async transitionVisit(user: AuthenticatedUser, appointmentId: string, status: string, reason?: string) {
+  async transitionVisit(
+    user: AuthenticatedUser,
+    appointmentId: string,
+    status: string,
+    reason?: string,
+  ) {
     const current = await this.prisma.appointment.findUnique({
-      where: { id: appointmentId }
+      where: { id: appointmentId },
     });
     if (!current) throw new NotFoundException('Запись не найдена');
     if (current.tenantId !== user.tenantId) throw new ForbiddenException();
 
     const allowedTransitions: Record<string, string[]> = {
-      'SCHEDULED': ['CONFIRMED', 'CANCELLED', 'NO_SHOW'],
-      'CONFIRMED': ['CHECKED_IN', 'CANCELLED', 'NO_SHOW'],
-      'CHECKED_IN': ['IN_PROGRESS', 'CANCELLED', 'NO_SHOW'],
-      'IN_PROGRESS': ['COMPLETED_PENDING_PAYMENT', 'COMPLETED', 'CANCELLED', 'NO_SHOW'],
-      'COMPLETED_PENDING_PAYMENT': ['COMPLETED', 'CANCELLED'],
-      'COMPLETED': [],
-      'CANCELLED': [],
-      'NO_SHOW': []
+      SCHEDULED: ['CONFIRMED', 'CANCELLED', 'NO_SHOW'],
+      CONFIRMED: ['CHECKED_IN', 'CANCELLED', 'NO_SHOW'],
+      CHECKED_IN: ['IN_PROGRESS', 'CANCELLED', 'NO_SHOW'],
+      IN_PROGRESS: ['COMPLETED_PENDING_PAYMENT', 'COMPLETED', 'CANCELLED', 'NO_SHOW'],
+      COMPLETED_PENDING_PAYMENT: ['COMPLETED', 'CANCELLED'],
+      COMPLETED: [],
+      CANCELLED: [],
+      NO_SHOW: [],
     };
 
     const nextOptions = allowedTransitions[current.status] || [];
     if (!nextOptions.includes(status)) {
-      throw new BadRequestException(`Нельзя перевести визит из статуса ${current.status} в ${status}`);
+      throw new BadRequestException(
+        `Нельзя перевести визит из статуса ${current.status} в ${status}`,
+      );
     }
 
     const data: Record<string, Date | string | null> = { status };
@@ -363,7 +401,7 @@ export class ReceptionService {
       const app = await tx.appointment.update({
         where: { id: appointmentId },
         data,
-        include: { patient: { include: { contacts: true } }, service: true, branch: true }
+        include: { patient: { include: { contacts: true } }, service: true, branch: true },
       });
 
       await tx.appointmentStatusHistory.create({
@@ -373,8 +411,8 @@ export class ReceptionService {
           oldStatus: current.status,
           newStatus: status,
           changedBy: user.userId,
-          reason: reason ?? 'Переход статуса визита'
-        }
+          reason: reason ?? 'Переход статуса визита',
+        },
       });
 
       await tx.appointmentVisitState.create({
@@ -384,25 +422,31 @@ export class ReceptionService {
           oldState: current.status,
           newState: status,
           changedBy: user.userId,
-          workstationType: 'RECEPTIONIST'
-        }
+          workstationType: 'RECEPTIONIST',
+        },
       });
 
       const queueRecord = await tx.visitQueue.findFirst({
-        where: { tenantId: user.tenantId, appointmentId }
+        where: { tenantId: user.tenantId, appointmentId },
       });
       if (queueRecord) {
         let newQueueStatus = queueRecord.queueStatus;
         if (status === 'IN_PROGRESS') newQueueStatus = 'IN_ROOM';
-        if (status === 'COMPLETED' || status === 'COMPLETED_PENDING_PAYMENT') newQueueStatus = 'COMPLETED';
+        if (status === 'COMPLETED' || status === 'COMPLETED_PENDING_PAYMENT')
+          newQueueStatus = 'COMPLETED';
         if (status === 'CANCELLED' || status === 'NO_SHOW') newQueueStatus = 'SKIPPED';
 
         if (newQueueStatus !== queueRecord.queueStatus) {
           const updatedQueue = await tx.visitQueue.update({
             where: { id: queueRecord.id },
-            data: { queueStatus: newQueueStatus }
+            data: { queueStatus: newQueueStatus },
           });
-          this.realtime.emitAppointmentEvent('queue.updated', user.tenantId, app.branchId, updatedQueue);
+          this.realtime.emitAppointmentEvent(
+            'queue.updated',
+            user.tenantId,
+            app.branchId,
+            updatedQueue,
+          );
         }
       }
 
@@ -426,7 +470,7 @@ export class ReceptionService {
       entityType: 'appointment',
       entityId: appointmentId,
       oldValuesJson: current,
-      newValuesJson: result
+      newValuesJson: result,
     });
 
     return result;
@@ -436,7 +480,7 @@ export class ReceptionService {
     if (!app.serviceId || !app.service) return;
 
     const existing = await tx.invoice.findFirst({
-      where: { tenantId: user.tenantId, appointmentId: app.id }
+      where: { tenantId: user.tenantId, appointmentId: app.id },
     });
     if (existing) return;
 
@@ -463,12 +507,12 @@ export class ReceptionService {
               quantity: 1,
               unitPrice,
               totalPrice: unitPrice,
-              performerEmployeeId: app.employeeId
-            }
-          ]
-        }
+              performerEmployeeId: app.employeeId,
+            },
+          ],
+        },
       },
-      include: { items: true }
+      include: { items: true },
     });
 
     this.realtime.emitAppointmentEvent('invoice.generated', user.tenantId, app.branchId, invoice);
@@ -479,16 +523,18 @@ export class ReceptionService {
     return this.prisma.visitQueue.findMany({
       where: { tenantId: user.tenantId, branchId },
       include: { appointment: { include: { patient: true } } },
-      orderBy: [
-        { priority: 'desc' },
-        { createdAt: 'asc' }
-      ]
+      orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
     });
   }
 
-  async updateQueueStatus(user: AuthenticatedUser, queueId: string, status: string, reason?: string) {
+  async updateQueueStatus(
+    user: AuthenticatedUser,
+    queueId: string,
+    status: string,
+    reason?: string,
+  ) {
     const queueRecord = await this.prisma.visitQueue.findUnique({
-      where: { id: queueId }
+      where: { id: queueId },
     });
     if (!queueRecord) throw new NotFoundException('Запись очереди не найдена');
     if (queueRecord.tenantId !== user.tenantId) throw new ForbiddenException();
@@ -500,10 +546,15 @@ export class ReceptionService {
 
     const updated = await this.prisma.visitQueue.update({
       where: { id: queueId },
-      data: { queueStatus: status }
+      data: { queueStatus: status },
     });
 
-    this.realtime.emitAppointmentEvent('queue.updated', user.tenantId, queueRecord.branchId, updated);
+    this.realtime.emitAppointmentEvent(
+      'queue.updated',
+      user.tenantId,
+      queueRecord.branchId,
+      updated,
+    );
 
     const dateStr = queueRecord.createdAt.toISOString().slice(0, 10);
     await this.recalculateDashboard(user.tenantId, queueRecord.branchId, dateStr);
@@ -516,7 +567,7 @@ export class ReceptionService {
       entityType: 'visit_queue',
       entityId: queueId,
       oldValuesJson: queueRecord,
-      newValuesJson: { ...updated, reason }
+      newValuesJson: { ...updated, reason },
     });
 
     return updated;
@@ -524,11 +575,11 @@ export class ReceptionService {
 
   async updateQueuePriority(user: AuthenticatedUser, id: string, priority: string) {
     let queueRecord = await this.prisma.visitQueue.findUnique({
-      where: { id }
+      where: { id },
     });
     if (!queueRecord) {
       queueRecord = await this.prisma.visitQueue.findFirst({
-        where: { appointmentId: id, tenantId: user.tenantId }
+        where: { appointmentId: id, tenantId: user.tenantId },
       });
     }
     if (!queueRecord) throw new NotFoundException('Запись очереди не найдена');
@@ -541,10 +592,15 @@ export class ReceptionService {
 
     const updated = await this.prisma.visitQueue.update({
       where: { id: queueRecord.id },
-      data: { priority }
+      data: { priority },
     });
 
-    this.realtime.emitAppointmentEvent('queue.updated', user.tenantId, queueRecord.branchId, updated);
+    this.realtime.emitAppointmentEvent(
+      'queue.updated',
+      user.tenantId,
+      queueRecord.branchId,
+      updated,
+    );
 
     const dateStr = queueRecord.createdAt.toISOString().slice(0, 10);
     await this.recalculateDashboard(user.tenantId, queueRecord.branchId, dateStr);
@@ -557,7 +613,7 @@ export class ReceptionService {
       entityType: 'visit_queue',
       entityId: queueRecord.id,
       oldValuesJson: { priority: queueRecord.priority },
-      newValuesJson: { priority }
+      newValuesJson: { priority },
     });
 
     return updated;
@@ -575,18 +631,18 @@ export class ReceptionService {
             tags: { include: { tag: true } },
             metrics: true,
             invoices: {
-              where: { status: { in: ['DRAFT', 'PENDING_PAYMENT'] } }
-            }
-          }
-        }
-      }
+              where: { status: { in: ['DRAFT', 'PENDING_PAYMENT'] } },
+            },
+          },
+        },
+      },
     });
 
     let card = null;
     if (contact) {
       const p = contact.patient;
       const debt = p.invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
-      const isVip = p.tags.some(t => t.tag.code === 'VIP' || t.tag.name.toLowerCase() === 'vip');
+      const isVip = p.tags.some((t) => t.tag.code === 'VIP' || t.tag.name.toLowerCase() === 'vip');
       const notesCount = await this.prisma.patientNote.count({ where: { patientId: p.id } });
 
       card = {
@@ -596,7 +652,7 @@ export class ReceptionService {
         isVip,
         lastVisitAt: p.metrics?.lastVisitAt?.toISOString() || null,
         debt,
-        notesCount
+        notesCount,
       };
     }
 
@@ -608,14 +664,14 @@ export class ReceptionService {
         patientId: contact ? contact.patientId : null,
         operatorUserId: user.userId,
         callStartedAt: new Date(),
-        callResult: 'ANSWERED'
-      }
+        callResult: 'ANSWERED',
+      },
     });
 
     this.realtime.emitAppointmentEvent('call.received', user.tenantId, dto.branchId, {
       callId: call.id,
       phoneNumber: dto.phoneNumber,
-      card
+      card,
     });
 
     await this.audit.log({
@@ -625,7 +681,7 @@ export class ReceptionService {
       action: 'call.popup.opened',
       entityType: 'incoming_call',
       entityId: call.id,
-      newValuesJson: { call, card }
+      newValuesJson: { call, card },
     });
 
     return { call, card };
@@ -636,7 +692,7 @@ export class ReceptionService {
       where: { tenantId: user.tenantId, branchId },
       include: { patient: true },
       orderBy: { callStartedAt: 'desc' },
-      take: 20
+      take: 20,
     });
   }
 
@@ -644,7 +700,7 @@ export class ReceptionService {
     return this.prisma.invoice.findMany({
       where: { tenantId: user.tenantId, branchId },
       include: { patient: true, items: { include: { service: true } } },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -666,17 +722,17 @@ export class ReceptionService {
         dueAmount: total,
         createdBy: user.userId,
         items: {
-          create: dto.items.map(item => ({
+          create: dto.items.map((item) => ({
             tenantId: user.tenantId,
             serviceId: item.serviceId,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             totalAmount: item.unitPrice * item.quantity,
-            performerEmployeeId: item.performerEmployeeId || null
-          }))
-        }
+            performerEmployeeId: item.performerEmployeeId || null,
+          })),
+        },
       },
-      include: { items: true }
+      include: { items: true },
     });
 
     this.realtime.emitAppointmentEvent('invoice.generated', user.tenantId, dto.branchId, invoice);
@@ -688,7 +744,7 @@ export class ReceptionService {
       action: 'invoice.draft.created',
       entityType: 'invoice',
       entityId: invoice.id,
-      newValuesJson: invoice
+      newValuesJson: invoice,
     });
 
     return invoice;
@@ -696,7 +752,7 @@ export class ReceptionService {
 
   async payInvoice(user: AuthenticatedUser, invoiceId: string, dto: PayInvoiceDto) {
     const invoice = await this.prisma.invoice.findUnique({
-      where: { id: invoiceId }
+      where: { id: invoiceId },
     });
     if (!invoice) throw new NotFoundException('Счет не найден');
     if (invoice.tenantId !== user.tenantId) throw new ForbiddenException();
@@ -704,7 +760,7 @@ export class ReceptionService {
     const updated = await this.prisma.$transaction(async (tx) => {
       const inv = await tx.invoice.update({
         where: { id: invoiceId },
-        data: { status: 'PAID' }
+        data: { status: 'PAID' },
       });
 
       await tx.payment.create({
@@ -716,19 +772,22 @@ export class ReceptionService {
           paymentMethod: dto.paymentMethod,
           amount: invoice.totalAmount,
           cashierUserId: user.userId,
-          status: 'COMPLETED'
-        }
+          status: 'COMPLETED',
+        },
       });
 
       // If tied to an appointment, transition the appointment status to COMPLETED
       if (invoice.appointmentId) {
         const app = await tx.appointment.findUnique({ where: { id: invoice.appointmentId } });
-        if (app && ['COMPLETED_PENDING_PAYMENT', 'CHECKED_IN', 'IN_PROGRESS'].includes(app.status)) {
+        if (
+          app &&
+          ['COMPLETED_PENDING_PAYMENT', 'CHECKED_IN', 'IN_PROGRESS'].includes(app.status)
+        ) {
           await tx.appointment.update({
             where: { id: invoice.appointmentId },
-            data: { status: 'COMPLETED', completedAt: new Date() }
+            data: { status: 'COMPLETED', completedAt: new Date() },
           });
-          
+
           await tx.appointmentStatusHistory.create({
             data: {
               tenantId: user.tenantId,
@@ -736,8 +795,8 @@ export class ReceptionService {
               oldStatus: app.status,
               newStatus: 'COMPLETED',
               changedBy: user.userId,
-              reason: 'Счет полностью оплачен'
-            }
+              reason: 'Счет полностью оплачен',
+            },
           });
 
           await tx.appointmentVisitState.create({
@@ -747,8 +806,8 @@ export class ReceptionService {
               oldState: app.status,
               newState: 'COMPLETED',
               changedBy: user.userId,
-              workstationType: 'RECEPTIONIST'
-            }
+              workstationType: 'RECEPTIONIST',
+            },
           });
         }
       }
@@ -756,8 +815,13 @@ export class ReceptionService {
       return inv;
     });
 
-    this.realtime.emitAppointmentEvent('payment.completed', user.tenantId, invoice.branchId, updated);
-    
+    this.realtime.emitAppointmentEvent(
+      'payment.completed',
+      user.tenantId,
+      invoice.branchId,
+      updated,
+    );
+
     // Invalidate dashboard cache
     const dateStr = invoice.createdAt.toISOString().slice(0, 10);
     await this.recalculateDashboard(user.tenantId, invoice.branchId, dateStr);
@@ -772,7 +836,7 @@ export class ReceptionService {
       entityType: 'invoice',
       entityId: invoiceId,
       oldValuesJson: invoice,
-      newValuesJson: updated
+      newValuesJson: updated,
     });
 
     return updated;
@@ -784,7 +848,7 @@ export class ReceptionService {
 
     const contact = await this.prisma.patientContact.findFirst({
       where: { tenantId: user.tenantId, normalizedValueHash: phoneHash },
-      include: { patient: true }
+      include: { patient: true },
     });
 
     let patientId = contact?.patientId;
@@ -793,7 +857,7 @@ export class ReceptionService {
       const count = await this.prisma.patient.count({ where: { tenantId: user.tenantId } });
       const patientCode = `P-${String(count + 1).padStart(6, '0')}`;
       const fullName = [dto.lastName, dto.firstName, dto.middleName].filter(Boolean).join(' ');
-      
+
       const newPatient = await this.prisma.patient.create({
         data: {
           tenantId: user.tenantId,
@@ -809,17 +873,17 @@ export class ReceptionService {
                 type: 'PHONE',
                 value: dto.phone,
                 normalizedValueHash: phoneHash,
-                isPrimary: true
-              }
-            ]
-          }
-        }
+                isPrimary: true,
+              },
+            ],
+          },
+        },
       });
       patientId = newPatient.id;
     }
 
     const service = await this.prisma.service.findUnique({
-      where: { id: dto.serviceId }
+      where: { id: dto.serviceId },
     });
     const duration = service?.durationMinutes ?? 30;
     const startAt = new Date(dto.startAt);
@@ -834,14 +898,14 @@ export class ReceptionService {
       endAt: endAt.toISOString(),
       bookingSource: 'PHONE_CALL',
       appointmentType: 'CONSULTATION',
-      notes: 'Быстрая запись через АРМ администратора'
+      notes: 'Быстрая запись через АРМ администратора',
     });
 
     // If booking contains a custom priority, update appointment priority
     if (dto.priority && dto.priority !== 'NORMAL') {
       await this.prisma.appointment.update({
         where: { id: app.id },
-        data: { priority: dto.priority }
+        data: { priority: dto.priority },
       });
     }
 
@@ -855,7 +919,7 @@ export class ReceptionService {
       action: 'receptionist.fastbooking',
       entityType: 'appointment',
       entityId: app.id,
-      newValuesJson: app
+      newValuesJson: app,
     });
 
     return app;
@@ -869,14 +933,14 @@ export class ReceptionService {
         tags: { include: { tag: true } },
         metrics: true,
         familyMembers: {
-          include: { familyGroup: { include: { members: { include: { patient: true } } } } }
+          include: { familyGroup: { include: { members: { include: { patient: true } } } } },
         },
         invoices: {
           where: { status: { in: ['DRAFT', 'PENDING_PAYMENT'] } },
           orderBy: { createdAt: 'desc' },
-          take: 5
-        }
-      }
+          take: 5,
+        },
+      },
     });
     if (!patient) throw new NotFoundException('Пациент не найден');
 
@@ -884,22 +948,25 @@ export class ReceptionService {
       where: { patientId, tenantId: user.tenantId },
       include: { service: true },
       orderBy: { startAt: 'desc' },
-      take: 5
+      take: 5,
     });
 
     const debt = patient.invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
-    const isVip = patient.tags.some(t => t.tag.code === 'VIP' || t.tag.name.toLowerCase() === 'vip');
+    const isVip = patient.tags.some(
+      (t) => t.tag.code === 'VIP' || t.tag.name.toLowerCase() === 'vip',
+    );
     const age = patient.birthDate ? this.calculateAge(patient.birthDate) : null;
-    const primaryPhone = patient.contacts.find(c => c.isPrimary)?.value || patient.contacts[0]?.value || null;
+    const primaryPhone =
+      patient.contacts.find((c) => c.isPrimary)?.value || patient.contacts[0]?.value || null;
 
-    const familyMembers = patient.familyMembers.flatMap(fm =>
+    const familyMembers = patient.familyMembers.flatMap((fm) =>
       fm.familyGroup.members
-        .filter(m => m.patientId !== patientId)
-        .map(m => ({
+        .filter((m) => m.patientId !== patientId)
+        .map((m) => ({
           id: m.patient.id,
           name: m.patient.fullName,
-          relation: fm.relationType
-        }))
+          relation: fm.relationType,
+        })),
     );
 
     return {
@@ -912,43 +979,46 @@ export class ReceptionService {
       isVip,
       status: patient.status,
       debt,
-      tags: patient.tags.map(t => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color })),
-      metrics: patient.metrics ? {
-        totalVisits: patient.metrics.totalVisits,
-        totalRevenue: Number(patient.metrics.totalRevenue),
-        ltv: Number(patient.metrics.ltv),
-        averageCheck: Number(patient.metrics.averageCheck),
-        retentionScore: patient.metrics.retentionScore
-      } : null,
+      tags: patient.tags.map((t) => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color })),
+      metrics: patient.metrics
+        ? {
+            totalVisits: patient.metrics.totalVisits,
+            totalRevenue: Number(patient.metrics.totalRevenue),
+            ltv: Number(patient.metrics.ltv),
+            averageCheck: Number(patient.metrics.averageCheck),
+            retentionScore: patient.metrics.retentionScore,
+          }
+        : null,
       familyMembers,
-      recentAppointments: recentAppointments.map(a => ({
+      recentAppointments: recentAppointments.map((a) => ({
         id: a.id,
         date: a.startAt.toISOString(),
         service: a.service?.name ?? 'Без услуги',
-        status: a.status
-      }))
+        status: a.status,
+      })),
     };
   }
 
   async recalculateMetrics(tenantId: string, patientId: string) {
     const appointments = await this.prisma.appointment.findMany({
-      where: { tenantId, patientId }
+      where: { tenantId, patientId },
     });
 
-    const completed = appointments.filter(a => a.status === 'COMPLETED');
-    const cancellations = appointments.filter(a => a.status === 'CANCELLED').length;
-    const missed = appointments.filter(a => a.status === 'NO_SHOW').length;
+    const completed = appointments.filter((a) => a.status === 'COMPLETED');
+    const cancellations = appointments.filter((a) => a.status === 'CANCELLED').length;
+    const missed = appointments.filter((a) => a.status === 'NO_SHOW').length;
     const totalVisits = completed.length;
 
     const invoices = await this.prisma.invoice.findMany({
-      where: { tenantId, patientId, status: 'PAID' }
+      where: { tenantId, patientId, status: 'PAID' },
     });
     const totalRevenue = invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
     const averageCheck = totalVisits > 0 ? totalRevenue / totalVisits : 0;
 
-    const lastVisit = completed.length > 0
-      ? new Date(Math.max(...completed.map(c => c.startAt.getTime())))
-      : null;
+    const lastVisit =
+      completed.length > 0
+        ? new Date(Math.max(...completed.map((c) => c.startAt.getTime())))
+        : null;
 
     await this.prisma.patientCrmMetric.upsert({
       where: { patientId },
@@ -959,7 +1029,7 @@ export class ReceptionService {
         averageCheck: new Prisma.Decimal(averageCheck),
         missedAppointments: missed,
         cancellations,
-        lastVisitAt: lastVisit
+        lastVisitAt: lastVisit,
       },
       create: {
         tenantId,
@@ -970,8 +1040,8 @@ export class ReceptionService {
         averageCheck: new Prisma.Decimal(averageCheck),
         missedAppointments: missed,
         cancellations,
-        lastVisitAt: lastVisit
-      }
+        lastVisitAt: lastVisit,
+      },
     });
   }
 }

@@ -1,0 +1,1887 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ТЗ №5. Patient Portal MVP — MedCRM</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #101828;
+        --muted: #667085;
+        --line: #d9e1ea;
+        --surface: #ffffff;
+        --soft: #f6f8fb;
+        --brand: #079685;
+        --brand-dark: #04786b;
+        --brand-soft: #e7f8f5;
+        --blue: #2563eb;
+        --amber: #b45309;
+        --red: #b42318;
+        --green: #15803d;
+        --violet: #6d28d9;
+        --shadow: 0 16px 40px rgba(16, 24, 40, 0.08);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #eef3f7;
+        color: var(--ink);
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Arial,
+          sans-serif;
+        line-height: 1.55;
+      }
+      .page {
+        width: min(1180px, calc(100% - 40px));
+        margin: 32px auto;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+      }
+      header.cover {
+        padding: 56px 56px 40px;
+        background:
+          linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(7, 150, 133, 0.18)), #fbfdff;
+        border-bottom: 1px solid var(--line);
+      }
+      main {
+        padding: 36px 56px 56px;
+      }
+      h1,
+      h2,
+      h3,
+      h4 {
+        margin: 0;
+        line-height: 1.18;
+      }
+      h1 {
+        max-width: 880px;
+        font-size: 42px;
+        font-weight: 760;
+      }
+      h2 {
+        margin-top: 48px;
+        padding-top: 26px;
+        border-top: 1px solid var(--line);
+        font-size: 26px;
+      }
+      h3 {
+        margin-top: 28px;
+        font-size: 19px;
+      }
+      h4 {
+        margin-top: 18px;
+        font-size: 16px;
+        color: #344054;
+      }
+      p {
+        margin: 10px 0 0;
+      }
+      ul,
+      ol {
+        margin: 10px 0 0;
+        padding-left: 22px;
+      }
+      li + li {
+        margin-top: 6px;
+      }
+      table {
+        width: 100%;
+        margin-top: 14px;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th,
+      td {
+        vertical-align: top;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        text-align: left;
+      }
+      th {
+        background: #f3f7fa;
+        font-weight: 700;
+      }
+      code {
+        padding: 2px 5px;
+        border-radius: 5px;
+        background: #edf2f7;
+        color: #243244;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 0.92em;
+      }
+      pre {
+        margin-top: 12px;
+        padding: 16px 18px;
+        background: #0b1220;
+        color: #e6edf3;
+        border-radius: 10px;
+        overflow-x: auto;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+      }
+      .meta {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 28px;
+      }
+      .meta div,
+      .note,
+      .decision,
+      .warning,
+      .danger,
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.85);
+        padding: 14px 16px;
+      }
+      .meta span,
+      .eyebrow {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .meta strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 15px;
+      }
+      .lead {
+        max-width: 820px;
+        margin-top: 18px;
+        color: #344054;
+        font-size: 18px;
+      }
+      .toc {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 24px;
+        margin-top: 18px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--soft);
+      }
+      .toc a {
+        color: var(--brand-dark);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .toc a:hover {
+        text-decoration: underline;
+      }
+      .two {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 16px;
+      }
+      .three {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 16px;
+      }
+      .four {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+      }
+      .card {
+        padding: 18px;
+      }
+      .card h3 {
+        margin-top: 0;
+      }
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        margin: 4px 6px 0 0;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: var(--brand-soft);
+        color: var(--brand-dark);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .tag.blue {
+        background: #eff6ff;
+        color: #1e40af;
+      }
+      .tag.amber {
+        background: #fffbeb;
+        color: #92400e;
+      }
+      .tag.red {
+        background: #fef2f2;
+        color: #991b1b;
+      }
+      .tag.violet {
+        background: #f5f3ff;
+        color: #5b21b6;
+      }
+      .tag.green {
+        background: #f0fdf4;
+        color: #166534;
+      }
+      .tag.gray {
+        background: #f3f4f6;
+        color: #374151;
+      }
+      .note {
+        background: #f8fbff;
+        border-color: #c7d8f0;
+      }
+      .decision {
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+      }
+      .warning {
+        background: #fff7ed;
+        border-color: #fed7aa;
+      }
+      .danger {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #7f1d1d;
+      }
+      .small {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .stage {
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--brand);
+        border-radius: 10px;
+        padding: 16px 18px;
+        margin-top: 14px;
+        background: #fbfeff;
+      }
+      .stage h3 {
+        margin-top: 0;
+      }
+      .stage .stage-meta {
+        display: inline-block;
+        margin-right: 10px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--brand-soft);
+        color: var(--brand-dark);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .kpi {
+        border-radius: 12px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, #ffffff, #f7fafc);
+      }
+      .kpi .label {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .kpi .value {
+        display: block;
+        margin-top: 6px;
+        font-size: 26px;
+        font-weight: 760;
+      }
+      .kpi .hint {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .check {
+        padding-left: 0;
+        list-style: none;
+      }
+      .check li {
+        position: relative;
+        padding: 6px 0 6px 26px;
+        border-bottom: 1px dashed #e5e7eb;
+      }
+      .check li:before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 11px;
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1.5px solid var(--brand);
+        background: #fff;
+      }
+      .check li:last-child {
+        border-bottom: 0;
+      }
+      .file-tree {
+        margin-top: 12px;
+        padding: 16px 20px;
+        background: #0b1220;
+        color: #e6edf3;
+        border-radius: 10px;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.7;
+        overflow-x: auto;
+      }
+      .file-tree b {
+        color: #7dd3fc;
+        font-weight: 700;
+      }
+      .file-tree i {
+        color: #a5b4fc;
+        font-style: normal;
+      }
+      .file-tree em {
+        color: #fcd34d;
+        font-style: normal;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 18px;
+      }
+      .step {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fbfeff;
+        padding: 12px;
+      }
+      .step b {
+        display: block;
+        color: var(--brand-dark);
+        font-size: 12px;
+        letter-spacing: 0.02em;
+      }
+      .step h4 {
+        margin-top: 6px;
+        font-size: 14px;
+      }
+      .step p {
+        margin-top: 6px;
+        color: #344054;
+        font-size: 12px;
+      }
+
+      .device-preview {
+        margin-top: 18px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: linear-gradient(180deg, #fff, #f8fafc);
+      }
+      .phone {
+        width: 240px;
+        border: 8px solid #111827;
+        border-radius: 28px;
+        overflow: hidden;
+        background: #fff;
+        display: inline-block;
+        vertical-align: top;
+        margin-right: 18px;
+      }
+      .phone .head {
+        background: #079685;
+        color: #fff;
+        padding: 14px;
+      }
+      .phone .head .clinic {
+        font-weight: 700;
+        font-size: 15px;
+      }
+      .phone .head .sub {
+        font-size: 12px;
+        opacity: 0.9;
+      }
+      .phone .body {
+        padding: 12px;
+      }
+      .phone .item {
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        font-size: 12px;
+      }
+      .phone .pill {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        background: #fffbeb;
+        color: #92400e;
+      }
+      .phone .price {
+        float: right;
+        font-weight: 700;
+      }
+
+      @media (max-width: 860px) {
+        .page {
+          width: 100%;
+          margin: 0;
+          border-width: 0;
+        }
+        header.cover,
+        main {
+          padding: 28px 20px;
+        }
+        h1 {
+          font-size: 30px;
+        }
+        .meta,
+        .two,
+        .three,
+        .four,
+        .toc,
+        .flow {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media print {
+        body {
+          background: #fff;
+        }
+        .page {
+          width: 100%;
+          margin: 0;
+          border: 0;
+          box-shadow: none;
+        }
+        header.cover,
+        main {
+          padding: 24px 32px;
+        }
+        pre {
+          background: #f4f4f5;
+          color: #111827;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <article class="page">
+      <header class="cover">
+        <span class="eyebrow">MedCRM · ТЗ №5 · Patient Portal MVP</span>
+        <h1>Личный кабинет пациента: запись, история, оплата</h1>
+        <p class="lead">
+          Превратить MedCRM из «внутренней CRM клиники» в полноценную МИС с лицом к пациенту.
+          Patient Portal MVP даёт пациенту возможность записаться онлайн, увидеть историю визитов и
+          медицинские документы, оплатить услуги и управлять согласиями. Это первая фича, которая
+          превращает MedCRM в продукт «для врача и для пациента».
+        </p>
+        <section class="meta">
+          <div><span>Версия</span><strong>1.0</strong></div>
+          <div><span>Дата</span><strong>25 мая 2026</strong></div>
+          <div><span>Проект</span><strong>xiewan1230-maker/MedCRM</strong></div>
+          <div>
+            <span>Фокус</span><strong>Public-facing portal, online booking, payments</strong>
+          </div>
+        </section>
+      </header>
+
+      <main>
+        <nav class="toc">
+          <a href="#purpose">1. Назначение</a>
+          <a href="#as-is">2. Состояние «как есть»</a>
+          <a href="#goals">3. Цели и Out of Scope</a>
+          <a href="#personas">4. Персоны и сценарии</a>
+          <a href="#arch">5. Архитектура портала</a>
+          <a href="#auth">6. Auth пациента</a>
+          <a href="#booking">7. Online booking</a>
+          <a href="#history">8. История и документы</a>
+          <a href="#payments">9. Платежи и счета</a>
+          <a href="#consent">10. Согласия и приватность</a>
+          <a href="#notifications">11. Уведомления пациента</a>
+          <a href="#prisma">12. Изменения в Prisma</a>
+          <a href="#api">13. API контракт</a>
+          <a href="#files">14. Структура файлов</a>
+          <a href="#plan">15. Этапы работ</a>
+          <a href="#acceptance">16. Acceptance</a>
+          <a href="#metrics">17. Метрики и риски</a>
+        </nav>
+
+        <section id="purpose">
+          <h2>1. Назначение</h2>
+          <p>
+            Сегодня в MedCRM нет публичного интерфейса для пациента. Пациент может узнать о визите
+            только через звонок регистратора, СМС или Telegram-bot (после ТЗ №4). Это «80% продукт»:
+            операционная часть закрыта, но без портала клиника не получает онлайн-трафик, не снижает
+            нагрузку на регистратуру и не предлагает digital-experience, которого ожидают
+            современные пациенты.
+          </p>
+          <p>
+            Цель ТЗ №5 — построить публичный модуль <code>patient-portal</code> (новый Next.js-app
+            или отдельный сегмент существующего frontend) с регистрацией пациента, онлайн-записью на
+            приём, личным кабинетом (история, документы, рецепты, оплата). Без портала MedCRM
+            остаётся «внутренней CRM», с порталом — становится МИС.
+          </p>
+          <div class="decision">
+            <span class="eyebrow">Принцип</span>
+            <strong>«Один пациент — один портал, много клиник; идентичность по телефону»</strong>
+            <p class="small">
+              Пациент регистрируется один раз; через тенант-pin (или ссылку от клиники) он
+              привязывается к нужной клинике; одна запись в портале может видеть данные нескольких
+              клиник по grant.
+            </p>
+          </div>
+        </section>
+
+        <section id="as-is">
+          <h2>2. Состояние «как есть»</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Слой</th>
+                <th>Сейчас</th>
+                <th>Проблема</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Patient identity</td>
+                <td>
+                  Модель <code>Patient</code> с <code>tenantId</code>, телефоном, паспортом. Нет
+                  «портального аккаунта».
+                </td>
+                <td>
+                  Пациент не может «войти». Нет связки между записями пациента в разных клиниках.
+                </td>
+              </tr>
+              <tr>
+                <td>Online booking</td>
+                <td>В backend есть booking-flow для регистратора, но без публичного эндпоинта.</td>
+                <td>Чтобы записаться — нужно позвонить.</td>
+              </tr>
+              <tr>
+                <td>Frontend</td>
+                <td>Один Next.js-app для admin/registry.</td>
+                <td>Нет публичной зоны без auth, нет SEO-страниц клиники.</td>
+              </tr>
+              <tr>
+                <td>Payment gateway</td>
+                <td>
+                  Модель <code>PaymentGateway</code>, <code>Payment</code>, но реальной интеграции
+                  нет.
+                </td>
+                <td>Нельзя оплатить онлайн.</td>
+              </tr>
+              <tr>
+                <td>Documents</td>
+                <td>
+                  Есть <code>MedicalRecord</code>, <code>EncounterDocument</code>,
+                  <code>Prescription</code>.
+                </td>
+                <td>Пациент не имеет доступа.</td>
+              </tr>
+              <tr>
+                <td>Consent</td>
+                <td>
+                  Модель <code>PatientLegalDocument</code> + <code>DigitalSignature</code>, но flow
+                  в портале нет.
+                </td>
+                <td>Согласие подписывается на бумаге.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="goals">
+          <h2>3. Цели и Out of Scope</h2>
+          <div class="two">
+            <div class="card">
+              <h3>Цели (MVP)</h3>
+              <ul>
+                <li>Регистрация и авторизация пациента (телефон + OTP).</li>
+                <li>Привязка пациента к клинике (или нескольким) через PIN / QR / deeplink.</li>
+                <li>Онлайн-запись на приём: специальность → врач → слот → подтверждение.</li>
+                <li>История визитов: список приёмов, статус, итог.</li>
+                <li>Документы: получить выписку, рецепт, направление (PDF).</li>
+                <li>
+                  Оплата онлайн: pay-as-you-go (счёт после визита) + предоплата при онлайн-записи.
+                </li>
+                <li>Уведомления (Telegram / SMS / push) — pull-режим: пациент видит свои.</li>
+                <li>Согласие на обработку ПДн при первом входе.</li>
+                <li>Профиль: ФИО, контакты, аллергии (read-only), управление согласиями.</li>
+                <li>Кнопка «отменить визит» с правилами клиники.</li>
+                <li>Локализация ru/tj/en/uz.</li>
+                <li>Адаптив, поддержка мобильных браузеров без выделенного app.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Out of Scope</h3>
+              <ul>
+                <li>Native mobile app (iOS / Android) — отдельное ТЗ.</li>
+                <li>Telemedicine (видеосвязь с врачом) — отдельное ТЗ.</li>
+                <li>Чат с врачом — отдельное ТЗ (после appointments-pipeline).</li>
+                <li>Семейные аккаунты (родитель видит детей) — фаза 2.</li>
+                <li>Биометрия / Face ID — после нативных приложений.</li>
+                <li>Loyalty / promo / referral — фаза 2.</li>
+                <li>Интеграция с госуслугами (ЕМИАС, единый ID РТ) — отдельное ТЗ.</li>
+                <li>Интернет-аптека и доставка лекарств — отдельный продукт.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="personas">
+          <h2>4. Персоны и сценарии</h2>
+
+          <h3>4.1. Персона</h3>
+          <p>
+            «Карина, 32 года, мама двоих детей. Регулярно посещает терапевта, педиатра, гинеколога.
+            Часто записывается в 3 разных клиники. Хочет: всё в одном месте, без звонков, мобильный
+            браузер.»
+          </p>
+
+          <h3>4.2. Ключевые сценарии</h3>
+          <ol>
+            <li>
+              <strong>S1 — Первая запись через QR клиники.</strong> Сканирует QR в холле → вводит
+              телефон → OTP → подтверждает согласие → видит специальности клиники → выбирает
+              «терапевт» → выбирает доктора → выбирает слот → оплачивает онлайн или «оплатить в
+              клинике» → получает Telegram-confirmation.
+            </li>
+            <li>
+              <strong>S2 — Повторная запись из портала.</strong> Вход → «Записаться» → клиника
+              (выбор из привязанных) → доктор → слот → оплата → готово.
+            </li>
+            <li>
+              <strong>S3 — Просмотр истории.</strong> Вход → «Мои визиты» → конкретный визит →
+              выписка PDF → скачать.
+            </li>
+            <li>
+              <strong>S4 — Получение рецепта.</strong> Уведомление в Telegram «новый рецепт» → клик
+              → авторизация → видит рецепт → скачивает PDF → показывает в аптеке (QR).
+            </li>
+            <li>
+              <strong>S5 — Оплата задолженности.</strong> На главной портала видит «у вас счёт на 1
+              200 ₽» → клик → оплачивает → видит чек.
+            </li>
+            <li>
+              <strong>S6 — Отмена визита.</strong> «Мои визиты» → активный визит → «Отменить» →
+              выбор причины → confirm → освобождается слот.
+            </li>
+            <li>
+              <strong>S7 — Перенос визита.</strong> «Мои визиты» → активный → «Перенести» → выбор
+              нового слота того же врача → confirm.
+            </li>
+            <li>
+              <strong>S8 — Multi-clinic.</strong> Tenant A пациент уже зарегистрирован; tenant B
+              приглашает по deeplink → confirm → один аккаунт видит и A, и B.
+            </li>
+          </ol>
+        </section>
+
+        <section id="arch">
+          <h2>5. Архитектура портала</h2>
+
+          <h3>5.1. Опции деплоя</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Вариант</th>
+                <th>Описание</th>
+                <th>Pros</th>
+                <th>Cons</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>A · Один Next.js-app с двумя зонами</td>
+                <td><code>frontend/app/(portal)</code> и <code>frontend/app/(protected)</code></td>
+                <td>Один deploy, общие токены, общая дизайн-система.</td>
+                <td>Бандл больше, риск утечки кода между зонами.</td>
+              </tr>
+              <tr>
+                <td>B · Отдельный Next.js-app <code>portal/</code></td>
+                <td>Новый workspace в монорепо</td>
+                <td>Чёткая граница, отдельный DNS / SEO, меньший бандл портала.</td>
+                <td>Дополнительный deploy, нужна синхронизация дизайн-токенов.</td>
+              </tr>
+              <tr>
+                <td>C · SSR в gateway</td>
+                <td>API-only backend, портал на статике с client-side fetch</td>
+                <td>—</td>
+                <td>SEO хуже, для SaaS — нерекомендуется.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="decision">
+            <span class="eyebrow">Решение</span>
+            <strong>Вариант B — отдельный <code>portal/</code> workspace в монорепо.</strong>
+            <p class="small">
+              Преимущества разделения: чистый бандл (нет admin-кода), отдельный domain (<code
+                >portal.&lt;clinic&gt;.medcrm.app</code
+              >
+              или <code>portal.medcrm.app/t/&lt;tenantCode&gt;</code>), отдельные security headers
+              (более строгие CSP), отдельный CDN и кэширование SEO-страниц «врачи / специальности /
+              отзывы». Token и UI-kit из ТЗ №2 переиспользуются.
+            </p>
+          </div>
+
+          <h3>5.2. Domain-стратегия</h3>
+          <ul>
+            <li>
+              <code>portal.medcrm.app/t/&lt;tenantCode&gt;</code> — fallback вариант для любой
+              клиники.
+            </li>
+            <li><code>&lt;tenantCode&gt;.medcrm.app/portal</code> — стандарт для подписки.</li>
+            <li>Кастомный домен (<code>app.&lt;clinic&gt;.ru</code>) — для enterprise тарифа.</li>
+          </ul>
+
+          <h3>5.3. Backend</h3>
+          <p>
+            Эндпоинты портала — отдельный модуль <code>patient-portal</code> в
+            <code>auth-service</code> (или gateway-уровень):
+          </p>
+          <ul>
+            <li>Под отдельным префиксом <code>/portal/v1/*</code>.</li>
+            <li>Auth — отдельный flow (OTP по телефону), отдельные роли (<code>PATIENT</code>).</li>
+            <li>
+              RBAC: пациент может читать только свои данные (по <code>patientId</code> в JWT) + RLS
+              политики (см. ТЗ №3).
+            </li>
+          </ul>
+        </section>
+
+        <section id="auth">
+          <h2>6. Auth пациента</h2>
+
+          <h3>6.1. Flow регистрации</h3>
+          <div class="flow">
+            <div class="step">
+              <b>Step 1</b>
+              <h4>Phone input</h4>
+              <p>Пациент вводит телефон в формате <code>+992XXXXXXXXX</code>.</p>
+            </div>
+            <div class="step">
+              <b>Step 2</b>
+              <h4>OTP via SMS / Telegram</h4>
+              <p>Worker отправляет 6-значный код (см. ТЗ №4). Срок 5 минут, max 3 попытки.</p>
+            </div>
+            <div class="step">
+              <b>Step 3</b>
+              <h4>Verify OTP</h4>
+              <p>Backend проверяет код, выпускает session token (cookie SameSite=Strict).</p>
+            </div>
+            <div class="step">
+              <b>Step 4</b>
+              <h4>Profile setup</h4>
+              <p>Если новый пациент: ФИО, дата рождения, пол. Иначе skip.</p>
+            </div>
+            <div class="step">
+              <b>Step 5</b>
+              <h4>Consent</h4>
+              <p>Согласие на обработку ПДн, подписывается digital-signature.</p>
+            </div>
+          </div>
+
+          <h3>6.2. Привязка к клинике</h3>
+          <ol>
+            <li>
+              Через deeplink клиники:
+              <code>/portal/connect?tenant=demo-clinic&amp;token=&lt;hmac&gt;</code> — токен
+              подписан tenant-secret, валидируется backend.
+            </li>
+            <li>Через QR-код в холле клиники (тот же deeplink, но в виде QR).</li>
+            <li>
+              Через PIN от регистратора: «введите PIN, который вам сообщили в клинике» (5-значный,
+              TTL 10 мин).
+            </li>
+            <li>Через приглашение в SMS / Telegram после первого визита.</li>
+          </ol>
+          <p>После привязки запись в <code>PatientPortalGrant</code>:</p>
+          <pre><code>model PatientPortalGrant {
+  id            String   @id @default(uuid()) @db.Uuid
+  accountId     String   @map("account_id") @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  patientId     String   @map("patient_id") @db.Uuid
+  state         String   @default("ACTIVE")   // ACTIVE | REVOKED
+  grantedVia    String?  @map("granted_via")  // DEEPLINK | QR | PIN | INVITE
+  grantedAt     DateTime @default(now()) @map("granted_at") @db.Timestamptz(6)
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(6)
+}</code></pre>
+
+          <h3>6.3. Сессия пациента</h3>
+          <ul>
+            <li>Access token JWT 1h, refresh 60 дней (запоминаем браузер).</li>
+            <li>Cookie HttpOnly + Secure + SameSite=Strict.</li>
+            <li>
+              Devices: модель <code>PatientPortalSession</code> хранит fingerprint, IP, last-active.
+            </li>
+            <li>«Выйти на всех устройствах» — кнопка в профиле.</li>
+          </ul>
+
+          <h3>6.4. Опциональная 2FA</h3>
+          <ul>
+            <li>TOTP-приложение (после ТЗ №3).</li>
+            <li>Включается пациентом сам в Settings → Безопасность.</li>
+            <li>WebAuthn — фаза 2.</li>
+          </ul>
+
+          <h3>6.5. Восстановление доступа</h3>
+          <ul>
+            <li>
+              Telephone changed → восстанавливается через клинику (проверка паспорта в офлайне) +
+              одобрение clinic-admin.
+            </li>
+            <li>Lost OTP device → recovery codes (если включена 2FA).</li>
+          </ul>
+        </section>
+
+        <section id="booking">
+          <h2>7. Online booking</h2>
+
+          <h3>7.1. Funnel</h3>
+          <div class="flow">
+            <div class="step">
+              <b>Step 1</b>
+              <h4>Specialty</h4>
+              <p>Список специальностей клиники с иконками и описанием.</p>
+            </div>
+            <div class="step">
+              <b>Step 2</b>
+              <h4>Doctor</h4>
+              <p>Список врачей по specialty: фото, опыт, рейтинг (опционально), ближайший слот.</p>
+            </div>
+            <div class="step">
+              <b>Step 3</b>
+              <h4>Slot</h4>
+              <p>Календарь × 14 дней, доступные слоты; учёт <code>ResourceCalendar</code>.</p>
+            </div>
+            <div class="step">
+              <b>Step 4</b>
+              <h4>Service &amp; Pre-pay</h4>
+              <p>Выбор услуги (опционально), сумма, опция «предоплата» или «оплатить в клинике».</p>
+            </div>
+            <div class="step">
+              <b>Step 5</b>
+              <h4>Confirm</h4>
+              <p>
+                Создание <code>Appointment</code> в статусе <code>SCHEDULED</code>,
+                Telegram/SMS-уведомление.
+              </p>
+            </div>
+          </div>
+
+          <h3>7.2. Учёт слотов</h3>
+          <ul>
+            <li>
+              Слоты считаются на лету backend-ом:
+              <code>BookingSlotsService.getAvailable(doctorId, dateRange)</code>.
+            </li>
+            <li>
+              Учитываются: <code>ResourceCalendar</code> доктора,
+              <code>AppointmentReservation</code> (временный hold), уже забронированные
+              <code>Appointment</code>.
+            </li>
+            <li>
+              Hold-механика: при выборе слота создаётся <code>AppointmentReservation</code> на 5
+              минут — другие пациенты не могут выбрать тот же слот.
+            </li>
+            <li>
+              При confirm — reservation превращается в <code>Appointment</code>; при таймауте —
+              освобождается.
+            </li>
+          </ul>
+
+          <h3>7.3. Бизнес-правила</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Правило</th>
+                <th>Конфигурация tenant</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Окно онлайн-записи</td>
+                <td>
+                  от <code>now + lead_minutes</code> до <code>now + horizon_days</code>; default 60
+                  минут / 30 дней
+                </td>
+              </tr>
+              <tr>
+                <td>Cancel deadline</td>
+                <td>не позже <code>start_at − cancel_grace_hours</code>; default 4 часа</td>
+              </tr>
+              <tr>
+                <td>Re-schedule deadline</td>
+                <td>не позже <code>start_at − reschedule_grace_hours</code>; default 4 часа</td>
+              </tr>
+              <tr>
+                <td>Pre-pay</td>
+                <td>может быть «опционально», «обязательно», «зависит от специальности»</td>
+              </tr>
+              <tr>
+                <td>No-show penalty</td>
+                <td>удержание предоплаты согласно публичной оферте клиники</td>
+              </tr>
+              <tr>
+                <td>Max active bookings</td>
+                <td>default 3 одновременно (anti-spam)</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>7.4. SEO-страницы клиники</h3>
+          <ul>
+            <li>Public-страница клиники: услуги, врачи, прайс — без auth.</li>
+            <li>
+              Public-страница врача: специализация, опыт, ближайшие слоты, кнопка «записаться».
+            </li>
+            <li>
+              SSR + sitemap.xml + JSON-LD структурированные данные (Schema.org Physician +
+              MedicalClinic).
+            </li>
+          </ul>
+        </section>
+
+        <section id="history">
+          <h2>8. История и документы</h2>
+
+          <h3>8.1. Mock мобильного экрана</h3>
+          <div class="device-preview">
+            <div class="phone">
+              <div class="head">
+                <div class="clinic">Клиника «Демо»</div>
+                <div class="sub">Мои визиты</div>
+              </div>
+              <div class="body">
+                <div class="item">
+                  <span class="pill">Через 2 дня</span>
+                  <div style="margin-top: 6px"><strong>Терапевт</strong></div>
+                  <div>Иванов А. И. · 15:30</div>
+                  <div style="margin-top: 6px" class="price">1 200 ₽</div>
+                </div>
+                <div class="item">
+                  <strong>Стоматолог</strong>
+                  <div>Петрова Е. · 12 апр</div>
+                  <div style="margin-top: 4px"><a style="color: #04786b">Выписка PDF</a></div>
+                </div>
+                <div class="item">
+                  <strong>Педиатр</strong>
+                  <div>Сидоров К. · 28 мар</div>
+                  <div style="margin-top: 4px"><a style="color: #04786b">Рецепт PDF</a></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <h3>8.2. Документы пациента</h3>
+          <ul>
+            <li>
+              Выписка из визита — генерируется из <code>Encounter</code> +
+              <code>EncounterDiagnosis</code> + <code>EncounterDocument</code> в worker (PDF queue).
+            </li>
+            <li>
+              Рецепт — <code>Prescription</code>: PDF + QR-код с подписанной payload (для проверки в
+              аптеке).
+            </li>
+            <li>Направление на анализы — на основе <code>ServiceOrder</code>.</li>
+            <li>Чек — <code>Receipt</code> после оплаты.</li>
+            <li>Доступ — только своему пациенту; signed-URL TTL 15 минут.</li>
+            <li>
+              Логирование доступа к каждому документу (<code>audit.action: 'document_viewed'</code>)
+              — см. ТЗ №3.
+            </li>
+          </ul>
+
+          <h3>8.3. Profile</h3>
+          <ul>
+            <li>ФИО, дата рождения — read-only после verify; изменение через клинику.</li>
+            <li>Телефон — обновляется с reverify через OTP.</li>
+            <li>Адрес — пациент редактирует свободно.</li>
+            <li>Аллергии, хронические — read-only (заполняет врач).</li>
+            <li>Управление согласиями (см. секцию 10).</li>
+            <li>Управление подписками на уведомления.</li>
+          </ul>
+        </section>
+
+        <section id="payments">
+          <h2>9. Платежи и счета</h2>
+
+          <h3>9.1. Платёжные провайдеры</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Регион</th>
+                <th>Провайдер</th>
+                <th>Метод</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Россия</td>
+                <td>YooKassa / Tinkoff / Сбер</td>
+                <td>Карты МИР/Visa/MC, СБП</td>
+              </tr>
+              <tr>
+                <td>Таджикистан</td>
+                <td>Алиф / Эсхата / Korti Milli</td>
+                <td>Карты, e-wallets</td>
+              </tr>
+              <tr>
+                <td>Узбекистан</td>
+                <td>PayMe / Click / Uzcard</td>
+                <td>Карты, e-wallets</td>
+              </tr>
+              <tr>
+                <td>Интернационально</td>
+                <td>Stripe</td>
+                <td>Карты Visa/MC, Apple/Google Pay</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>Provider-абстракция аналогична channel-providers (см. ТЗ №4):</p>
+          <pre><code>export interface PaymentProvider {
+  readonly code: string;
+  createPayment(input: { amount: Money; description: string; returnUrl: string; meta: Record&lt;string, unknown&gt; }): Promise&lt;{ paymentId: string; payUrl: string }&gt;;
+  capture(paymentId: string): Promise&lt;{ status: 'CAPTURED' | 'CANCELLED'; receipt?: ReceiptData }&gt;;
+  refund(paymentId: string, amount?: Money): Promise&lt;{ status: 'REFUNDED' | 'PARTIAL_REFUNDED' }&gt;;
+  handleWebhook(payload: unknown, signature: string): Promise&lt;PaymentWebhookEvent&gt;;
+}</code></pre>
+
+          <h3>9.2. Pre-pay flow</h3>
+          <ol>
+            <li>
+              Пациент выбирает слот, услугу → backend создаёт <code>Invoice</code> в статусе
+              <code>PENDING</code> + <code>Payment</code> с <code>provider</code>.
+            </li>
+            <li>
+              Provider возвращает <code>payUrl</code> → пациент идёт на checkout (hosted page).
+            </li>
+            <li>
+              После успеха provider шлёт webhook → backend помечает
+              <code>Payment.status = CAPTURED</code>, <code>Invoice.status = PAID</code>,
+              <code>Appointment.confirmedAt</code>.
+            </li>
+            <li>
+              При timeout (15 минут) — Appointment отменяется автоматически, slot освобождается.
+            </li>
+          </ol>
+
+          <h3>9.3. Post-visit pay</h3>
+          <ol>
+            <li>Врач завершает приём; счёт формируется в кассе клиники.</li>
+            <li>Counter / Telegram bot уведомляет пациента: «оплатите &lt;сумма&gt; — ссылка».</li>
+            <li>Пациент в портале видит «к оплате 1 200 ₽» — клик → провайдер → success.</li>
+            <li>
+              Backend генерирует фискальный чек (если есть интеграция с фискальной кассой) + PDF
+              чек.
+            </li>
+          </ol>
+
+          <h3>9.4. Refund</h3>
+          <ul>
+            <li>Cancel в окне разрешения → автоматический refund (полный).</li>
+            <li>Cancel после deadline → клиника решает manually (admin endpoint).</li>
+            <li>Refund фиксируется через PaymentAllocation; audit-log.</li>
+          </ul>
+
+          <h3>9.5. PCI compliance</h3>
+          <ul>
+            <li>Никогда не храним PAN. Используем hosted checkout / tokenization.</li>
+            <li>В коде только <code>paymentId</code>, <code>last4</code>, <code>brand</code>.</li>
+            <li>Webhook-секрет хранится в KMS (см. ТЗ №3).</li>
+            <li>Signed URLs для receipt PDF; TTL 15 минут.</li>
+          </ul>
+        </section>
+
+        <section id="consent">
+          <h2>10. Согласия и приватность</h2>
+          <ul>
+            <li>
+              При первом входе — обязательное согласие на обработку ПДн (текст из
+              <code>LegalDocumentTemplate</code>).
+            </li>
+            <li>
+              Подпись — <code>DigitalSignature</code> с timestamp, hash; запись в
+              <code>PatientLegalDocument</code>.
+            </li>
+            <li>
+              Управление в Settings: список действующих согласий, дата подписания, кнопка
+              «отозвать».
+            </li>
+            <li>
+              Отозванное согласие закрывает обработку, но клиника обязана сохранить медкарту 7 лет
+              (см. ТЗ №3).
+            </li>
+            <li>Cookie banner на public-страницах (essential + analytics; пациент управляет).</li>
+            <li>Privacy Policy и ToS — обязательные linked pages.</li>
+            <li>
+              Right to access / portability — кнопка «Скачать все мои данные» → backend генерирует
+              ZIP (FHIR Bundle + PDF + CSV).
+            </li>
+            <li>
+              Right to erasure — кнопка «Удалить мой портал-аккаунт»: revoke grants, anonymize
+              portal account; медкарта остаётся за клиникой.
+            </li>
+          </ul>
+        </section>
+
+        <section id="notifications">
+          <h2>11. Уведомления пациента</h2>
+          <ul>
+            <li>
+              Reminders по визиту (см. ТЗ №4) идут в Telegram / SMS — портал показывает их в feed.
+            </li>
+            <li>Web Push (Service Worker): новые рецепты, изменения статуса визита.</li>
+            <li>In-app feed «Уведомления» в портале.</li>
+            <li>
+              Подписка на каналы: пациент может отключить marketing, оставить только transactional.
+            </li>
+            <li>
+              Telegram-bot линкуется к porталу через deeplink (одинаковый telegram
+              <code>chatId</code> у пациент-портала и у клинического бота).
+            </li>
+          </ul>
+        </section>
+
+        <section id="prisma">
+          <h2>12. Изменения в Prisma</h2>
+          <pre><code>// 1. Portal account: один на пациента, независимо от клиники
+model PatientPortalAccount {
+  id              String   @id @default(uuid()) @db.Uuid
+  phoneE164       String   @unique @map("phone_e164") @db.VarChar(20)
+  phoneBi         String   @map("phone_bi") @db.VarChar(64)
+  emailE164       String?  @unique @map("email_e164") @db.VarChar(255)
+  firstName       String?  @map("first_name") @db.VarChar(120)
+  lastName        String?  @map("last_name") @db.VarChar(120)
+  birthDate       DateTime? @map("birth_date") @db.Date
+  gender          String?  @db.VarChar(16)
+  twofaEnabled    Boolean  @default(false) @map("twofa_enabled")
+  twofaSecretHash String?  @map("twofa_secret_hash")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sessions        PatientPortalSession[]
+  grants          PatientPortalGrant[]
+
+  @@map("patient_portal_accounts")
+}
+
+// 2. Связь портал-аккаунта с пациентом конкретной клиники
+model PatientPortalGrant {
+  id            String   @id @default(uuid()) @db.Uuid
+  accountId     String   @map("account_id") @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  patientId     String   @map("patient_id") @db.Uuid
+  state         String   @default("ACTIVE") @db.VarChar(20)
+  grantedVia    String?  @map("granted_via") @db.VarChar(40)
+  grantedAt     DateTime @default(now()) @map("granted_at") @db.Timestamptz(6)
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(6)
+
+  account       PatientPortalAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, tenantId, patientId])
+  @@index([tenantId, patientId])
+  @@map("patient_portal_grants")
+}
+
+// 3. Сессии портала
+model PatientPortalSession {
+  id                String   @id @default(uuid()) @db.Uuid
+  accountId         String   @map("account_id") @db.Uuid
+  deviceFingerprint String?  @map("device_fingerprint") @db.VarChar(128)
+  ipAddress         String?  @map("ip_address") @db.Inet
+  userAgent         String?  @map("user_agent")
+  refreshHash       String   @map("refresh_hash")
+  expiresAt         DateTime @map("expires_at") @db.Timestamptz(6)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(6)
+  lastActiveAt      DateTime @default(now()) @map("last_active_at") @db.Timestamptz(6)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  account           PatientPortalAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("patient_portal_sessions")
+}
+
+// 4. OTP запросы (audit + rate-limit)
+model PatientPortalOtp {
+  id          String   @id @default(uuid()) @db.Uuid
+  phoneE164   String   @map("phone_e164") @db.VarChar(20)
+  codeHash    String   @map("code_hash")
+  attempts    Int      @default(0)
+  channel     String   @db.VarChar(20)     // SMS | TELEGRAM
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(6)
+  consumedAt  DateTime? @map("consumed_at") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([phoneE164, createdAt])
+  @@map("patient_portal_otps")
+}</code></pre>
+        </section>
+
+        <section id="api">
+          <h2>13. API контракт</h2>
+
+          <h3>13.1. Auth</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Метод</th>
+                <th>Путь</th>
+                <th>Назначение</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/auth/otp/request</code></td>
+                <td>Послать OTP на телефон</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/auth/otp/verify</code></td>
+                <td>Проверить OTP, выпустить session</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/auth/logout</code></td>
+                <td>Завершить сессию</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/auth/refresh</code></td>
+                <td>Обновить access token</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/auth/connect</code></td>
+                <td>Привязать tenant (deeplink/QR/PIN)</td>
+              </tr>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/auth/sessions</code></td>
+                <td>Список активных сессий</td>
+              </tr>
+              <tr>
+                <td>DELETE</td>
+                <td><code>/portal/v1/auth/sessions/:id</code></td>
+                <td>Revoke session</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>13.2. Profile</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Метод</th>
+                <th>Путь</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/me</code></td>
+              </tr>
+              <tr>
+                <td>PUT</td>
+                <td><code>/portal/v1/me</code></td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/me/phone/change</code></td>
+              </tr>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/me/consents</code></td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/me/consents/:templateId/sign</code></td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/me/consents/:templateId/revoke</code></td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/me/export</code></td>
+                <td>Сгенерировать ZIP всех данных</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/me/delete</code></td>
+                <td>Удалить portal-аккаунт</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>13.3. Clinics</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Метод</th>
+                <th>Путь</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/clinics</code></td>
+                <td>Привязанные клиники</td>
+              </tr>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/clinics/:tenantCode/specialties</code></td>
+              </tr>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/clinics/:tenantCode/doctors</code></td>
+              </tr>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/clinics/:tenantCode/doctors/:doctorId/slots</code></td>
+              </tr>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/clinics/:tenantCode/services</code></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>13.4. Booking</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Метод</th>
+                <th>Путь</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/bookings/reservations</code></td>
+                <td>Hold слота на 5 минут</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/bookings</code></td>
+                <td>Подтвердить + опционально pre-pay</td>
+              </tr>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/appointments</code></td>
+                <td>Мои визиты (upcoming + history)</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/appointments/:id/cancel</code></td>
+                <td>Отмена</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/appointments/:id/reschedule</code></td>
+                <td>Перенос</td>
+              </tr>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/appointments/:id/documents</code></td>
+                <td>Документы по визиту</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>13.5. Payments</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Метод</th>
+                <th>Путь</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/invoices</code></td>
+                <td>Мои счета</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/invoices/:id/pay</code></td>
+                <td>Initiate payment</td>
+              </tr>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/payments/:id</code></td>
+                <td>Статус платежа</td>
+              </tr>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/receipts/:id</code></td>
+                <td>PDF чек</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/webhooks/payments/:provider</code></td>
+                <td>Webhook (signed)</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>13.6. Документы</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Метод</th>
+                <th>Путь</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/documents</code></td>
+                <td>Список</td>
+              </tr>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/documents/:id</code></td>
+                <td>Подписанный URL на скачивание</td>
+              </tr>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/prescriptions</code></td>
+                <td>Все рецепты</td>
+              </tr>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/prescriptions/:id/qr</code></td>
+                <td>QR для аптеки</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>13.7. Уведомления</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Метод</th>
+                <th>Путь</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/notifications</code></td>
+                <td>Feed</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/notifications/read</code></td>
+                <td>Mark as read</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/portal/v1/notifications/push/subscribe</code></td>
+                <td>Web push subscription</td>
+              </tr>
+              <tr>
+                <td>GET</td>
+                <td><code>/portal/v1/notifications/preferences</code></td>
+              </tr>
+              <tr>
+                <td>PUT</td>
+                <td><code>/portal/v1/notifications/preferences</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="files">
+          <h2>14. Структура файлов</h2>
+          <div class="file-tree">
+            portal/ ← NEW Next.js app workspace ├─ app/ │ ├─ [locale]/ │ │ ├─ (public)/ │ │ │ ├─
+            page.tsx ← landing │ │ │ ├─ clinics/[tenantCode]/page.tsx │ │ │ └─
+            doctors/[doctorId]/page.tsx │ │ ├─ (auth)/ │ │ │ ├─ login/page.tsx ← phone + OTP │ │ │
+            └─ connect/page.tsx │ │ ├─ (cabinet)/ │ │ │ ├─ layout.tsx │ │ │ ├─ page.tsx ← Главная
+            (upcoming visit, debt) │ │ │ ├─ booking/page.tsx │ │ │ ├─ appointments/page.tsx │ │ │ ├─
+            documents/page.tsx │ │ │ ├─ payments/page.tsx │ │ │ └─ settings/... │ │ ├─ layout.tsx │
+            │ └─ providers.tsx │ ├─ globals.css ← reuse tokens from main app │ └─ sitemap.ts ├─
+            modules/ │ ├─ booking/... │ ├─ documents/... │ ├─ payments/... │ └─ profile/... ├─
+            shared/ │ ├─ ui/ ← reuse via workspace symlink из ТЗ №2 │ └─ api/ ← typed client для
+            /portal/v1/* └─ public/ backend/ ├─ apps/auth-service/src/patient-portal/ │ ├─
+            patient-portal.module.ts │ ├─ auth/ │ │ ├─ portal-auth.controller.ts │ │ ├─
+            portal-auth.service.ts │ │ ├─ portal-otp.service.ts │ │ └─ portal-connect.service.ts │
+            ├─ booking/ │ │ ├─ portal-booking.controller.ts │ │ └─ portal-booking.service.ts │ ├─
+            appointments/... │ ├─ documents/... │ ├─ payments/ │ │ ├─ providers/ │ │ │ ├─
+            yookassa.adapter.ts │ │ │ ├─ alif.adapter.ts │ │ │ ├─ payme.adapter.ts │ │ │ └─
+            stripe.adapter.ts │ │ ├─ payments.controller.ts │ │ └─ payments.service.ts │ └─
+            notifications/... └─ core/payments/ ├─ payment-provider.interface.ts └─
+            payment-provider.registry.ts
+          </div>
+        </section>
+
+        <section id="plan">
+          <h2>15. Этапы работ</h2>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 1 · ~1 неделя</span>
+            <h3>Этап 1. Bootstrap portal app + auth scaffold</h3>
+            <ul>
+              <li>
+                Workspace <code>portal/</code> (Next.js 16, переиспользует shared/ui из main app).
+              </li>
+              <li>
+                Backend модуль <code>patient-portal</code> + Prisma миграция (Account, Grant,
+                Session, OTP).
+              </li>
+              <li>
+                Endpoints <code>auth/otp/request|verify</code> с реальной отправкой через worker (ТЗ
+                №4).
+              </li>
+              <li>UI: phone input → OTP → profile setup.</li>
+              <li>PR <code>feat(portal): bootstrap + phone otp auth</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 2 · ~1.5 недели</span>
+            <h3>Этап 2. Connect клиники + landing</h3>
+            <ul>
+              <li>Deeplink / QR / PIN connect-flows.</li>
+              <li>SEO-страницы клиники, врача (SSR + JSON-LD).</li>
+              <li>Главная портала: краткая инфа, привязанные клиники, ближайшие визиты.</li>
+              <li>PR <code>feat(portal): connect + clinic landing pages</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 3 · ~1.5 недели</span>
+            <h3>Этап 3. Online booking</h3>
+            <ul>
+              <li>Booking funnel: specialty → doctor → slot → confirm.</li>
+              <li>Reservation hold-механика, освобождение при таймауте.</li>
+              <li>Бизнес-правила (окно, cancel deadline, max active).</li>
+              <li>Cancel + reschedule API + UI.</li>
+              <li>E2E: запись → отмена; запись → перенос.</li>
+              <li>PR <code>feat(portal): online booking + reschedule</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 4 · ~1.5 недели</span>
+            <h3>Этап 4. История + документы</h3>
+            <ul>
+              <li>API визитов (upcoming + history).</li>
+              <li>Документы (выписка, рецепт, направление) — PDF через worker (ТЗ №4).</li>
+              <li>QR-коды на рецепте.</li>
+              <li>Audit-log на каждый просмотр документа (ТЗ №3).</li>
+              <li>PR <code>feat(portal): visits history + documents</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 5 · ~1.5 недели</span>
+            <h3>Этап 5. Платежи</h3>
+            <ul>
+              <li>Payment provider registry.</li>
+              <li>Адаптер YooKassa (Россия) — обязательно; Алиф (Таджикистан) — обязательно.</li>
+              <li>Pre-pay flow + post-visit flow.</li>
+              <li>Refund flow.</li>
+              <li>Signed webhooks + secret rotation.</li>
+              <li>PCI-самопроверка.</li>
+              <li>PR <code>feat(portal): payments + yookassa + alif</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 6 · ~1 неделя</span>
+            <h3>Этап 6. Согласия + уведомления + push</h3>
+            <ul>
+              <li>Consent flow, signature persisting.</li>
+              <li>Subject rights: export ZIP, delete account.</li>
+              <li>In-app feed уведомлений.</li>
+              <li>Web Push (service worker + VAPID).</li>
+              <li>Preferences.</li>
+              <li>PR <code>feat(portal): consents + push + subject rights</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 7 · ~1 неделя</span>
+            <h3>Этап 7. Polish + pilot</h3>
+            <ul>
+              <li>i18n ru/tj/en/uz (см. ТЗ №2).</li>
+              <li>A11y audit (axe).</li>
+              <li>Lighthouse / performance budgets.</li>
+              <li>Soft-launch на demo-клинике; сбор фидбэка; багфиксы.</li>
+              <li>PR <code>chore(portal): polish + pilot ready</code>.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="acceptance">
+          <h2>16. Acceptance criteria</h2>
+          <ul class="check">
+            <li>
+              Пациент регистрируется по телефону + OTP; OTP реально доходит через SMS или Telegram.
+            </li>
+            <li>Пациент привязывается к клинике через deeplink, QR или PIN.</li>
+            <li>Один портал-аккаунт может видеть данные нескольких клиник.</li>
+            <li>
+              Booking funnel рабочий: пациент записывается online, slot блокируется hold-механикой.
+            </li>
+            <li>Пациент может отменить и перенести визит в окне правил клиники.</li>
+            <li>Все «активные» и «прошедшие» визиты видны в истории.</li>
+            <li>Выписка, рецепт, направление — PDF скачиваются по signed URL.</li>
+            <li>QR-код на рецепте валиден и проверяем сторонним сервисом аптеки.</li>
+            <li>
+              Pre-pay flow работает через минимум один реальный провайдер (YooKassa или Alif).
+            </li>
+            <li>Refund при cancel-в-окне выполняется автоматически.</li>
+            <li>Webhook платёжки подписан и валидируется.</li>
+            <li>Согласие на ПДн подписывается и хранится; пациент может отозвать.</li>
+            <li>Export данных (ZIP) и delete portal account работают end-to-end.</li>
+            <li>Web Push доставляет нотификацию о новом рецепте.</li>
+            <li>Локализация ru/tj/en/uz; контент UI без хардкода.</li>
+            <li>
+              Lighthouse: LCP &lt; 2.5s, CLS &lt; 0.1, TBT &lt; 200ms на главной портала и
+              booking-флоу.
+            </li>
+            <li>Audit-log записывает каждый просмотр документа и каждое изменение профиля.</li>
+            <li>Pilot-запуск на demo-клинике завершён, фидбэк собран.</li>
+          </ul>
+        </section>
+
+        <section id="metrics">
+          <h2>17. Метрики и риски</h2>
+
+          <h3>17.1. Бизнес-метрики</h3>
+          <div class="four">
+            <div class="kpi">
+              <span class="label">Online-bookings</span><span class="value">≥ 30%</span
+              ><span class="hint">% от total через 3 мес</span>
+            </div>
+            <div class="kpi">
+              <span class="label">No-show rate</span><span class="value">−25%</span
+              ><span class="hint">vs offline-only</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Pre-pay rate</span><span class="value">≥ 40%</span
+              ><span class="hint">от online-bookings</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Activation</span><span class="value">≥ 60%</span
+              ><span class="hint">завершают connect → booking</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Phone-load</span><span class="value">−40%</span
+              ><span class="hint">звонков на регистратуру</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Re-use</span><span class="value">≥ 50%</span
+              ><span class="hint">пациент делает 2-ю запись через портал</span>
+            </div>
+            <div class="kpi">
+              <span class="label">NPS</span><span class="value">≥ 45</span
+              ><span class="hint">после первого пилота</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Auth success</span><span class="value">≥ 95%</span
+              ><span class="hint">OTP получен и введён</span>
+            </div>
+          </div>
+
+          <h3>17.2. Технические метрики</h3>
+          <div class="four">
+            <div class="kpi">
+              <span class="label">LCP portal</span><span class="value">≤ 2.5 s</span
+              ><span class="hint">P75 4G</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Booking ttfb</span><span class="value">≤ 300 ms</span
+              ><span class="hint">API P95</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Payment success</span><span class="value">≥ 97%</span
+              ><span class="hint">от инициированных</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Webhook lag</span><span class="value">≤ 5 s</span
+              ><span class="hint">от capture до Invoice.PAID</span>
+            </div>
+          </div>
+
+          <h3>17.3. Риски</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Риск</th>
+                <th>Митигация</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Race на одном слоте (два пациента жмут «подтвердить»).</td>
+                <td>
+                  DB-уровень: <code>UNIQUE</code> на <code>(doctorId, startAt)</code> с EXCLUDE
+                  GIST; reservation hold; <code>SELECT FOR UPDATE</code> в booking-tx.
+                </td>
+              </tr>
+              <tr>
+                <td>Платёжка отвечает «captured», но webhook не дошёл.</td>
+                <td>
+                  Reconciliation worker: каждые 15 минут поллит status платежа по
+                  <code>paymentId</code>, идемпотентно обновляет.
+                </td>
+              </tr>
+              <tr>
+                <td>Refund при отмене — провайдер вернул ошибку.</td>
+                <td>Retry + DLQ + админ-uIalert; ручной refund доступен из админ-uI.</td>
+              </tr>
+              <tr>
+                <td>SPAM-bookings: один пациент создаёт 100 reservation.</td>
+                <td>
+                  Rate-limit per accountId; <code>max_active_bookings</code> default 3; phone-otp
+                  требуется для каждой регистрации.
+                </td>
+              </tr>
+              <tr>
+                <td>Утечка PHI через portal (например, передал ссылку коллеге).</td>
+                <td>
+                  Signed URL TTL 15 мин; audit access; web push только на subscribed device; не
+                  отправляем PHI в email/SMS.
+                </td>
+              </tr>
+              <tr>
+                <td>Утерян телефон → потерян доступ.</td>
+                <td>
+                  Recovery через клинику (admin-flow) с проверкой паспорта; backup-codes (если 2FA
+                  включена).
+                </td>
+              </tr>
+              <tr>
+                <td>Tenant хочет белый-label портал на своём домене.</td>
+                <td>
+                  Поддержка custom-domain в архитектуре с начала; TLS managed via Caddy/Let's
+                  Encrypt; tenant-specific theming через токены.
+                </td>
+              </tr>
+              <tr>
+                <td>Регуляторное: РФ требует ID госуслуг для медзаписи.</td>
+                <td>
+                  Сейчас — phone-OTP достаточно для частной клиники; ЕМИАС/ЕСИА — отдельное ТЗ.
+                </td>
+              </tr>
+              <tr>
+                <td>iOS Safari Web Push поддержка ограничена.</td>
+                <td>Fallback на Telegram bot; web push — bonus, не критичен.</td>
+              </tr>
+              <tr>
+                <td>Локализация рецепта на узбекском.</td>
+                <td>Шаблоны PDF — TT&amp;T-уровень; перевод проверяется клиникой.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="decision">
+            <span class="eyebrow">Definition of Done</span>
+            <strong
+              >Patient Portal MVP в проде: OTP login работает, booking + cancel + reschedule,
+              история + документы, оплата online через YooKassa и Alif, push-уведомления, согласия и
+              subject rights, локализация ru/tj/en/uz, audit на каждое действие. Пилот в
+              demo-клинике показал ≥ 30% online-bookings и снижение no-show ≥ 20%.</strong
+            >
+          </div>
+        </section>
+
+        <section>
+          <h2>Приложение А. Конфигурация для запуска</h2>
+          <pre><code># portal app
+PORTAL_PORT=3003
+PORTAL_BASE_URL=https://portal.medcrm.app
+PORTAL_TENANT_DOMAIN_MODE=path     # path | subdomain | custom
+
+# OTP
+PORTAL_OTP_LENGTH=6
+PORTAL_OTP_TTL_SECONDS=300
+PORTAL_OTP_MAX_ATTEMPTS=3
+PORTAL_OTP_CHANNEL_PRIORITY=TELEGRAM,SMS
+
+# Sessions
+PORTAL_JWT_ACCESS_SECRET=...
+PORTAL_JWT_REFRESH_SECRET=...
+PORTAL_SESSION_MAX_AGE_SECONDS=5184000   # 60d
+
+# Push
+PORTAL_VAPID_PUBLIC_KEY=...
+PORTAL_VAPID_PRIVATE_KEY=...
+PORTAL_VAPID_SUBJECT=mailto:devops@medcrm.app
+
+# Payments
+YOOKASSA_SHOP_ID=
+YOOKASSA_SECRET_KEY=
+YOOKASSA_WEBHOOK_SECRET=
+ALIF_MERCHANT_ID=
+ALIF_API_KEY=
+ALIF_WEBHOOK_SECRET=</code></pre>
+        </section>
+
+        <section>
+          <h2>Приложение Б. Связанные документы</h2>
+          <ul>
+            <li>ТЗ №1 DevOps Foundation — CI для portal app, lint/test, preview deploy.</li>
+            <li>ТЗ №2 Design System — UI-kit + i18n + theme; портал переиспользует.</li>
+            <li>
+              ТЗ №3 Security — auth, audit, PHI шифрование, RLS — обязательная база для portal.
+            </li>
+            <li>
+              ТЗ №4 Async Workflows — отправка OTP и reminders через worker; PDF-рендер через queue;
+              reconciliation worker.
+            </li>
+            <li>
+              <code>docs/architecture/smart-scheduling.md</code> — slot-engine, waitlist,
+              recurrence.
+            </li>
+            <li><code>docs/architecture/finance-platform.md</code> — finance/billing/cashier.</li>
+          </ul>
+        </section>
+
+        <footer
+          style="
+            margin-top: 56px;
+            padding-top: 22px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 13px;
+          "
+        >
+          Документ подготовлен в рамках roadmap MedCRM. Связанные ТЗ: №1 DevOps Foundation, №2
+          Design System, №3 Security Baseline, №4 Async Workflows.
+        </footer>
+      </main>
+    </article>
+  </body>
+</html>

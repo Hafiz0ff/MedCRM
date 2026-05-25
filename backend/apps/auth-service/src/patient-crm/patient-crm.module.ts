@@ -5,7 +5,6 @@ import { PatientCrmService } from './patient-crm.service';
 @Module({
   controllers: [PatientCrmController],
   providers: [PatientCrmService],
-  exports: [PatientCrmService]
+  exports: [PatientCrmService],
 })
 export class PatientCrmModule {}
-

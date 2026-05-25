@@ -19,8 +19,8 @@ export class OpenApiController {
         upstreamPrefix: route.upstreamPrefix,
         rateLimitPolicy: route.rateLimitPolicy,
         requiresAuth: route.requiresAuth,
-        description: route.description
-      }))
+        description: route.description,
+      })),
     };
   }
 
@@ -33,9 +33,9 @@ export class OpenApiController {
         {
           service: 'auth-service',
           openApiJson: '/internal/v1/auth-service/docs-json',
-          swaggerUi: '/internal/v1/auth-service/docs'
-        }
-      ]
+          swaggerUi: '/internal/v1/auth-service/docs',
+        },
+      ],
     };
   }
 
@@ -46,4 +46,3 @@ export class OpenApiController {
     return this.aggregator.getAggregatedSpec(forceRefresh);
   }
 }
-

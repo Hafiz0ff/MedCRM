@@ -1,10 +1,21 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { RequirePermissions } from '@core/security/permissions.decorator';
 import { RequireModule } from '@core/security/modules.decorator';
+import { RequirePermissions } from '@core/security/permissions.decorator';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ModuleEnabledGuard } from '../auth/guards/module-enabled.guard';
 import { RbacGuard } from '../auth/guards/rbac.guard';
@@ -36,7 +47,7 @@ import {
   WeekAvailabilityQuery,
   weekAvailabilityQuerySchema,
   RoomUtilizationQuery,
-  roomUtilizationQuerySchema
+  roomUtilizationQuerySchema,
 } from './dto/appointment.schemas';
 import { SmartSchedulingService } from './smart-scheduling.service';
 
@@ -50,7 +61,10 @@ export class SmartSchedulingController {
 
   @Get('appointments')
   @RequirePermissions('scheduling.appointments.read')
-  list(@CurrentUser() user: AuthenticatedUser, @Query(new ZodValidationPipe(appointmentListQuerySchema)) query: AppointmentListQuery) {
+  list(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query(new ZodValidationPipe(appointmentListQuerySchema)) query: AppointmentListQuery,
+  ) {
     return this.scheduling.list(user, query);
   }
 
@@ -64,7 +78,11 @@ export class SmartSchedulingController {
   @Patch('appointments/:id')
   @RequirePermissions('scheduling.appointments.update')
   @UsePipes(new ZodValidationPipe(updateAppointmentSchema))
-  update(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() dto: UpdateAppointmentDto) {
+  update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateAppointmentDto,
+  ) {
     return this.scheduling.update(user, id, dto);
   }
 
@@ -82,7 +100,11 @@ export class SmartSchedulingController {
 
   @Post('appointments/:id/cancel')
   @RequirePermissions('scheduling.appointments.cancel')
-  cancel(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() body: { reason?: string }) {
+  cancel(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+  ) {
     return this.scheduling.transition(user, id, 'CANCELLED', body.reason);
   }
 
@@ -113,7 +135,7 @@ export class SmartSchedulingController {
   reschedule(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(rescheduleSchema)) dto: RescheduleDto
+    @Body(new ZodValidationPipe(rescheduleSchema)) dto: RescheduleDto,
   ) {
     return this.scheduling.reschedule(user, id, dto);
   }
@@ -131,7 +153,7 @@ export class SmartSchedulingController {
   @ApiOperation({ summary: 'Get 7-day availability grid' })
   weekAvailability(
     @CurrentUser() user: AuthenticatedUser,
-    @Query(new ZodValidationPipe(weekAvailabilityQuerySchema)) query: WeekAvailabilityQuery
+    @Query(new ZodValidationPipe(weekAvailabilityQuerySchema)) query: WeekAvailabilityQuery,
   ) {
     return this.scheduling.getWeekAvailability(user, query);
   }
@@ -141,14 +163,17 @@ export class SmartSchedulingController {
   @ApiOperation({ summary: 'Get room utilization statistics' })
   roomUtilization(
     @CurrentUser() user: AuthenticatedUser,
-    @Query(new ZodValidationPipe(roomUtilizationQuerySchema)) query: RoomUtilizationQuery
+    @Query(new ZodValidationPipe(roomUtilizationQuerySchema)) query: RoomUtilizationQuery,
   ) {
     return this.scheduling.getRoomUtilization(user, query);
   }
 
   @Get('availability')
   @RequirePermissions('scheduling.availability.read')
-  availability(@CurrentUser() user: AuthenticatedUser, @Query(new ZodValidationPipe(appointmentListQuerySchema)) query: AppointmentListQuery) {
+  availability(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query(new ZodValidationPipe(appointmentListQuerySchema)) query: AppointmentListQuery,
+  ) {
     return this.scheduling.availability(user, query);
   }
 
@@ -194,7 +219,7 @@ export class SmartSchedulingController {
   updateWaitingList(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() dto: UpdateWaitingListDto
+    @Body() dto: UpdateWaitingListDto,
   ) {
     return this.scheduling.updateWaitingList(user, id, dto);
   }
@@ -233,7 +258,10 @@ export class SmartSchedulingController {
   @Get('availability/public-slots')
   @RequirePermissions('scheduling.availability.read')
   @ApiOperation({ summary: 'Browse available calendar slots for widgets' })
-  getPublicSlots(@CurrentUser() user: AuthenticatedUser, @Query(new ZodValidationPipe(publicSlotsQuerySchema)) query: PublicSlotsQueryDto) {
+  getPublicSlots(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query(new ZodValidationPipe(publicSlotsQuerySchema)) query: PublicSlotsQueryDto,
+  ) {
     return this.scheduling.getPublicSlots(user, query);
   }
 
@@ -241,7 +269,10 @@ export class SmartSchedulingController {
   @RequirePermissions('scheduling.appointments.create')
   @ApiOperation({ summary: 'Hold slot temporarily (10 mins lock) for widget self-registration' })
   @UsePipes(new ZodValidationPipe(onlineBookingReserveSchema))
-  onlineBookingReserve(@CurrentUser() user: AuthenticatedUser, @Body() dto: OnlineBookingReserveDto) {
+  onlineBookingReserve(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: OnlineBookingReserveDto,
+  ) {
     return this.scheduling.onlineBookingReserve(user, dto);
   }
 
@@ -249,8 +280,10 @@ export class SmartSchedulingController {
   @RequirePermissions('scheduling.appointments.create')
   @ApiOperation({ summary: 'Confirm temporary hold using OTP verification' })
   @UsePipes(new ZodValidationPipe(onlineBookingConfirmSchema))
-  onlineBookingConfirm(@CurrentUser() user: AuthenticatedUser, @Body() dto: OnlineBookingConfirmDto) {
+  onlineBookingConfirm(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: OnlineBookingConfirmDto,
+  ) {
     return this.scheduling.onlineBookingConfirm(user, dto);
   }
 }
-

@@ -32,20 +32,20 @@ patient-crm
   |-- patient-search
 ```
 
-| Подмодуль | Ответственность |
-|---|---|
-| patient-profile | Основная CRM-карточка пациента |
-| contacts | Телефоны, email, мессенджеры, адреса |
-| crm-segmentation | Теги, сегменты, CRM статусы |
-| lead-tracking | Источник заявки, UTM, конверсия |
-| family-relations | Семейные группы, опекуны, shared loyalty |
-| legal-documents | Согласия, договоры, шаблоны, сроки |
-| crm-history | Timeline пациента |
-| communication-tracking | История звонков и сообщений |
-| loyalty-foundation | Баланс/баллы как основа будущего loyalty |
-| lifecycle-engine | Sleeping, retention, churn risk |
-| duplicate-detection | Fuzzy matching и ручное подтверждение дублей |
-| patient-search | Поиск по ФИО, телефону, email, коду, семье |
+| Подмодуль              | Ответственность                              |
+| ---------------------- | -------------------------------------------- |
+| patient-profile        | Основная CRM-карточка пациента               |
+| contacts               | Телефоны, email, мессенджеры, адреса         |
+| crm-segmentation       | Теги, сегменты, CRM статусы                  |
+| lead-tracking          | Источник заявки, UTM, конверсия              |
+| family-relations       | Семейные группы, опекуны, shared loyalty     |
+| legal-documents        | Согласия, договоры, шаблоны, сроки           |
+| crm-history            | Timeline пациента                            |
+| communication-tracking | История звонков и сообщений                  |
+| loyalty-foundation     | Баланс/баллы как основа будущего loyalty     |
+| lifecycle-engine       | Sleeping, retention, churn risk              |
+| duplicate-detection    | Fuzzy matching и ручное подтверждение дублей |
+| patient-search         | Поиск по ФИО, телефону, email, коду, семье   |
 
 ## 3. Patient Profile
 
@@ -93,44 +93,44 @@ patients
 
 Основная карточка пациента.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| external_id | varchar | Нет |
-| patient_code | varchar | Да |
-| first_name | varchar | Да |
-| last_name | varchar | Да |
-| middle_name | varchar | Нет |
-| full_name | varchar | Да |
-| birth_date | date | Нет |
-| gender | varchar | Нет |
-| nationality | varchar | Нет |
-| language | varchar | Да |
-| photo_file_id | uuid | Нет |
-| status | varchar | Да |
-| registration_branch_id | uuid | Нет |
-| assigned_manager_id | uuid | Нет |
-| created_at | timestamptz | Да |
-| updated_at | timestamptz | Да |
-| archived_at | timestamptz | Нет |
+| Поле                   | Тип         | Обязательность |
+| ---------------------- | ----------- | -------------- |
+| id                     | uuid        | Да             |
+| tenant_id              | uuid        | Да             |
+| external_id            | varchar     | Нет            |
+| patient_code           | varchar     | Да             |
+| first_name             | varchar     | Да             |
+| last_name              | varchar     | Да             |
+| middle_name            | varchar     | Нет            |
+| full_name              | varchar     | Да             |
+| birth_date             | date        | Нет            |
+| gender                 | varchar     | Нет            |
+| nationality            | varchar     | Нет            |
+| language               | varchar     | Да             |
+| photo_file_id          | uuid        | Нет            |
+| status                 | varchar     | Да             |
+| registration_branch_id | uuid        | Нет            |
+| assigned_manager_id    | uuid        | Нет            |
+| created_at             | timestamptz | Да             |
+| updated_at             | timestamptz | Да             |
+| archived_at            | timestamptz | Нет            |
 
 ### `patient_contacts`
 
 Множественные контакты пациента.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| patient_id | uuid | Да |
-| type | varchar | Да |
-| value | text | Да |
-| value_encrypted | bytea | Нет |
-| normalized_value_hash | varchar | Да |
-| is_primary | boolean | Да |
-| is_verified | boolean | Да |
-| comment | text | Нет |
+| Поле                  | Тип     | Обязательность |
+| --------------------- | ------- | -------------- |
+| id                    | uuid    | Да             |
+| tenant_id             | uuid    | Да             |
+| patient_id            | uuid    | Да             |
+| type                  | varchar | Да             |
+| value                 | text    | Да             |
+| value_encrypted       | bytea   | Нет            |
+| normalized_value_hash | varchar | Да             |
+| is_primary            | boolean | Да             |
+| is_verified           | boolean | Да             |
+| comment               | text    | Нет            |
 
 Типы: `PHONE`, `EMAIL`, `TELEGRAM`, `WHATSAPP`, `INSTAGRAM`.
 
@@ -138,37 +138,37 @@ patients
 
 ### `patient_addresses`
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| patient_id | uuid | Да |
-| country | varchar | Нет |
-| city | varchar | Нет |
-| district | varchar | Нет |
-| address_line | text | Нет |
-| postal_code | varchar | Нет |
-| is_primary | boolean | Да |
+| Поле         | Тип     | Обязательность |
+| ------------ | ------- | -------------- |
+| id           | uuid    | Да             |
+| tenant_id    | uuid    | Да             |
+| patient_id   | uuid    | Да             |
+| country      | varchar | Нет            |
+| city         | varchar | Нет            |
+| district     | varchar | Нет            |
+| address_line | text    | Нет            |
+| postal_code  | varchar | Нет            |
+| is_primary   | boolean | Да             |
 
 ### `patient_leads`
 
 Маркетинговая атрибуция и первичный источник.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| patient_id | uuid | Да |
-| source_type | varchar | Да |
-| source_name | varchar | Нет |
-| campaign_name | varchar | Нет |
-| utm_source | varchar | Нет |
-| utm_medium | varchar | Нет |
-| utm_campaign | varchar | Нет |
-| utm_content | varchar | Нет |
-| utm_term | varchar | Нет |
-| first_contact_at | timestamptz | Нет |
-| conversion_at | timestamptz | Нет |
+| Поле             | Тип         | Обязательность |
+| ---------------- | ----------- | -------------- |
+| id               | uuid        | Да             |
+| tenant_id        | uuid        | Да             |
+| patient_id       | uuid        | Да             |
+| source_type      | varchar     | Да             |
+| source_name      | varchar     | Нет            |
+| campaign_name    | varchar     | Нет            |
+| utm_source       | varchar     | Нет            |
+| utm_medium       | varchar     | Нет            |
+| utm_campaign     | varchar     | Нет            |
+| utm_content      | varchar     | Нет            |
+| utm_term         | varchar     | Нет            |
+| first_contact_at | timestamptz | Нет            |
+| conversion_at    | timestamptz | Нет            |
 
 `source_type`: `INSTAGRAM`, `TELEGRAM`, `GOOGLE`, `WEBSITE`, `REFERRAL`, `WALK_IN`.
 
@@ -176,21 +176,21 @@ patients
 
 CRM-метрики пациента.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| patient_id | uuid | Да |
-| total_visits | integer | Да |
-| total_revenue | numeric | Да |
-| ltv | numeric | Да |
-| average_check | numeric | Да |
-| missed_appointments | integer | Да |
-| cancellations | integer | Да |
-| last_visit_at | timestamptz | Нет |
-| last_contact_at | timestamptz | Нет |
-| retention_score | numeric | Нет |
-| loyalty_points | integer | Да |
+| Поле                | Тип         | Обязательность |
+| ------------------- | ----------- | -------------- |
+| id                  | uuid        | Да             |
+| tenant_id           | uuid        | Да             |
+| patient_id          | uuid        | Да             |
+| total_visits        | integer     | Да             |
+| total_revenue       | numeric     | Да             |
+| ltv                 | numeric     | Да             |
+| average_check       | numeric     | Да             |
+| missed_appointments | integer     | Да             |
+| cancellations       | integer     | Да             |
+| last_visit_at       | timestamptz | Нет            |
+| last_contact_at     | timestamptz | Нет            |
+| retention_score     | numeric     | Нет            |
+| loyalty_points      | integer     | Да             |
 
 Метрики обновляются событиями из scheduling, finance, communications и loyalty.
 
@@ -198,53 +198,53 @@ CRM-метрики пациента.
 
 Система тегов для сегментации.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| code | varchar | Да |
-| name | varchar | Да |
-| color | varchar | Нет |
-| is_system | boolean | Да |
+| Поле      | Тип     | Обязательность |
+| --------- | ------- | -------------- |
+| id        | uuid    | Да             |
+| tenant_id | uuid    | Да             |
+| code      | varchar | Да             |
+| name      | varchar | Да             |
+| color     | varchar | Нет            |
+| is_system | boolean | Да             |
 
 Примеры: `VIP`, `Child`, `Pregnancy`, `High LTV`, `Dormant`, `Corporate`, `Employee Family`.
 
 ### `patient_tags`
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| patient_id | uuid | Да |
-| tag_id | uuid | Да |
-| assigned_by | uuid | Нет |
-| assigned_at | timestamptz | Да |
+| Поле        | Тип         | Обязательность |
+| ----------- | ----------- | -------------- |
+| id          | uuid        | Да             |
+| tenant_id   | uuid        | Да             |
+| patient_id  | uuid        | Да             |
+| tag_id      | uuid        | Да             |
+| assigned_by | uuid        | Нет            |
+| assigned_at | timestamptz | Да             |
 
 ### `family_groups`
 
 Семейная группа.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| family_name | varchar | Да |
-| primary_contact_patient_id | uuid | Нет |
-| shared_balance_enabled | boolean | Да |
-| shared_discount_enabled | boolean | Да |
-| created_at | timestamptz | Да |
+| Поле                       | Тип         | Обязательность |
+| -------------------------- | ----------- | -------------- |
+| id                         | uuid        | Да             |
+| tenant_id                  | uuid        | Да             |
+| family_name                | varchar     | Да             |
+| primary_contact_patient_id | uuid        | Нет            |
+| shared_balance_enabled     | boolean     | Да             |
+| shared_discount_enabled    | boolean     | Да             |
+| created_at                 | timestamptz | Да             |
 
 ### `family_members`
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| family_group_id | uuid | Да |
-| patient_id | uuid | Да |
-| relation_type | varchar | Да |
-| is_primary_contact | boolean | Да |
-| can_receive_notifications | boolean | Да |
+| Поле                      | Тип     | Обязательность |
+| ------------------------- | ------- | -------------- |
+| id                        | uuid    | Да             |
+| tenant_id                 | uuid    | Да             |
+| family_group_id           | uuid    | Да             |
+| patient_id                | uuid    | Да             |
+| relation_type             | varchar | Да             |
+| is_primary_contact        | boolean | Да             |
+| can_receive_notifications | boolean | Да             |
 
 `relation_type`: `MOTHER`, `FATHER`, `SON`, `DAUGHTER`, `SPOUSE`, `GUARDIAN`.
 
@@ -252,49 +252,49 @@ CRM-метрики пациента.
 
 ### `legal_document_types`
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Нет для системных типов |
-| code | varchar | Да |
-| name | varchar | Да |
-| validity_period_days | integer | Нет |
-| requires_signature | boolean | Да |
-| is_required | boolean | Да |
-| retention_period_days | integer | Нет |
+| Поле                  | Тип     | Обязательность          |
+| --------------------- | ------- | ----------------------- |
+| id                    | uuid    | Да                      |
+| tenant_id             | uuid    | Нет для системных типов |
+| code                  | varchar | Да                      |
+| name                  | varchar | Да                      |
+| validity_period_days  | integer | Нет                     |
+| requires_signature    | boolean | Да                      |
+| is_required           | boolean | Да                      |
+| retention_period_days | integer | Нет                     |
 
 Примеры: `PDN_CONSENT`, `MEDICAL_SERVICE_CONTRACT`, `MARKETING_CONSENT`.
 
 ### `patient_legal_documents`
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| patient_id | uuid | Да |
-| document_type_id | uuid | Да |
-| file_id | uuid | Да |
-| document_number | varchar | Нет |
-| signed_at | timestamptz | Нет |
-| expires_at | timestamptz | Нет |
-| retention_until | timestamptz | Нет |
-| status | varchar | Да |
-| signed_by_user_id | uuid | Нет |
-| branch_id | uuid | Нет |
+| Поле              | Тип         | Обязательность |
+| ----------------- | ----------- | -------------- |
+| id                | uuid        | Да             |
+| tenant_id         | uuid        | Да             |
+| patient_id        | uuid        | Да             |
+| document_type_id  | uuid        | Да             |
+| file_id           | uuid        | Да             |
+| document_number   | varchar     | Нет            |
+| signed_at         | timestamptz | Нет            |
+| expires_at        | timestamptz | Нет            |
+| retention_until   | timestamptz | Нет            |
+| status            | varchar     | Да             |
+| signed_by_user_id | uuid        | Нет            |
+| branch_id         | uuid        | Нет            |
 
 Статусы: `ACTIVE`, `EXPIRED`, `REVOKED`, `ARCHIVED`.
 
 ### `legal_document_templates`
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| document_type_id | uuid | Да |
-| version | varchar | Да |
-| language | varchar | Да |
-| template_file_id | uuid | Да |
-| is_active | boolean | Да |
+| Поле             | Тип     | Обязательность |
+| ---------------- | ------- | -------------- |
+| id               | uuid    | Да             |
+| tenant_id        | uuid    | Да             |
+| document_type_id | uuid    | Да             |
+| version          | varchar | Да             |
+| language         | varchar | Да             |
+| template_file_id | uuid    | Да             |
+| is_active        | boolean | Да             |
 
 Шаблоны версионируются. Подписание документа должно сохранять ссылку на версию шаблона или фактический файл.
 
@@ -302,19 +302,19 @@ CRM-метрики пациента.
 
 Единая timeline-лента пациента.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| patient_id | uuid | Да |
-| branch_id | uuid | Нет |
-| event_type | varchar | Да |
-| event_source | varchar | Да |
-| title | varchar | Да |
-| description | text | Нет |
-| metadata_json | jsonb | Да |
-| created_by | uuid | Нет |
-| created_at | timestamptz | Да |
+| Поле          | Тип         | Обязательность |
+| ------------- | ----------- | -------------- |
+| id            | uuid        | Да             |
+| tenant_id     | uuid        | Да             |
+| patient_id    | uuid        | Да             |
+| branch_id     | uuid        | Нет            |
+| event_type    | varchar     | Да             |
+| event_source  | varchar     | Да             |
+| title         | varchar     | Да             |
+| description   | text        | Нет            |
+| metadata_json | jsonb       | Да             |
+| created_by    | uuid        | Нет            |
+| created_at    | timestamptz | Да             |
 
 `event_type`: `CALL`, `MESSAGE`, `APPOINTMENT`, `PAYMENT`, `NOTE`, `TAG_ASSIGNED`, `DOCUMENT_SIGNED`.
 
@@ -322,15 +322,15 @@ CRM-метрики пациента.
 
 Внутренние CRM заметки.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| patient_id | uuid | Да |
-| note | text | Да |
-| visibility | varchar | Да |
-| created_by | uuid | Да |
-| created_at | timestamptz | Да |
+| Поле       | Тип         | Обязательность |
+| ---------- | ----------- | -------------- |
+| id         | uuid        | Да             |
+| tenant_id  | uuid        | Да             |
+| patient_id | uuid        | Да             |
+| note       | text        | Да             |
+| visibility | varchar     | Да             |
+| created_by | uuid        | Да             |
+| created_at | timestamptz | Да             |
 
 `visibility`: `PRIVATE`, `ADMIN_ONLY`, `SHARED`.
 
@@ -821,4 +821,3 @@ export const PatientCrmModuleManifest = {
   },
 } as const;
 ```
-

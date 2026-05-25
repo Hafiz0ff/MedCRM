@@ -1,5 +1,5 @@
-import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { describe, it, before, after } from 'node:test';
 import { setupE2eTest, teardownE2eTest, TestContext } from './e2e-helper';
 
 describe('E2E Scheduling Conflict & Prevention Tests', () => {
@@ -16,17 +16,17 @@ describe('E2E Scheduling Conflict & Prevention Tests', () => {
 
     // Retrieve seeded patient, employee, and service
     const patient = await context.prisma.patient.findFirstOrThrow({
-      where: { tenantId: context.tenantId }
+      where: { tenantId: context.tenantId },
     });
     patientId = patient.id;
 
     const employee = await context.prisma.employee.findFirstOrThrow({
-      where: { tenantId: context.tenantId }
+      where: { tenantId: context.tenantId },
     });
     employeeId = employee.id;
 
     const service = await context.prisma.service.findFirstOrThrow({
-      where: { tenantId: context.tenantId, code: 'consultation' }
+      where: { tenantId: context.tenantId, code: 'consultation' },
     });
     serviceId = service.id;
   });
@@ -59,8 +59,8 @@ describe('E2E Scheduling Conflict & Prevention Tests', () => {
         startAt: startAt.toISOString(),
         endAt: endAt.toISOString(),
         bookingSource: 'ADMIN_PANEL',
-        appointmentType: 'CONSULTATION'
-      })
+        appointmentType: 'CONSULTATION',
+      }),
     });
 
     assert.equal(res1.status, 201);
@@ -79,18 +79,18 @@ describe('E2E Scheduling Conflict & Prevention Tests', () => {
         startAt: startAt.toISOString(),
         endAt: endAt.toISOString(),
         bookingSource: 'ADMIN_PANEL',
-        appointmentType: 'CONSULTATION'
-      })
+        appointmentType: 'CONSULTATION',
+      }),
     });
 
     assert.equal(res2.status, 400);
     const body2 = await res2.json();
     assert.ok(
       body2.message.includes('occupied') ||
-      body2.message.includes('conflict') ||
-      body2.message.includes('overlap') ||
-      body2.message.includes('schedule') ||
-      body2.message.includes('hours')
+        body2.message.includes('conflict') ||
+        body2.message.includes('overlap') ||
+        body2.message.includes('schedule') ||
+        body2.message.includes('hours'),
     );
   });
 
@@ -117,17 +117,17 @@ describe('E2E Scheduling Conflict & Prevention Tests', () => {
         startAt: startAt.toISOString(),
         endAt: endAt.toISOString(),
         bookingSource: 'ADMIN_PANEL',
-        appointmentType: 'CONSULTATION'
-      })
+        appointmentType: 'CONSULTATION',
+      }),
     });
 
     assert.equal(res.status, 400);
     const body = await res.json();
     assert.ok(
       body.message.includes('schedule') ||
-      body.message.includes('hours') ||
-      body.message.includes('restricted') ||
-      body.message.includes('bookings')
+        body.message.includes('hours') ||
+        body.message.includes('restricted') ||
+        body.message.includes('bookings'),
     );
   });
 });

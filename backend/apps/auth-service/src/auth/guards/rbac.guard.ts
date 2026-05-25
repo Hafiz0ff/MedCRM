@@ -1,7 +1,7 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
 import { REQUIRED_PERMISSIONS_KEY } from '@core/security/permissions.decorator';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 
 @Injectable()
 export class RbacGuard implements CanActivate {
@@ -10,7 +10,7 @@ export class RbacGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const required = this.reflector.getAllAndOverride<string[]>(REQUIRED_PERMISSIONS_KEY, [
       context.getHandler(),
-      context.getClass()
+      context.getClass(),
     ]);
 
     if (!required || required.length === 0) {
@@ -32,4 +32,3 @@ export class RbacGuard implements CanActivate {
     return true;
   }
 }
-

@@ -1,27 +1,27 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { DepartmentDto } from '../dto/organization-structure.schemas';
 
 @Injectable()
 export class DepartmentsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly audit: AuditLoggerService
+    private readonly audit: AuditLoggerService,
   ) {}
 
   async list(user: AuthenticatedUser) {
     return this.prisma.department.findMany({
       where: {
         tenantId: user.tenantId,
-        branchId: { in: user.branchIds }
+        branchId: { in: user.branchIds },
       },
       include: {
         parent: true,
-        children: true
+        children: true,
       },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -37,8 +37,8 @@ export class DepartmentsService {
         name: dto.name,
         description: dto.description,
         color: dto.color,
-        isActive: dto.isActive
-      }
+        isActive: dto.isActive,
+      },
     });
 
     await this.audit.log({
@@ -48,7 +48,7 @@ export class DepartmentsService {
       action: 'department.created',
       entityType: 'department',
       entityId: department.id,
-      newValuesJson: department
+      newValuesJson: department,
     });
 
     return department;
@@ -58,7 +58,7 @@ export class DepartmentsService {
     this.assertBranchAccess(user, dto.branchId);
 
     const current = await this.prisma.department.findFirst({
-      where: { id, tenantId: user.tenantId }
+      where: { id, tenantId: user.tenantId },
     });
     if (!current) throw new NotFoundException('Department not found');
 
@@ -71,8 +71,8 @@ export class DepartmentsService {
         name: dto.name,
         description: dto.description,
         color: dto.color,
-        isActive: dto.isActive
-      }
+        isActive: dto.isActive,
+      },
     });
 
     await this.audit.log({
@@ -83,7 +83,7 @@ export class DepartmentsService {
       entityType: 'department',
       entityId: department.id,
       oldValuesJson: current,
-      newValuesJson: department
+      newValuesJson: department,
     });
 
     return department;
@@ -91,7 +91,7 @@ export class DepartmentsService {
 
   async delete(user: AuthenticatedUser, id: string) {
     const department = await this.prisma.department.findFirst({
-      where: { id, tenantId: user.tenantId }
+      where: { id, tenantId: user.tenantId },
     });
     if (!department) throw new NotFoundException('Department not found');
 
@@ -105,7 +105,7 @@ export class DepartmentsService {
       userId: user.userId,
       action: 'department.deleted',
       entityType: 'department',
-      entityId: department.id
+      entityId: department.id,
     });
 
     return { success: true };

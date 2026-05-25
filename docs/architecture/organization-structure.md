@@ -26,16 +26,16 @@ organization-structure
   |-- directories
 ```
 
-| Подмодуль | Ответственность |
-|---|---|
-| branches | Филиалы, адреса, телефоны, часовые пояса, базовые часы работы |
-| departments | Отделения, вложенная структура, цветовая маркировка |
-| employees | Карточки сотрудников и связь с Auth user |
-| positions | Должности, медицинский/немедицинский персонал |
-| rooms | Паспорт кабинета, тип, вместимость, график |
-| equipment | Медицинское оборудование, обслуживание, калибровка |
-| schedules | Универсальные графики и исключения ресурсов |
-| directories | Настраиваемые справочники, import/export, RU/TJ localization |
+| Подмодуль   | Ответственность                                               |
+| ----------- | ------------------------------------------------------------- |
+| branches    | Филиалы, адреса, телефоны, часовые пояса, базовые часы работы |
+| departments | Отделения, вложенная структура, цветовая маркировка           |
+| employees   | Карточки сотрудников и связь с Auth user                      |
+| positions   | Должности, медицинский/немедицинский персонал                 |
+| rooms       | Паспорт кабинета, тип, вместимость, график                    |
+| equipment   | Медицинское оборудование, обслуживание, калибровка            |
+| schedules   | Универсальные графики и исключения ресурсов                   |
+| directories | Настраиваемые справочники, import/export, RU/TJ localization  |
 
 ## 3. Иерархия
 
@@ -90,35 +90,35 @@ rooms
 
 Филиал клиники.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| code | varchar | Да |
-| name | varchar | Да |
-| address | text | Нет |
-| phone | varchar | Нет |
-| timezone | varchar | Да |
-| working_hours_json | jsonb | Да |
-| is_active | boolean | Да |
-| created_at | timestamptz | Да |
-| updated_at | timestamptz | Да |
+| Поле               | Тип         | Обязательность |
+| ------------------ | ----------- | -------------- |
+| id                 | uuid        | Да             |
+| tenant_id          | uuid        | Да             |
+| code               | varchar     | Да             |
+| name               | varchar     | Да             |
+| address            | text        | Нет            |
+| phone              | varchar     | Нет            |
+| timezone           | varchar     | Да             |
+| working_hours_json | jsonb       | Да             |
+| is_active          | boolean     | Да             |
+| created_at         | timestamptz | Да             |
+| updated_at         | timestamptz | Да             |
 
 ### `departments`
 
 Отделение или направление: стоматология, гинекология, кардиология, лаборатория.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| branch_id | uuid | Да |
-| parent_department_id | uuid | Нет |
-| code | varchar | Да |
-| name | varchar | Да |
-| description | text | Нет |
-| color | varchar | Нет |
-| is_active | boolean | Да |
+| Поле                 | Тип     | Обязательность |
+| -------------------- | ------- | -------------- |
+| id                   | uuid    | Да             |
+| tenant_id            | uuid    | Да             |
+| branch_id            | uuid    | Да             |
+| parent_department_id | uuid    | Нет            |
+| code                 | varchar | Да             |
+| name                 | varchar | Да             |
+| description          | text    | Нет            |
+| color                | varchar | Нет            |
+| is_active            | boolean | Да             |
 
 Поддерживает вложенную древовидную структуру.
 
@@ -126,13 +126,13 @@ rooms
 
 Системный и расширяемый справочник медицинских специализаций.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| code | varchar | Да |
-| name | varchar | Да |
-| international_code | varchar | Нет |
-| is_system | boolean | Да |
+| Поле               | Тип     | Обязательность |
+| ------------------ | ------- | -------------- |
+| id                 | uuid    | Да             |
+| code               | varchar | Да             |
+| name               | varchar | Да             |
+| international_code | varchar | Нет            |
+| is_system          | boolean | Да             |
 
 Примеры: `dentist`, `gynecologist`, `cardiologist`.
 
@@ -140,16 +140,16 @@ rooms
 
 Справочник должностей tenant-а.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Нет для системных должностей |
-| code | varchar | Да |
-| name | varchar | Да |
-| description | text | Нет |
-| is_medical_staff | boolean | Да |
-| is_system | boolean | Да |
-| is_active | boolean | Да |
+| Поле             | Тип     | Обязательность               |
+| ---------------- | ------- | ---------------------------- |
+| id               | uuid    | Да                           |
+| tenant_id        | uuid    | Нет для системных должностей |
+| code             | varchar | Да                           |
+| name             | varchar | Да                           |
+| description      | text    | Нет                          |
+| is_medical_staff | boolean | Да                           |
+| is_system        | boolean | Да                           |
+| is_active        | boolean | Да                           |
 
 Примеры: главный врач, врач УЗИ, медсестра, администратор, кассир.
 
@@ -157,44 +157,44 @@ rooms
 
 Карточка сотрудника. Может быть связана с Auth user, но не обязана иметь учетную запись на первом этапе.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| user_id | uuid | Нет |
-| employee_number | varchar | Да |
-| first_name | varchar | Да |
-| last_name | varchar | Да |
-| middle_name | varchar | Нет |
-| birth_date | date | Нет |
-| gender | varchar | Нет |
-| phone | varchar | Нет |
-| email | varchar | Нет |
-| hire_date | date | Нет |
-| dismissal_date | date | Нет |
-| employment_type | varchar | Да |
-| photo_file_id | uuid | Нет |
-| status | varchar | Да |
-| created_at | timestamptz | Да |
-| updated_at | timestamptz | Да |
+| Поле            | Тип         | Обязательность |
+| --------------- | ----------- | -------------- |
+| id              | uuid        | Да             |
+| tenant_id       | uuid        | Да             |
+| user_id         | uuid        | Нет            |
+| employee_number | varchar     | Да             |
+| first_name      | varchar     | Да             |
+| last_name       | varchar     | Да             |
+| middle_name     | varchar     | Нет            |
+| birth_date      | date        | Нет            |
+| gender          | varchar     | Нет            |
+| phone           | varchar     | Нет            |
+| email           | varchar     | Нет            |
+| hire_date       | date        | Нет            |
+| dismissal_date  | date        | Нет            |
+| employment_type | varchar     | Да             |
+| photo_file_id   | uuid        | Нет            |
+| status          | varchar     | Да             |
+| created_at      | timestamptz | Да             |
+| updated_at      | timestamptz | Да             |
 
 ### `employee_positions`
 
 Назначение сотрудника в филиал, отделение, должность и специализацию.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| employee_id | uuid | Да |
-| branch_id | uuid | Да |
-| department_id | uuid | Нет |
-| position_id | uuid | Да |
-| specialty_id | uuid | Нет |
-| work_rate | numeric | Да |
-| is_primary | boolean | Да |
-| active_from | date | Да |
-| active_to | date | Нет |
+| Поле          | Тип     | Обязательность |
+| ------------- | ------- | -------------- |
+| id            | uuid    | Да             |
+| tenant_id     | uuid    | Да             |
+| employee_id   | uuid    | Да             |
+| branch_id     | uuid    | Да             |
+| department_id | uuid    | Нет            |
+| position_id   | uuid    | Да             |
+| specialty_id  | uuid    | Нет            |
+| work_rate     | numeric | Да             |
+| is_primary    | boolean | Да             |
+| active_from   | date    | Да             |
+| active_to     | date    | Нет            |
 
 `work_rate` хранит ставку сотрудника: например, `1.0`, `0.5`, `0.25`.
 
@@ -202,14 +202,14 @@ rooms
 
 Справочник типов кабинетов.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Нет для системных типов |
-| code | varchar | Да |
-| name | varchar | Да |
-| color | varchar | Нет |
-| is_system | boolean | Да |
+| Поле      | Тип     | Обязательность          |
+| --------- | ------- | ----------------------- |
+| id        | uuid    | Да                      |
+| tenant_id | uuid    | Нет для системных типов |
+| code      | varchar | Да                      |
+| name      | varchar | Да                      |
+| color     | varchar | Нет                     |
+| is_system | boolean | Да                      |
 
 Примеры: кабинет врача, операционная, УЗИ кабинет, процедурный, лаборатория.
 
@@ -217,21 +217,21 @@ rooms
 
 Паспорт кабинета.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| branch_id | uuid | Да |
-| department_id | uuid | Нет |
-| room_type_id | uuid | Да |
-| code | varchar | Да |
-| name | varchar | Да |
-| floor | varchar | Нет |
-| capacity | integer | Да |
-| description | text | Нет |
-| schedule_json | jsonb | Да |
-| status | varchar | Да |
-| is_active | boolean | Да |
+| Поле          | Тип     | Обязательность |
+| ------------- | ------- | -------------- |
+| id            | uuid    | Да             |
+| tenant_id     | uuid    | Да             |
+| branch_id     | uuid    | Да             |
+| department_id | uuid    | Нет            |
+| room_type_id  | uuid    | Да             |
+| code          | varchar | Да             |
+| name          | varchar | Да             |
+| floor         | varchar | Нет            |
+| capacity      | integer | Да             |
+| description   | text    | Нет            |
+| schedule_json | jsonb   | Да             |
+| status        | varchar | Да             |
+| is_active     | boolean | Да             |
 
 Паспорт кабинета содержит:
 
@@ -245,11 +245,11 @@ rooms
 
 Какие специалисты могут работать в кабинете.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| room_id | uuid | Да |
-| specialty_id | uuid | Да |
+| Поле         | Тип  | Обязательность |
+| ------------ | ---- | -------------- |
+| id           | uuid | Да             |
+| room_id      | uuid | Да             |
+| specialty_id | uuid | Да             |
 
 Пример: УЗИ кабинет доступен для `radiologist` и `gynecologist`.
 
@@ -257,83 +257,83 @@ rooms
 
 Категории оборудования.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Нет для системных категорий |
-| code | varchar | Да |
-| name | varchar | Да |
-| is_system | boolean | Да |
+| Поле      | Тип     | Обязательность              |
+| --------- | ------- | --------------------------- |
+| id        | uuid    | Да                          |
+| tenant_id | uuid    | Нет для системных категорий |
+| code      | varchar | Да                          |
+| name      | varchar | Да                          |
+| is_system | boolean | Да                          |
 
 ### `equipment`
 
 Медицинское оборудование и shared resources.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| branch_id | uuid | Да |
-| room_id | uuid | Нет |
-| category_id | uuid | Да |
-| inventory_number | varchar | Да |
-| serial_number | varchar | Нет |
-| name | varchar | Да |
-| manufacturer | varchar | Нет |
-| model | varchar | Нет |
-| purchase_date | date | Нет |
-| maintenance_date | date | Нет |
-| calibration_date | date | Нет |
-| status | varchar | Да |
-| is_shared_resource | boolean | Да |
+| Поле               | Тип     | Обязательность |
+| ------------------ | ------- | -------------- |
+| id                 | uuid    | Да             |
+| tenant_id          | uuid    | Да             |
+| branch_id          | uuid    | Да             |
+| room_id            | uuid    | Нет            |
+| category_id        | uuid    | Да             |
+| inventory_number   | varchar | Да             |
+| serial_number      | varchar | Нет            |
+| name               | varchar | Да             |
+| manufacturer       | varchar | Нет            |
+| model              | varchar | Нет            |
+| purchase_date      | date    | Нет            |
+| maintenance_date   | date    | Нет            |
+| calibration_date   | date    | Нет            |
+| status             | varchar | Да             |
+| is_shared_resource | boolean | Да             |
 
 ### `room_equipment`
 
 История установки оборудования в кабинеты.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| room_id | uuid | Да |
-| equipment_id | uuid | Да |
-| installed_at | timestamptz | Да |
-| removed_at | timestamptz | Нет |
+| Поле         | Тип         | Обязательность |
+| ------------ | ----------- | -------------- |
+| id           | uuid        | Да             |
+| room_id      | uuid        | Да             |
+| equipment_id | uuid        | Да             |
+| installed_at | timestamptz | Да             |
+| removed_at   | timestamptz | Нет            |
 
 ### `employee_room_assignments`
 
 Связь врача, кабинета, отделения, специализации и рабочего графика.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| employee_id | uuid | Да |
-| branch_id | uuid | Да |
-| department_id | uuid | Нет |
-| room_id | uuid | Да |
-| specialty_id | uuid | Нет |
-| active_from | date | Да |
-| active_to | date | Нет |
-| work_schedule_json | jsonb | Да |
+| Поле               | Тип   | Обязательность |
+| ------------------ | ----- | -------------- |
+| id                 | uuid  | Да             |
+| tenant_id          | uuid  | Да             |
+| employee_id        | uuid  | Да             |
+| branch_id          | uuid  | Да             |
+| department_id      | uuid  | Нет            |
+| room_id            | uuid  | Да             |
+| specialty_id       | uuid  | Нет            |
+| active_from        | date  | Да             |
+| active_to          | date  | Нет            |
+| work_schedule_json | jsonb | Да             |
 
 ### `working_schedules`
 
 Универсальный график для branch, room, employee, equipment.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| entity_type | varchar | Да |
-| entity_id | uuid | Да |
-| weekday | smallint | Да |
-| start_time | time | Да |
-| end_time | time | Да |
-| break_start | time | Нет |
-| break_end | time | Нет |
-| recurrence_rule | text | Нет |
-| timezone | varchar | Да |
-| is_active | boolean | Да |
+| Поле            | Тип      | Обязательность |
+| --------------- | -------- | -------------- |
+| id              | uuid     | Да             |
+| tenant_id       | uuid     | Да             |
+| entity_type     | varchar  | Да             |
+| entity_id       | uuid     | Да             |
+| weekday         | smallint | Да             |
+| start_time      | time     | Да             |
+| end_time        | time     | Да             |
+| break_start     | time     | Нет            |
+| break_end       | time     | Нет            |
+| recurrence_rule | text     | Нет            |
+| timezone        | varchar  | Да             |
+| is_active       | boolean  | Да             |
 
 `entity_type`: `branch`, `room`, `employee`, `equipment`.
 
@@ -341,17 +341,17 @@ rooms
 
 Исключения расписания: ремонт кабинета, отпуск врача, обслуживание аппарата.
 
-| Поле | Тип | Обязательность |
-|---|---|---|
-| id | uuid | Да |
-| tenant_id | uuid | Да |
-| entity_type | varchar | Да |
-| entity_id | uuid | Да |
-| exception_date | date | Да |
-| reason | text | Нет |
-| start_time | time | Нет |
-| end_time | time | Нет |
-| is_day_off | boolean | Да |
+| Поле           | Тип     | Обязательность |
+| -------------- | ------- | -------------- |
+| id             | uuid    | Да             |
+| tenant_id      | uuid    | Да             |
+| entity_type    | varchar | Да             |
+| entity_id      | uuid    | Да             |
+| exception_date | date    | Да             |
+| reason         | text    | Нет            |
+| start_time     | time    | Нет            |
+| end_time       | time    | Нет            |
+| is_day_off     | boolean | Да             |
 
 ## 6. SQL baseline
 
@@ -790,4 +790,3 @@ export const OrganizationStructureModuleManifest = {
   },
 } as const;
 ```
-

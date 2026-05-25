@@ -1,7 +1,8 @@
+import { PrismaService } from '@core/database/prisma.service';
+import { AuditChainService } from '@core/security/audit-chain.service';
+import { TenantContextService } from '@core/tenancy/tenant-context.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '@core/database/prisma.service';
-import { TenantContextService } from '@core/tenancy/tenant-context.service';
 
 export type AuditEventInput = {
   tenantId: string;
@@ -22,15 +23,17 @@ export class AuditLoggerService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly tenantContext: TenantContextService
+    private readonly tenantContext: TenantContextService,
+    private readonly auditChain: AuditChainService,
   ) {}
 
   async log(input: AuditEventInput): Promise<void> {
     const context = this.tenantContext.get();
-    
+    const createdAt = new Date();
+
     // Write structured JSON log to console
     const structuredPayload = {
-      timestamp: new Date().toISOString(),
+      timestamp: createdAt.toISOString(),
       level: 'INFO',
       requestId: context.requestId,
       correlationId: context.requestId,
@@ -41,12 +44,29 @@ export class AuditLoggerService {
       entityType: input.entityType,
       entityId: input.entityId,
       ipAddress: input.ipAddress,
-      userAgent: input.userAgent
+      userAgent: input.userAgent,
     };
-    
+
     this.logger.log(JSON.stringify(structuredPayload));
 
     try {
+      // Retrieve the last audit log hash to link the chain
+      const lastLog = await this.prisma.auditLog.findFirst({
+        orderBy: { createdAt: 'desc' },
+      });
+      const prevHash = lastLog ? lastLog.hash : null;
+
+      // Compute cryptographically linked hash for the current record
+      const hash = this.auditChain.computeHash(prevHash, {
+        tenantId: input.tenantId,
+        action: input.action,
+        entityType: input.entityType,
+        entityId: input.entityId,
+        userId: input.userId,
+        requestId: context.requestId || 'system',
+        createdAt,
+      });
+
       await this.prisma.auditLog.create({
         data: {
           tenantId: input.tenantId,
@@ -59,8 +79,11 @@ export class AuditLoggerService {
           newValuesJson: input.newValuesJson ?? undefined,
           ipAddress: input.ipAddress,
           userAgent: input.userAgent,
-          requestId: context.requestId
-        }
+          requestId: context.requestId || 'system',
+          createdAt,
+          prevHash,
+          hash,
+        },
       });
     } catch (error: any) {
       const errPayload = {
@@ -68,13 +91,18 @@ export class AuditLoggerService {
         level: 'ERROR',
         requestId: context.requestId,
         action: 'audit.failed',
-        message: `Failed to write audit event ${input.action}: ${error.message}`
+        message: `Failed to write audit event ${input.action}: ${error.message}`,
       };
       this.logger.error(JSON.stringify(errPayload));
     }
   }
 
-  logEvent(level: 'ERROR' | 'WARN' | 'INFO' | 'DEBUG', action: string, message: string, extra: any = {}): void {
+  logEvent(
+    level: 'ERROR' | 'WARN' | 'INFO' | 'DEBUG',
+    action: string,
+    message: string,
+    extra: any = {},
+  ): void {
     const context = this.tenantContext.get();
     const logPayload = {
       timestamp: new Date().toISOString(),
@@ -83,7 +111,7 @@ export class AuditLoggerService {
       correlationId: context.requestId,
       action,
       message,
-      ...extra
+      ...extra,
     };
     const serialized = JSON.stringify(logPayload);
     if (level === 'ERROR') this.logger.error(serialized);
@@ -92,4 +120,3 @@ export class AuditLoggerService {
     else this.logger.log(serialized);
   }
 }
-

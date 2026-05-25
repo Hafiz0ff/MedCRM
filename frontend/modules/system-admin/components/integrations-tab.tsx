@@ -1,6 +1,5 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
 import {
   KeyRound,
   Loader2,
@@ -10,34 +9,35 @@ import {
   RefreshCw,
   RotateCw,
   ShieldAlert,
-  Trash2
+  Trash2,
 } from 'lucide-react';
-import { BootstrapPayload } from '@/shared/types/bootstrap';
-import { can } from '@/shared/permissions/can';
-import { useToast } from '@/shared/ui/toast';
-import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
+import { FormEvent, useState } from 'react';
 import {
   IntegrationProvider,
   useCreateIntegration,
   useDeleteIntegration,
   useIntegrationProviders,
   useRotateIntegrationKey,
-  useUpdateIntegration
+  useUpdateIntegration,
 } from '../hooks/use-system-admin';
 import { ApiKeyRevealDialog, ApiKeyRevealPayload } from './api-key-reveal';
+import { can } from '@/shared/permissions/can';
+import { BootstrapPayload } from '@/shared/types/bootstrap';
+import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
+import { useToast } from '@/shared/ui/toast';
 
 const providerTypes = [
   { value: 'FHIR', label: 'FHIR / EMR' },
   { value: 'LIS', label: 'LIS / Лаборатория' },
   { value: 'PAYMENT', label: 'Платежный шлюз' },
   { value: 'SMS', label: 'SMS / Уведомления' },
-  { value: 'CUSTOM', label: 'Прочее' }
+  { value: 'CUSTOM', label: 'Прочее' },
 ];
 
 const authTypes = [
   { value: 'API_KEY', label: 'API key' },
   { value: 'OAUTH2', label: 'OAuth 2.0' },
-  { value: 'BASIC', label: 'Basic auth' }
+  { value: 'BASIC', label: 'Basic auth' },
 ];
 
 export function IntegrationsTab({ bootstrap }: { bootstrap: BootstrapPayload }) {
@@ -59,7 +59,7 @@ export function IntegrationsTab({ bootstrap }: { bootstrap: BootstrapPayload }) 
     providerCode: '',
     providerName: '',
     authenticationType: 'API_KEY',
-    rateLimitPerMinute: 60
+    rateLimitPerMinute: 60,
   });
 
   const handleCreate = (event: FormEvent) => {
@@ -71,7 +71,7 @@ export function IntegrationsTab({ bootstrap }: { bootstrap: BootstrapPayload }) 
         providerCode: form.providerCode.trim().toUpperCase(),
         providerName: form.providerName.trim(),
         authenticationType: form.authenticationType,
-        rateLimitPerMinute: form.rateLimitPerMinute
+        rateLimitPerMinute: form.rateLimitPerMinute,
       },
       {
         onSuccess: (created) => {
@@ -81,18 +81,18 @@ export function IntegrationsTab({ bootstrap }: { bootstrap: BootstrapPayload }) 
             providerCode: '',
             providerName: '',
             authenticationType: 'API_KEY',
-            rateLimitPerMinute: 60
+            rateLimitPerMinute: 60,
           });
           setReveal({
             providerName: created.providerName,
             apiKey: created.apiKey,
             apiKeyPrefix: created.apiKeyPrefix,
-            reason: 'created'
+            reason: 'created',
           });
           toast('success', 'Интеграция создана', created.providerName);
         },
-        onError: (err) => toast('error', 'Не удалось создать', err.message)
-      }
+        onError: (err) => toast('error', 'Не удалось создать', err.message),
+      },
     );
   };
 
@@ -104,14 +104,14 @@ export function IntegrationsTab({ bootstrap }: { bootstrap: BootstrapPayload }) 
           providerName: provider.providerName,
           apiKey: rotated.apiKey,
           apiKeyPrefix: rotated.apiKeyPrefix,
-          reason: 'rotated'
+          reason: 'rotated',
         });
         toast('success', 'Ключ обновлён', `${provider.providerName} (${rotated.apiKeyPrefix})`);
       },
       onError: (err) => {
         toast('error', 'Не удалось обновить ключ', err.message);
         setConfirmRotate(null);
-      }
+      },
     });
   };
 
@@ -120,9 +120,13 @@ export function IntegrationsTab({ bootstrap }: { bootstrap: BootstrapPayload }) 
       { providerId: provider.id, isActive: !provider.isActive },
       {
         onSuccess: () =>
-          toast('success', provider.isActive ? 'Интеграция выключена' : 'Интеграция включена', provider.providerName),
-        onError: (err) => toast('error', 'Ошибка', err.message)
-      }
+          toast(
+            'success',
+            provider.isActive ? 'Интеграция выключена' : 'Интеграция включена',
+            provider.providerName,
+          ),
+        onError: (err) => toast('error', 'Ошибка', err.message),
+      },
     );
   };
 
@@ -135,7 +139,7 @@ export function IntegrationsTab({ bootstrap }: { bootstrap: BootstrapPayload }) 
       onError: (err) => {
         toast('error', 'Не удалось удалить', err.message);
         setConfirmDelete(null);
-      }
+      },
     });
   };
 
@@ -158,8 +162,8 @@ export function IntegrationsTab({ bootstrap }: { bootstrap: BootstrapPayload }) 
             <KeyRound size={18} /> Интеграции и B2B-ключи
           </h2>
           <p className="muted">
-            Ключи формата <code>mck_live_*</code> привязаны к этому тенанту. Полный ключ показывается только в момент
-            генерации.
+            Ключи формата <code>mck_live_*</code> привязаны к этому тенанту. Полный ключ
+            показывается только в момент генерации.
           </p>
         </div>
         <div className="page-actions">
@@ -221,7 +225,9 @@ export function IntegrationsTab({ bootstrap }: { bootstrap: BootstrapPayload }) 
                 id="provider-code"
                 className="input"
                 value={form.providerCode}
-                onChange={(event) => setForm({ ...form, providerCode: event.target.value.toUpperCase() })}
+                onChange={(event) =>
+                  setForm({ ...form, providerCode: event.target.value.toUpperCase() })
+                }
                 pattern="[A-Z0-9_]{2,}"
                 required
               />
@@ -235,7 +241,9 @@ export function IntegrationsTab({ bootstrap }: { bootstrap: BootstrapPayload }) 
                 min={1}
                 max={6000}
                 value={form.rateLimitPerMinute}
-                onChange={(event) => setForm({ ...form, rateLimitPerMinute: Number(event.target.value) })}
+                onChange={(event) =>
+                  setForm({ ...form, rateLimitPerMinute: Number(event.target.value) })
+                }
               />
             </div>
           </div>
@@ -253,7 +261,11 @@ export function IntegrationsTab({ bootstrap }: { bootstrap: BootstrapPayload }) 
             <button type="button" className="secondary-button" onClick={() => setShowForm(false)}>
               Отмена
             </button>
-            <button type="submit" className="button" disabled={!canManage || createProvider.isPending}>
+            <button
+              type="submit"
+              className="button"
+              disabled={!canManage || createProvider.isPending}
+            >
               {createProvider.isPending ? 'Создаём…' : 'Создать и выдать ключ'}
             </button>
           </div>
@@ -261,7 +273,9 @@ export function IntegrationsTab({ bootstrap }: { bootstrap: BootstrapPayload }) 
       ) : null}
 
       {providers.length === 0 ? (
-        <p className="muted settings-empty">Пока нет ни одной интеграции. Нажмите «Новая интеграция», чтобы выдать первый ключ.</p>
+        <p className="muted settings-empty">
+          Пока нет ни одной интеграции. Нажмите «Новая интеграция», чтобы выдать первый ключ.
+        </p>
       ) : (
         <table className="data-table integration-table">
           <thead>
@@ -360,8 +374,8 @@ export function IntegrationsTab({ bootstrap }: { bootstrap: BootstrapPayload }) 
 
       {!canManage ? (
         <div className="settings-callout">
-          <ShieldAlert size={14} /> У вас только право на чтение интеграций. Управление ключами требует роли с правом
-          `integration.gateway.manage`.
+          <ShieldAlert size={14} /> У вас только право на чтение интеграций. Управление ключами
+          требует роли с правом `integration.gateway.manage`.
         </div>
       ) : null}
     </section>

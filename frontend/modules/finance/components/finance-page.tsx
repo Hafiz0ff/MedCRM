@@ -1,6 +1,5 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
 import {
   Banknote,
   CalendarClock,
@@ -15,14 +14,9 @@ import {
   ShieldCheck,
   Undo2,
   WalletCards,
-  X
+  X,
 } from 'lucide-react';
-import { BootstrapPayload } from '@/shared/types/bootstrap';
-import { can } from '@/shared/permissions/can';
-import { usePatients } from '@/modules/patient-crm/hooks/use-patients';
-import { useDoctors } from '@/modules/smart-scheduling/hooks/use-scheduling';
-import { getRealtimeSocket } from '@/shared/realtime/socket';
-import { useToast } from '@/shared/ui/toast';
+import { FormEvent, useMemo, useState } from 'react';
 import {
   FinanceInvoice,
   PaymentMethod,
@@ -38,15 +32,21 @@ import {
   useOpenShift,
   usePatientWallet,
   usePayrollRules,
-  useTopUpWallet
+  useTopUpWallet,
 } from '../hooks/use-finance';
+import { usePatients } from '@/modules/patient-crm/hooks/use-patients';
+import { useDoctors } from '@/modules/smart-scheduling/hooks/use-scheduling';
+import { can } from '@/shared/permissions/can';
+import { getRealtimeSocket } from '@/shared/realtime/socket';
+import { BootstrapPayload } from '@/shared/types/bootstrap';
+import { useToast } from '@/shared/ui/toast';
 
 const paymentMethods: Array<{ value: PaymentMethod; label: string; icon: typeof Banknote }> = [
   { value: 'CASH', label: 'Наличные', icon: Banknote },
   { value: 'CARD', label: 'Карта', icon: CreditCard },
   { value: 'QR', label: 'QR', icon: ReceiptText },
   { value: 'BANK_TRANSFER', label: 'Перевод', icon: Landmark },
-  { value: 'WALLET', label: 'Кошелек', icon: WalletCards }
+  { value: 'WALLET', label: 'Кошелек', icon: WalletCards },
 ];
 
 const invoiceStatuses = [
@@ -55,14 +55,14 @@ const invoiceStatuses = [
   { value: 'PARTIALLY_PAID', label: 'Частично' },
   { value: 'PAID', label: 'Оплачены' },
   { value: 'REFUNDED', label: 'Возвраты' },
-  { value: 'CANCELLED', label: 'Отменены' }
+  { value: 'CANCELLED', label: 'Отменены' },
 ];
 
 const payrollTypes: Array<{ value: PayrollType; label: string }> = [
   { value: 'REVENUE_SHARE', label: 'Процент от выручки' },
   { value: 'FIXED', label: 'Фикса' },
   { value: 'HYBRID', label: 'Фикса + процент' },
-  { value: 'KPI_BASED', label: 'KPI' }
+  { value: 'KPI_BASED', label: 'KPI' },
 ];
 
 function amount(value: string | number | null | undefined) {
@@ -75,7 +75,12 @@ function money(value: string | number | null | undefined, currency = 'TJS') {
 
 function dateTime(value?: string | null) {
   if (!value) return 'Нет данных';
-  return new Date(value).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return new Date(value).toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function dateOnly(value?: string | null) {
@@ -83,7 +88,11 @@ function dateOnly(value?: string | null) {
   return new Date(value).toLocaleDateString('ru-RU');
 }
 
-function patientName(patient?: { firstName: string; lastName: string; middleName?: string | null }) {
+function patientName(patient?: {
+  firstName: string;
+  lastName: string;
+  middleName?: string | null;
+}) {
   if (!patient) return 'Пациент';
   return [patient.lastName, patient.firstName, patient.middleName].filter(Boolean).join(' ');
 }
@@ -105,13 +114,16 @@ function statusMeta(status: string) {
     PARTIALLY_PAID: { label: 'Частично', tone: 'info' },
     PAID: { label: 'Оплачен', tone: 'success' },
     REFUNDED: { label: 'Возврат', tone: 'danger' },
-    CANCELLED: { label: 'Отменен', tone: 'neutral' }
+    CANCELLED: { label: 'Отменен', tone: 'neutral' },
   };
   return map[status] ?? { label: status, tone: 'neutral' };
 }
 
 function canPay(invoice: FinanceInvoice) {
-  return ['DRAFT', 'PENDING_PAYMENT', 'PARTIALLY_PAID'].includes(invoice.status) && amount(invoice.dueAmount) > 0;
+  return (
+    ['DRAFT', 'PENDING_PAYMENT', 'PARTIALLY_PAID'].includes(invoice.status) &&
+    amount(invoice.dueAmount) > 0
+  );
 }
 
 export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
@@ -146,7 +158,11 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
   const canPayroll = can(bootstrap, 'finance.payroll.manage');
 
   const summary = useFinanceSummary();
-  const invoices = useFinanceInvoices({ patientId: patientId || undefined, status: status || undefined, paymentMethod: method || undefined });
+  const invoices = useFinanceInvoices({
+    patientId: patientId || undefined,
+    status: status || undefined,
+    paymentMethod: method || undefined,
+  });
   const payments = useFinancePayments();
   const patients = usePatients(patientSearch);
   const selectedWallet = usePatientWallet(patientId || undefined);
@@ -164,7 +180,10 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
 
   const totals = summary.data?.today;
   const selectedPatient = patients.data?.items.find((patient) => patient.id === patientId);
-  const cashChange = useMemo(() => Math.max(amount(cashReceived) - amount(paymentAmount), 0), [cashReceived, paymentAmount]);
+  const cashChange = useMemo(
+    () => Math.max(amount(cashReceived) - amount(paymentAmount), 0),
+    [cashReceived, paymentAmount],
+  );
 
   const openPaymentDrawer = (invoice: FinanceInvoice) => {
     setSelectedInvoice(invoice);
@@ -178,7 +197,9 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
     setSelectedInvoice(invoice);
     const firstPayment = invoice.payments[0];
     setRefundPaymentId(firstPayment?.id ?? '');
-    setRefundAmount(firstPayment ? String(amount(firstPayment.amount)) : String(amount(invoice.paidAmount)));
+    setRefundAmount(
+      firstPayment ? String(amount(firstPayment.amount)) : String(amount(invoice.paidAmount)),
+    );
     setRefundReason('');
     setDrawer('refund');
   };
@@ -193,8 +214,8 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
           toast('success', 'Смена открыта', 'Платежные операции разблокированы');
           setDrawer(null);
         },
-        onError: (error) => toast('error', 'Не удалось открыть смену', error.message)
-      }
+        onError: (error) => toast('error', 'Не удалось открыть смену', error.message),
+      },
     );
   };
 
@@ -208,8 +229,8 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
           toast('success', 'Смена закрыта', 'Кассовый остаток зафиксирован');
           setClosingBalance('');
         },
-        onError: (error) => toast('error', 'Не удалось закрыть смену', error.message)
-      }
+        onError: (error) => toast('error', 'Не удалось закрыть смену', error.message),
+      },
     );
   };
 
@@ -221,16 +242,19 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
         invoiceId: selectedInvoice.id,
         paymentMethod,
         amount: amount(paymentAmount),
-        currency: selectedInvoice.currency
+        currency: selectedInvoice.currency,
       },
       {
         onSuccess: () => {
-          getRealtimeSocket().emit('finance.payment.completed', { invoiceId: selectedInvoice.id, patientId: selectedInvoice.patientId });
+          getRealtimeSocket().emit('finance.payment.completed', {
+            invoiceId: selectedInvoice.id,
+            patientId: selectedInvoice.patientId,
+          });
           toast('success', 'Оплата проведена', selectedInvoice.invoiceNumber);
           setDrawer(null);
         },
-        onError: (error) => toast('error', 'Платеж отклонен', error.message)
-      }
+        onError: (error) => toast('error', 'Платеж отклонен', error.message),
+      },
     );
   };
 
@@ -243,15 +267,15 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
         paymentId: refundPaymentId,
         refundAmount: amount(refundAmount),
         refundMethod: paymentMethod,
-        reason: refundReason
+        reason: refundReason,
       },
       {
         onSuccess: () => {
           toast('success', 'Возврат оформлен', 'Запись передана в аудит');
           setDrawer(null);
         },
-        onError: (error) => toast('error', 'Возврат не выполнен', error.message)
-      }
+        onError: (error) => toast('error', 'Возврат не выполнен', error.message),
+      },
     );
   };
 
@@ -269,8 +293,8 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
           setWalletAmount('');
           setDrawer(null);
         },
-        onError: (error) => toast('error', 'Пополнение не выполнено', error.message)
-      }
+        onError: (error) => toast('error', 'Пополнение не выполнено', error.message),
+      },
     );
   };
 
@@ -285,12 +309,12 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
         fixedAmount: amount(fixedAmount),
         deductMaterialCost,
         appliesFrom: new Date().toISOString().slice(0, 10),
-        appliesTo: null
+        appliesTo: null,
       },
       {
         onSuccess: () => toast('success', 'Правило сохранено', 'Payroll конфигурация обновлена'),
-        onError: (error) => toast('error', 'Правило не сохранено', error.message)
-      }
+        onError: (error) => toast('error', 'Правило не сохранено', error.message),
+      },
     );
   };
 
@@ -300,7 +324,10 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
         <div>
           <span className="eyebrow">Финансовый контур</span>
           <h1>Финансы</h1>
-          <p>Кассовые смены, счета, оплаты, возвраты, авансовые кошельки пациентов и правила вознаграждений врачей.</p>
+          <p>
+            Кассовые смены, счета, оплаты, возвраты, авансовые кошельки пациентов и правила
+            вознаграждений врачей.
+          </p>
         </div>
         <div className="page-actions">
           <button className="secondary-button" onClick={() => summary.refetch()} type="button">
@@ -318,10 +345,16 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
 
       <section className="finance-status-strip">
         <div className={`finance-shift-card ${activeShift ? 'is-open' : 'is-locked'}`}>
-          <span className="finance-shift-icon">{activeShift ? <ShieldCheck size={19} /> : <Lock size={19} />}</span>
+          <span className="finance-shift-icon">
+            {activeShift ? <ShieldCheck size={19} /> : <Lock size={19} />}
+          </span>
           <div>
             <strong>{activeShift ? 'Кассовая смена открыта' : 'Кассовая смена закрыта'}</strong>
-            <span>{activeShift ? `Открыта ${dateTime(activeShift.openedAt)} · остаток ${money(activeShift.openingBalance)}` : 'Платежи, возвраты и пополнения заблокированы'}</span>
+            <span>
+              {activeShift
+                ? `Открыта ${dateTime(activeShift.openedAt)} · остаток ${money(activeShift.openingBalance)}`
+                : 'Платежи, возвраты и пополнения заблокированы'}
+            </span>
           </div>
         </div>
         <div className="finance-guardrail">
@@ -359,7 +392,10 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
         </article>
         <article className="metric-card">
           <span>Тариф клиники</span>
-          <strong>{summary.data?.subscription?.subscriptionPlan?.name ?? bootstrap.tenant.subscriptionPlan}</strong>
+          <strong>
+            {summary.data?.subscription?.subscriptionPlan?.name ??
+              bootstrap.tenant.subscriptionPlan}
+          </strong>
           <small>{summary.data?.subscription?.subscriptionStatus ?? 'active'}</small>
         </article>
       </section>
@@ -377,9 +413,17 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
           <div className="finance-filter-grid">
             <label className="global-search search">
               <Search size={18} />
-              <input placeholder="Поиск пациента" value={patientSearch} onChange={(event) => setPatientSearch(event.target.value)} />
+              <input
+                placeholder="Поиск пациента"
+                value={patientSearch}
+                onChange={(event) => setPatientSearch(event.target.value)}
+              />
             </label>
-            <select className="input" value={patientId} onChange={(event) => setPatientId(event.target.value)}>
+            <select
+              className="input"
+              value={patientId}
+              onChange={(event) => setPatientId(event.target.value)}
+            >
               <option value="">Все пациенты</option>
               {patients.data?.items.map((patient) => (
                 <option key={patient.id} value={patient.id}>
@@ -387,15 +431,27 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                 </option>
               ))}
             </select>
-            <select className="input" value={status} onChange={(event) => setStatus(event.target.value)}>
+            <select
+              className="input"
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+            >
               {invoiceStatuses.map((item) => (
-                <option key={item.value} value={item.value}>{item.label}</option>
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
               ))}
             </select>
-            <select className="input" value={method} onChange={(event) => setMethod(event.target.value)}>
+            <select
+              className="input"
+              value={method}
+              onChange={(event) => setMethod(event.target.value)}
+            >
               <option value="">Все методы</option>
               {paymentMethods.map((item) => (
-                <option key={item.value} value={item.value}>{item.label}</option>
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
               ))}
             </select>
           </div>
@@ -437,15 +493,29 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                         </td>
                         <td>{money(invoice.totalAmount, invoice.currency)}</td>
                         <td>{money(invoice.paidAmount, invoice.currency)}</td>
-                        <td className={amount(invoice.dueAmount) > 0 ? 'warn' : undefined}>{money(invoice.dueAmount, invoice.currency)}</td>
-                        <td><span className={`status-badge status-${meta.tone}`}>{meta.label}</span></td>
+                        <td className={amount(invoice.dueAmount) > 0 ? 'warn' : undefined}>
+                          {money(invoice.dueAmount, invoice.currency)}
+                        </td>
+                        <td>
+                          <span className={`status-badge status-${meta.tone}`}>{meta.label}</span>
+                        </td>
                         <td>
                           <div className="badges">
-                            <button className="secondary-button compact-button" disabled={paymentLocked || !canPay(invoice)} onClick={() => openPaymentDrawer(invoice)} type="button">
+                            <button
+                              className="secondary-button compact-button"
+                              disabled={paymentLocked || !canPay(invoice)}
+                              onClick={() => openPaymentDrawer(invoice)}
+                              type="button"
+                            >
                               <CreditCard size={15} />
                               Оплата
                             </button>
-                            <button className="secondary-button compact-button" disabled={!activeShift || !canRefund || !invoice.payments.length} onClick={() => openRefundDrawer(invoice)} type="button">
+                            <button
+                              className="secondary-button compact-button"
+                              disabled={!activeShift || !canRefund || !invoice.payments.length}
+                              onClick={() => openRefundDrawer(invoice)}
+                              type="button"
+                            >
                               <Undo2 size={15} />
                               Возврат
                             </button>
@@ -488,14 +558,34 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                 </div>
                 <div className="field">
                   <label htmlFor="closingBalance">Фактический остаток</label>
-                  <input id="closingBalance" inputMode="decimal" value={closingBalance} onChange={(event) => setClosingBalance(event.target.value)} placeholder="Например, 1850" required />
+                  <input
+                    id="closingBalance"
+                    inputMode="decimal"
+                    value={closingBalance}
+                    onChange={(event) => setClosingBalance(event.target.value)}
+                    placeholder="Например, 1850"
+                    required
+                  />
                 </div>
-                <button className="secondary-button" disabled={closeShift.isPending || !canManageShift} type="submit">Закрыть смену</button>
+                <button
+                  className="secondary-button"
+                  disabled={closeShift.isPending || !canManageShift}
+                  type="submit"
+                >
+                  Закрыть смену
+                </button>
               </form>
             ) : (
               <div className="list">
-                <p className="muted">Откройте смену, чтобы проводить оплаты, возвраты и пополнения кошельков.</p>
-                <button className="button" disabled={!canManageShift} onClick={() => setDrawer('shift')} type="button">
+                <p className="muted">
+                  Откройте смену, чтобы проводить оплаты, возвраты и пополнения кошельков.
+                </p>
+                <button
+                  className="button"
+                  disabled={!canManageShift}
+                  onClick={() => setDrawer('shift')}
+                  type="button"
+                >
                   <Plus size={17} />
                   Открыть смену
                 </button>
@@ -520,14 +610,23 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                     <small className="muted">Обновлен {dateTime(wallet.updatedAt)}</small>
                   </div>
                 ))}
-                {!selectedWallet.data?.length && !selectedWallet.isLoading ? <p className="muted">Кошельки еще не созданы.</p> : null}
-                <button className="secondary-button" disabled={paymentLocked} onClick={() => setDrawer('wallet')} type="button">
+                {!selectedWallet.data?.length && !selectedWallet.isLoading ? (
+                  <p className="muted">Кошельки еще не созданы.</p>
+                ) : null}
+                <button
+                  className="secondary-button"
+                  disabled={paymentLocked}
+                  onClick={() => setDrawer('wallet')}
+                  type="button"
+                >
                   <Plus size={17} />
                   Пополнить
                 </button>
               </div>
             ) : (
-              <p className="muted">Выберите пациента в фильтрах счетов, чтобы увидеть баланс кошелька.</p>
+              <p className="muted">
+                Выберите пациента в фильтрах счетов, чтобы увидеть баланс кошелька.
+              </p>
             )}
           </section>
 
@@ -546,10 +645,15 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                     <span>{payment.invoice?.invoiceNumber ?? 'Счет'}</span>
                     <strong>{money(payment.amount, payment.currency)}</strong>
                   </div>
-                  <small className="muted">{patientName(payment.patient)} · {payment.paymentMethod} · {dateTime(payment.paidAt)}</small>
+                  <small className="muted">
+                    {patientName(payment.patient)} · {payment.paymentMethod} ·{' '}
+                    {dateTime(payment.paidAt)}
+                  </small>
                 </div>
               ))}
-              {!payments.data?.items.length && !payments.isLoading ? <p className="muted">Платежей пока нет.</p> : null}
+              {!payments.data?.items.length && !payments.isLoading ? (
+                <p className="muted">Платежей пока нет.</p>
+              ) : null}
             </div>
           </section>
         </aside>
@@ -560,7 +664,9 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
           <div className="panel-header">
             <div>
               <h2>Payroll & Billing</h2>
-              <p className="muted">Правила расчета вознаграждений врачей и контроль SaaS-подписки клиники.</p>
+              <p className="muted">
+                Правила расчета вознаграждений врачей и контроль SaaS-подписки клиники.
+              </p>
             </div>
             <span className="status-badge status-violet">Доступ руководителя</span>
           </div>
@@ -568,34 +674,65 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
             <form className="form" onSubmit={handlePayrollRule}>
               <div className="field">
                 <label htmlFor="payrollEmployee">Врач</label>
-                <select id="payrollEmployee" value={payrollEmployeeId} onChange={(event) => setPayrollEmployeeId(event.target.value)} required>
+                <select
+                  id="payrollEmployee"
+                  value={payrollEmployeeId}
+                  onChange={(event) => setPayrollEmployeeId(event.target.value)}
+                  required
+                >
                   <option value="">Выберите сотрудника</option>
                   {doctors.data?.map((doctor) => (
-                    <option key={doctor.id} value={doctor.id}>{doctor.name} · {doctor.branchName}</option>
+                    <option key={doctor.id} value={doctor.id}>
+                      {doctor.name} · {doctor.branchName}
+                    </option>
                   ))}
                 </select>
               </div>
               <div className="field">
                 <label htmlFor="payrollType">Тип правила</label>
-                <select id="payrollType" value={payrollType} onChange={(event) => setPayrollType(event.target.value as PayrollType)}>
-                  {payrollTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                <select
+                  id="payrollType"
+                  value={payrollType}
+                  onChange={(event) => setPayrollType(event.target.value as PayrollType)}
+                >
+                  {payrollTypes.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="finance-form-pair">
                 <div className="field">
                   <label htmlFor="percentageRate">Процент</label>
-                  <input id="percentageRate" inputMode="decimal" value={percentageRate} onChange={(event) => setPercentageRate(event.target.value)} />
+                  <input
+                    id="percentageRate"
+                    inputMode="decimal"
+                    value={percentageRate}
+                    onChange={(event) => setPercentageRate(event.target.value)}
+                  />
                 </div>
                 <div className="field">
                   <label htmlFor="fixedAmount">Фикса</label>
-                  <input id="fixedAmount" inputMode="decimal" value={fixedAmount} onChange={(event) => setFixedAmount(event.target.value)} />
+                  <input
+                    id="fixedAmount"
+                    inputMode="decimal"
+                    value={fixedAmount}
+                    onChange={(event) => setFixedAmount(event.target.value)}
+                  />
                 </div>
               </div>
               <label className="finance-check">
-                <input checked={deductMaterialCost} onChange={(event) => setDeductMaterialCost(event.target.checked)} type="checkbox" />
+                <input
+                  checked={deductMaterialCost}
+                  onChange={(event) => setDeductMaterialCost(event.target.checked)}
+                  type="checkbox"
+                />
                 Вычитать себестоимость материалов
               </label>
-              <button className="button" disabled={createPayrollRule.isPending} type="submit">Сохранить правило</button>
+              <button className="button" disabled={createPayrollRule.isPending} type="submit">
+                Сохранить правило
+              </button>
             </form>
 
             <div className="list">
@@ -605,15 +742,23 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                     <strong>{patientName(rule.employee)}</strong>
                     <span className="table-subtext">{rule.employee?.employeeNumber}</span>
                   </div>
-                  <span className={`status-badge ${rule.isActive ? 'status-success' : 'status-neutral'}`}>{rule.payrollType}</span>
+                  <span
+                    className={`status-badge ${rule.isActive ? 'status-success' : 'status-neutral'}`}
+                  >
+                    {rule.payrollType}
+                  </span>
                   <div className="compact-stat">
                     <span>Процент / фикса</span>
-                    <strong>{amount(rule.percentageRate)}% · {money(rule.fixedAmount)}</strong>
+                    <strong>
+                      {amount(rule.percentageRate)}% · {money(rule.fixedAmount)}
+                    </strong>
                   </div>
                   <small className="muted">Действует с {dateOnly(rule.appliesFrom)}</small>
                 </div>
               ))}
-              {!payrollRules.data?.items.length && !payrollRules.isLoading ? <p className="muted">Правила payroll еще не настроены.</p> : null}
+              {!payrollRules.data?.items.length && !payrollRules.isLoading ? (
+                <p className="muted">Правила payroll еще не настроены.</p>
+              ) : null}
             </div>
           </div>
         </section>
@@ -630,19 +775,38 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                 {drawer === 'refund' ? 'Возврат платежа' : null}
                 {drawer === 'wallet' ? 'Пополнение кошелька' : null}
               </h2>
-              <button className="icon-button" onClick={() => setDrawer(null)} type="button" aria-label="Закрыть">
+              <button
+                className="icon-button"
+                onClick={() => setDrawer(null)}
+                type="button"
+                aria-label="Закрыть"
+              >
                 <X size={18} />
               </button>
             </div>
 
             {drawer === 'shift' ? (
               <form className="form" onSubmit={handleOpenShift}>
-                <p className="muted">Фискальные операции будут доступны только после открытия смены.</p>
+                <p className="muted">
+                  Фискальные операции будут доступны только после открытия смены.
+                </p>
                 <div className="field">
                   <label htmlFor="openingBalance">Разменный остаток</label>
-                  <input id="openingBalance" inputMode="decimal" value={openingBalance} onChange={(event) => setOpeningBalance(event.target.value)} required />
+                  <input
+                    id="openingBalance"
+                    inputMode="decimal"
+                    value={openingBalance}
+                    onChange={(event) => setOpeningBalance(event.target.value)}
+                    required
+                  />
                 </div>
-                <button className="button" disabled={openShift.isPending || !canManageShift} type="submit">Открыть смену</button>
+                <button
+                  className="button"
+                  disabled={openShift.isPending || !canManageShift}
+                  type="submit"
+                >
+                  Открыть смену
+                </button>
               </form>
             ) : null}
 
@@ -657,7 +821,12 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                   {paymentMethods.map((item) => {
                     const Icon = item.icon;
                     return (
-                      <button className={paymentMethod === item.value ? 'active' : undefined} key={item.value} onClick={() => setPaymentMethod(item.value)} type="button">
+                      <button
+                        className={paymentMethod === item.value ? 'active' : undefined}
+                        key={item.value}
+                        onClick={() => setPaymentMethod(item.value)}
+                        type="button"
+                      >
                         <Icon size={17} />
                         {item.label}
                       </button>
@@ -666,13 +835,24 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                 </div>
                 <div className="field">
                   <label htmlFor="paymentAmount">Сумма оплаты</label>
-                  <input id="paymentAmount" inputMode="decimal" value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} required />
+                  <input
+                    id="paymentAmount"
+                    inputMode="decimal"
+                    value={paymentAmount}
+                    onChange={(event) => setPaymentAmount(event.target.value)}
+                    required
+                  />
                 </div>
                 {paymentMethod === 'CASH' ? (
                   <div className="finance-form-pair">
                     <div className="field">
                       <label htmlFor="cashReceived">Получено наличными</label>
-                      <input id="cashReceived" inputMode="decimal" value={cashReceived} onChange={(event) => setCashReceived(event.target.value)} />
+                      <input
+                        id="cashReceived"
+                        inputMode="decimal"
+                        value={cashReceived}
+                        onChange={(event) => setCashReceived(event.target.value)}
+                      />
                     </div>
                     <div className="finance-change">
                       <span>Сдача</span>
@@ -680,38 +860,80 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                     </div>
                   </div>
                 ) : null}
-                <button className="button" disabled={createPayment.isPending || paymentLocked} type="submit">Провести оплату</button>
+                <button
+                  className="button"
+                  disabled={createPayment.isPending || paymentLocked}
+                  type="submit"
+                >
+                  Провести оплату
+                </button>
               </form>
             ) : null}
 
             {drawer === 'refund' && selectedInvoice ? (
               <form className="form" onSubmit={handleRefund}>
-                <p className="muted">Причина возврата обязательна для audit logging и последующей сверки смены.</p>
+                <p className="muted">
+                  Причина возврата обязательна для audit logging и последующей сверки смены.
+                </p>
                 <div className="field">
                   <label htmlFor="refundPayment">Платеж</label>
-                  <select id="refundPayment" value={refundPaymentId} onChange={(event) => setRefundPaymentId(event.target.value)} required>
+                  <select
+                    id="refundPayment"
+                    value={refundPaymentId}
+                    onChange={(event) => setRefundPaymentId(event.target.value)}
+                    required
+                  >
                     {selectedInvoice.payments.map((payment) => (
-                      <option key={payment.id} value={payment.id}>{dateTime(payment.paidAt)} · {payment.paymentMethod} · {money(payment.amount, payment.currency)}</option>
+                      <option key={payment.id} value={payment.id}>
+                        {dateTime(payment.paidAt)} · {payment.paymentMethod} ·{' '}
+                        {money(payment.amount, payment.currency)}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div className="finance-form-pair">
                   <div className="field">
                     <label htmlFor="refundAmount">Сумма возврата</label>
-                    <input id="refundAmount" inputMode="decimal" value={refundAmount} onChange={(event) => setRefundAmount(event.target.value)} required />
+                    <input
+                      id="refundAmount"
+                      inputMode="decimal"
+                      value={refundAmount}
+                      onChange={(event) => setRefundAmount(event.target.value)}
+                      required
+                    />
                   </div>
                   <div className="field">
                     <label htmlFor="refundMethod">Метод</label>
-                    <select id="refundMethod" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}>
-                      {paymentMethods.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                    <select
+                      id="refundMethod"
+                      value={paymentMethod}
+                      onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
+                    >
+                      {paymentMethods.map((item) => (
+                        <option key={item.value} value={item.value}>
+                          {item.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
                 <div className="field">
                   <label htmlFor="refundReason">Причина</label>
-                  <textarea id="refundReason" value={refundReason} onChange={(event) => setRefundReason(event.target.value)} rows={4} required />
+                  <textarea
+                    id="refundReason"
+                    value={refundReason}
+                    onChange={(event) => setRefundReason(event.target.value)}
+                    rows={4}
+                    required
+                  />
                 </div>
-                <button className="button danger-button" disabled={createRefund.isPending || !activeShift || !canRefund} type="submit">Оформить возврат</button>
+                <button
+                  className="button danger-button"
+                  disabled={createRefund.isPending || !activeShift || !canRefund}
+                  type="submit"
+                >
+                  Оформить возврат
+                </button>
               </form>
             ) : null}
 
@@ -723,7 +945,11 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                 </div>
                 <div className="field">
                   <label htmlFor="walletType">Тип кошелька</label>
-                  <select id="walletType" value={walletType} onChange={(event) => setWalletType(event.target.value as WalletType)}>
+                  <select
+                    id="walletType"
+                    value={walletType}
+                    onChange={(event) => setWalletType(event.target.value as WalletType)}
+                  >
                     <option value="DEPOSIT">Депозит</option>
                     <option value="BONUS">Бонусы</option>
                     <option value="CREDIT">Кредит</option>
@@ -731,9 +957,21 @@ export function FinancePage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                 </div>
                 <div className="field">
                   <label htmlFor="walletAmount">Сумма пополнения</label>
-                  <input id="walletAmount" inputMode="decimal" value={walletAmount} onChange={(event) => setWalletAmount(event.target.value)} required />
+                  <input
+                    id="walletAmount"
+                    inputMode="decimal"
+                    value={walletAmount}
+                    onChange={(event) => setWalletAmount(event.target.value)}
+                    required
+                  />
                 </div>
-                <button className="button" disabled={topUpWallet.isPending || paymentLocked || !patientId} type="submit">Пополнить кошелек</button>
+                <button
+                  className="button"
+                  disabled={topUpWallet.isPending || paymentLocked || !patientId}
+                  type="submit"
+                >
+                  Пополнить кошелек
+                </button>
               </form>
             ) : null}
           </aside>

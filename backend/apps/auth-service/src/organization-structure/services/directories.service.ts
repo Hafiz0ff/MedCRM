@@ -1,11 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   SpecialtyDto,
   PositionDto,
   RoomTypeDto,
-  EquipmentCategoryDto
+  EquipmentCategoryDto,
 } from '../dto/organization-structure.schemas';
 
 @Injectable()
@@ -15,7 +15,7 @@ export class DirectoriesService {
   // Specialties
   async listSpecialties() {
     return this.prisma.specialty.findMany({
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -25,8 +25,8 @@ export class DirectoriesService {
         code: dto.code,
         name: dto.name,
         internationalCode: dto.internationalCode,
-        isSystem: dto.isSystem
-      }
+        isSystem: dto.isSystem,
+      },
     });
   }
 
@@ -41,7 +41,7 @@ export class DirectoriesService {
   async listPositions(user: AuthenticatedUser) {
     return this.prisma.position.findMany({
       where: { OR: [{ tenantId: null }, { tenantId: user.tenantId }] },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -54,14 +54,14 @@ export class DirectoriesService {
         description: dto.description,
         isMedicalStaff: dto.isMedicalStaff,
         isSystem: dto.isSystem,
-        isActive: dto.isActive
-      }
+        isActive: dto.isActive,
+      },
     });
   }
 
   async deletePosition(user: AuthenticatedUser, id: string) {
     const position = await this.prisma.position.findFirst({
-      where: { id, tenantId: user.tenantId }
+      where: { id, tenantId: user.tenantId },
     });
     if (!position) throw new NotFoundException('Position not found');
     if (position.isSystem) throw new Error('Cannot delete system position');
@@ -72,7 +72,7 @@ export class DirectoriesService {
   async listRoomTypes(user: AuthenticatedUser) {
     return this.prisma.roomType.findMany({
       where: { OR: [{ tenantId: null }, { tenantId: user.tenantId }] },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -83,14 +83,14 @@ export class DirectoriesService {
         code: dto.code,
         name: dto.name,
         color: dto.color,
-        isSystem: dto.isSystem
-      }
+        isSystem: dto.isSystem,
+      },
     });
   }
 
   async deleteRoomType(user: AuthenticatedUser, id: string) {
     const type = await this.prisma.roomType.findFirst({
-      where: { id, tenantId: user.tenantId }
+      where: { id, tenantId: user.tenantId },
     });
     if (!type) throw new NotFoundException('Room type not found');
     if (type.isSystem) throw new Error('Cannot delete system room type');
@@ -101,7 +101,7 @@ export class DirectoriesService {
   async listEquipmentCategories(user: AuthenticatedUser) {
     return this.prisma.equipmentCategory.findMany({
       where: { OR: [{ tenantId: null }, { tenantId: user.tenantId }] },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -111,14 +111,14 @@ export class DirectoriesService {
         tenantId: user.tenantId,
         code: dto.code,
         name: dto.name,
-        isSystem: dto.isSystem
-      }
+        isSystem: dto.isSystem,
+      },
     });
   }
 
   async deleteEquipmentCategory(user: AuthenticatedUser, id: string) {
     const category = await this.prisma.equipmentCategory.findFirst({
-      where: { id, tenantId: user.tenantId }
+      where: { id, tenantId: user.tenantId },
     });
     if (!category) throw new NotFoundException('Equipment category not found');
     if (category.isSystem) throw new Error('Cannot delete system category');

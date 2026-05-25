@@ -1,18 +1,17 @@
-import './globals.css';
-import type { Metadata } from 'next';
 import { ReactNode } from 'react';
+import './globals.css';
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'MedCRM',
   description: 'Cloud-first SaaS CRM/MIS platform for clinics',
   icons: {
-    icon: '/icon.svg'
-  }
+    icon: '/icon.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="ru">
+    <html lang="ru" suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );

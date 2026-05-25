@@ -18,7 +18,10 @@ export class RedisIoAdapter extends IoAdapter {
     const redisUrl = config.get<string>('REDIS_URL', 'redis://localhost:6379');
     const pubClient = new Redis(redisUrl);
     const subClient = pubClient.duplicate();
-    await Promise.all([pubClient.connect().catch(() => undefined), subClient.connect().catch(() => undefined)]);
+    await Promise.all([
+      pubClient.connect().catch(() => undefined),
+      subClient.connect().catch(() => undefined),
+    ]);
     this.adapterConstructor = createAdapter(pubClient, subClient);
     this.logger.log('Socket.IO Redis adapter enabled');
   }
@@ -28,8 +31,8 @@ export class RedisIoAdapter extends IoAdapter {
       ...options,
       cors: {
         origin: true,
-        credentials: true
-      }
+        credentials: true,
+      },
     });
     if (this.adapterConstructor) {
       server.adapter(this.adapterConstructor);
@@ -37,4 +40,3 @@ export class RedisIoAdapter extends IoAdapter {
     return server;
   }
 }
-

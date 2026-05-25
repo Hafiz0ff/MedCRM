@@ -1,8 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import type { ComponentType } from 'react';
 import {
   CalendarDays,
   ClipboardList,
@@ -13,10 +10,13 @@ import {
   Stethoscope,
   UserRoundCheck,
   Users,
-  WalletCards
+  WalletCards,
+  MessageSquare,
 } from 'lucide-react';
-import { BootstrapPayload } from '@/shared/types/bootstrap';
+import type { ComponentType } from 'react';
+import { Link, usePathname } from '@/i18n/routing';
 import { can, moduleEnabled } from '@/shared/permissions/can';
+import { BootstrapPayload } from '@/shared/types/bootstrap';
 
 type NavItem = {
   href: string;
@@ -34,7 +34,7 @@ const navItems: NavItem[] = [
     module: 'auth',
     permission: 'auth.bootstrap.read',
     group: 'Рабочая зона',
-    icon: LayoutDashboard
+    icon: LayoutDashboard,
   },
   {
     href: '/reception',
@@ -42,7 +42,7 @@ const navItems: NavItem[] = [
     module: 'receptionist-workplace',
     permission: 'reception.dashboard.read',
     group: 'Рабочая зона',
-    icon: ClipboardList
+    icon: ClipboardList,
   },
   {
     href: '/schedule',
@@ -50,7 +50,7 @@ const navItems: NavItem[] = [
     module: 'smart-scheduling',
     permission: 'scheduling.calendar.read',
     group: 'Рабочая зона',
-    icon: CalendarDays
+    icon: CalendarDays,
   },
   {
     href: '/patients',
@@ -58,7 +58,15 @@ const navItems: NavItem[] = [
     module: 'patient-crm',
     permission: 'patients.read',
     group: 'Рабочая зона',
-    icon: Users
+    icon: Users,
+  },
+  {
+    href: '/communications',
+    label: 'Рассылки',
+    module: 'communications',
+    permission: 'communications.rule.manage',
+    group: 'Управление',
+    icon: MessageSquare,
   },
   {
     href: '/finance',
@@ -66,13 +74,15 @@ const navItems: NavItem[] = [
     module: 'finance-billing',
     permission: 'finance.invoice.read',
     group: 'Управление',
-    icon: WalletCards
-  }
+    icon: WalletCards,
+  },
 ];
 
 export function Sidebar({ bootstrap }: { bootstrap: BootstrapPayload }) {
   const pathname = usePathname();
-  const visibleItems = navItems.filter((item) => moduleEnabled(bootstrap, item.module) && can(bootstrap, item.permission));
+  const visibleItems = navItems.filter(
+    (item) => moduleEnabled(bootstrap, item.module) && can(bootstrap, item.permission),
+  );
   const groupedItems = visibleItems.reduce<Record<string, NavItem[]>>((acc, item) => {
     acc[item.group] = [...(acc[item.group] ?? []), item];
     return acc;
@@ -121,7 +131,9 @@ export function Sidebar({ bootstrap }: { bootstrap: BootstrapPayload }) {
           </Link>
           {can(bootstrap, 'system.settings.read') ? (
             <Link
-              className={pathname === '/settings' || pathname.startsWith('/settings/') ? 'active' : undefined}
+              className={
+                pathname === '/settings' || pathname.startsWith('/settings/') ? 'active' : undefined
+              }
               href="/settings"
             >
               <Settings size={18} strokeWidth={2.2} />
@@ -141,7 +153,9 @@ export function Sidebar({ bootstrap }: { bootstrap: BootstrapPayload }) {
           <span className="sidebar-user-avatar">АД</span>
           <div>
             <strong>Администратор</strong>
-            <span>{bootstrap.enabledModules.length} модулей · {bootstrap.permissions.length} прав</span>
+            <span>
+              {bootstrap.enabledModules.length} модулей · {bootstrap.permissions.length} прав
+            </span>
           </div>
           <LogOut size={16} className="muted" />
         </div>

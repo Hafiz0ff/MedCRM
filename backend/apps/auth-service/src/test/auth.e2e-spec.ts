@@ -1,5 +1,5 @@
-import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { describe, it, before, after } from 'node:test';
 import { setupE2eTest, teardownE2eTest, TestContext } from './e2e-helper';
 
 describe('E2E Authentication, Sessions & RBAC', () => {
@@ -20,8 +20,8 @@ describe('E2E Authentication, Sessions & RBAC', () => {
       body: JSON.stringify({
         tenantCode: 'demo-clinic',
         email: 'admin@demo.clinic',
-        password: 'Admin123!'
-      })
+        password: 'Admin123!',
+      }),
     });
 
     assert.equal(res.status, 201);
@@ -37,8 +37,8 @@ describe('E2E Authentication, Sessions & RBAC', () => {
       body: JSON.stringify({
         tenantCode: 'demo-clinic',
         email: 'admin@demo.clinic',
-        password: 'WrongPassword'
-      })
+        password: 'WrongPassword',
+      }),
     });
 
     assert.equal(res.status, 401);
@@ -47,7 +47,7 @@ describe('E2E Authentication, Sessions & RBAC', () => {
   it('should get bootstrap config when authenticated', async () => {
     const res = await fetch(`${context.baseUrl}/auth/bootstrap`, {
       method: 'GET',
-      headers: context.authHeaders
+      headers: context.authHeaders,
     });
 
     assert.equal(res.status, 200);
@@ -61,7 +61,7 @@ describe('E2E Authentication, Sessions & RBAC', () => {
   it('should fail bootstrap request when unauthenticated', async () => {
     const res = await fetch(`${context.baseUrl}/auth/bootstrap`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     });
 
     assert.equal(res.status, 401);
@@ -70,7 +70,7 @@ describe('E2E Authentication, Sessions & RBAC', () => {
   it('should revoke all other active sessions successfully', async () => {
     const res = await fetch(`${context.baseUrl}/auth/sessions/revoke-all`, {
       method: 'POST',
-      headers: context.authHeaders
+      headers: context.authHeaders,
     });
 
     assert.equal(res.status, 201);

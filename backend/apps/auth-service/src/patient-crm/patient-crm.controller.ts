@@ -1,14 +1,38 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { RequirePermissions } from '@core/security/permissions.decorator';
 import { RequireModule } from '@core/security/modules.decorator';
+import { RequirePermissions } from '@core/security/permissions.decorator';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ModuleEnabledGuard } from '../auth/guards/module-enabled.guard';
 import { RbacGuard } from '../auth/guards/rbac.guard';
-import { PatientCrmService } from './patient-crm.service';
+import {
+  CrmTagDto,
+  CrmTagSchema,
+  FamilyGroupDto,
+  FamilyGroupSchema,
+  FamilyMemberDto,
+  FamilyMemberSchema,
+  PatientLegalDocumentDto,
+  PatientLegalDocumentSchema,
+  PatientNoteDto,
+  PatientNoteSchema,
+  PatientLeadDto,
+  PatientLeadSchema,
+} from './dto/patient-crm.dto';
 import {
   CreatePatientDto,
   PatientListQuery,
@@ -23,22 +47,9 @@ import {
   createContactSchema,
   updateContactSchema,
   mergePatientsSchema,
-  patientStatusTransitionSchema
+  patientStatusTransitionSchema,
 } from './dto/patient.schemas';
-import {
-  CrmTagDto,
-  CrmTagSchema,
-  FamilyGroupDto,
-  FamilyGroupSchema,
-  FamilyMemberDto,
-  FamilyMemberSchema,
-  PatientLegalDocumentDto,
-  PatientLegalDocumentSchema,
-  PatientNoteDto,
-  PatientNoteSchema,
-  PatientLeadDto,
-  PatientLeadSchema
-} from './dto/patient-crm.dto';
+import { PatientCrmService } from './patient-crm.service';
 
 @ApiTags('patients')
 @ApiBearerAuth()
@@ -59,14 +70,20 @@ export class PatientCrmController {
   @Get()
   @RequirePermissions('patients.read')
   @ApiOperation({ summary: 'List patients with pagination and branch-aware filtering' })
-  list(@CurrentUser() user: AuthenticatedUser, @Query(new ZodValidationPipe(patientListQuerySchema)) query: PatientListQuery) {
+  list(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query(new ZodValidationPipe(patientListQuerySchema)) query: PatientListQuery,
+  ) {
     return this.patients.list(user, query);
   }
 
   @Get('search')
   @RequirePermissions('patients.read')
   @ApiOperation({ summary: 'Search patients and return duplicate candidates baseline' })
-  search(@CurrentUser() user: AuthenticatedUser, @Query(new ZodValidationPipe(patientListQuerySchema)) query: PatientListQuery) {
+  search(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query(new ZodValidationPipe(patientListQuerySchema)) query: PatientListQuery,
+  ) {
     return this.patients.search(user, query);
   }
 
@@ -92,7 +109,7 @@ export class PatientCrmController {
   assignTag(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') patientId: string,
-    @Param('tagId') tagId: string
+    @Param('tagId') tagId: string,
   ) {
     return this.patients.assignTag(user, patientId, tagId);
   }
@@ -103,7 +120,7 @@ export class PatientCrmController {
   removeTag(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') patientId: string,
-    @Param('tagId') tagId: string
+    @Param('tagId') tagId: string,
   ) {
     return this.patients.removeTag(user, patientId, tagId);
   }
@@ -150,7 +167,11 @@ export class PatientCrmController {
   @Patch(':id')
   @RequirePermissions('patients.update')
   @UsePipes(new ZodValidationPipe(updatePatientSchema))
-  update(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() dto: UpdatePatientDto) {
+  update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: UpdatePatientDto,
+  ) {
     return this.patients.update(user, id, dto);
   }
 
@@ -175,7 +196,7 @@ export class PatientCrmController {
   signLegalDocument(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') patientId: string,
-    @Body() dto: PatientLegalDocumentDto
+    @Body() dto: PatientLegalDocumentDto,
   ) {
     return this.patients.signLegalDocument(user, patientId, dto);
   }
@@ -194,7 +215,7 @@ export class PatientCrmController {
   createNote(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') patientId: string,
-    @Body() dto: PatientNoteDto
+    @Body() dto: PatientNoteDto,
   ) {
     return this.patients.createNote(user, patientId, dto);
   }
@@ -213,7 +234,7 @@ export class PatientCrmController {
   trackLead(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') patientId: string,
-    @Body() dto: PatientLeadDto
+    @Body() dto: PatientLeadDto,
   ) {
     return this.patients.trackLead(user, patientId, dto);
   }
@@ -222,10 +243,7 @@ export class PatientCrmController {
   @RequirePermissions('patients.update')
   @ApiOperation({ summary: 'Merge two duplicate patients' })
   @UsePipes(new ZodValidationPipe(mergePatientsSchema))
-  merge(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: MergePatientsDto
-  ) {
+  merge(@CurrentUser() user: AuthenticatedUser, @Body() dto: MergePatientsDto) {
     return this.patients.mergePatients(user, dto);
   }
 
@@ -236,7 +254,7 @@ export class PatientCrmController {
   addContact(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') patientId: string,
-    @Body() dto: CreateContactDto
+    @Body() dto: CreateContactDto,
   ) {
     return this.patients.addContact(user, patientId, dto);
   }
@@ -249,7 +267,7 @@ export class PatientCrmController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') patientId: string,
     @Param('contactId') contactId: string,
-    @Body() dto: UpdateContactDto
+    @Body() dto: UpdateContactDto,
   ) {
     return this.patients.updateContact(user, patientId, contactId, dto);
   }
@@ -260,7 +278,7 @@ export class PatientCrmController {
   deleteContact(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') patientId: string,
-    @Param('contactId') contactId: string
+    @Param('contactId') contactId: string,
   ) {
     return this.patients.deleteContact(user, patientId, contactId);
   }
@@ -272,9 +290,8 @@ export class PatientCrmController {
   updateStatus(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') patientId: string,
-    @Body() dto: PatientStatusTransitionDto
+    @Body() dto: PatientStatusTransitionDto,
   ) {
     return this.patients.updateStatus(user, patientId, dto);
   }
 }
-

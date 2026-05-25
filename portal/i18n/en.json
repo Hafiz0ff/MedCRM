@@ -1,0 +1,38 @@
+{
+  "auth": {
+    "login": {
+      "title": "Patient Portal Login",
+      "phoneLabel": "Phone Number",
+      "phonePlaceholder": "+992931234567",
+      "sendCode": "Get Code",
+      "enterCode": "Enter 6-digit confirmation code",
+      "codeLabel": "Code from SMS or Telegram",
+      "verify": "Login",
+      "errorPhone": "Invalid phone format",
+      "errorCode": "Code must be 6 digits",
+      "successTitle": "Logged in",
+      "signupTitle": "Complete Registration",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "birthDate": "Date of Birth",
+      "gender": "Gender",
+      "genderMale": "Male",
+      "genderFemale": "Female",
+      "complete": "Complete",
+      "agreeToTerms": "I agree to the processing of personal data"
+    }
+  },
+  "cabinet": {
+    "dashboard": {
+      "title": "Patient Portal Dashboard",
+      "welcome": "Welcome, {name}!",
+      "noVisits": "No upcoming visits scheduled",
+      "upcoming": "Upcoming Visit",
+      "debt": "Your outstanding balance",
+      "payNow": "Pay Now",
+      "history": "Visits History",
+      "profile": "My Profile",
+      "logout": "Logout"
+    }
+  }
+}

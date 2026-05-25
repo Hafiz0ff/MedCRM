@@ -48,7 +48,7 @@ for i in {1..30}; do
   auth_code="$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/health || true)"
   gateway_code="$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/health || true)"
   internal_code="$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3010/health || true)"
-  frontend_code="$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3002/dashboard || true)"
+  frontend_code="$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3002/ru/dashboard || true)"
 
   if [ "$auth_code" = "200" ] && [ "$gateway_code" = "200" ] && [ "$internal_code" = "200" ] && { [ "$frontend_code" = "200" ] || [ "$frontend_code" = "307" ] || [ "$frontend_code" = "308" ]; }; then
     echo
@@ -56,7 +56,7 @@ for i in {1..30}; do
     echo "  auth-service:      http://localhost:3001/health"
     echo "  public gateway:    http://localhost:3000/health"
     echo "  internal gateway:  http://localhost:3010/health"
-    echo "  frontend:          http://localhost:3002/dashboard"
+    echo "  frontend:          http://localhost:3002/ru/dashboard"
     echo
     echo "Logs:"
     echo "  $LOG_DIR/auth-service.log"

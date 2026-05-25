@@ -17,28 +17,25 @@ import {
   FhirMedicationRequest,
   FhirObservation,
   FhirPatient,
-  FhirSupportedResource
+  FhirSupportedResource,
 } from './fhir.types';
 
 const MEDCRM_SYSTEM_BASE = 'http://medcrm.ru';
-const TERMINOLOGY_DIAGNOSIS_ROLE =
-  'http://terminology.hl7.org/CodeSystem/diagnosis-role';
-const TERMINOLOGY_CONDITION_CLINICAL =
-  'http://terminology.hl7.org/CodeSystem/condition-clinical';
+const TERMINOLOGY_DIAGNOSIS_ROLE = 'http://terminology.hl7.org/CodeSystem/diagnosis-role';
+const TERMINOLOGY_CONDITION_CLINICAL = 'http://terminology.hl7.org/CodeSystem/condition-clinical';
 const TERMINOLOGY_CONDITION_VER_STATUS =
   'http://terminology.hl7.org/CodeSystem/condition-ver-status';
 const TERMINOLOGY_OBSERVATION_INTERPRETATION =
   'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation';
 const TERMINOLOGY_ACTCODE = 'http://terminology.hl7.org/CodeSystem/v3-ActCode';
-const TERMINOLOGY_PARTICIPATION_TYPE =
-  'http://terminology.hl7.org/CodeSystem/v3-ParticipationType';
+const TERMINOLOGY_PARTICIPATION_TYPE = 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType';
 
 const ENCOUNTER_STATUS_BY_INTERNAL: Record<string, FhirEncounter['status']> = {
   DRAFT: 'planned',
   IN_PROGRESS: 'in-progress',
   SIGNED: 'finished',
   AMENDED: 'finished',
-  CANCELLED: 'cancelled'
+  CANCELLED: 'cancelled',
 };
 
 export type PatientLike = {
@@ -64,15 +61,17 @@ export type PatientLike = {
 export function mapPatient(patient: PatientLike): FhirPatient {
   const telecom = (patient.contacts ?? []).map((c) => ({
     system:
-      c.type === 'PHONE' ? ('phone' as const)
-      : c.type === 'EMAIL' ? ('email' as const)
-      : ('other' as const),
+      c.type === 'PHONE'
+        ? ('phone' as const)
+        : c.type === 'EMAIL'
+          ? ('email' as const)
+          : ('other' as const),
     value: c.value,
-    use: c.isPrimary ? ('home' as const) : ('work' as const)
+    use: c.isPrimary ? ('home' as const) : ('work' as const),
   }));
 
   const given = [patient.firstName, patient.middleName ?? undefined].filter(
-    (v): v is string => !!v
+    (v): v is string => !!v,
   );
 
   return {
@@ -83,30 +82,28 @@ export function mapPatient(patient: PatientLike): FhirPatient {
       {
         use: 'official',
         system: `${MEDCRM_SYSTEM_BASE}/tenant/${patient.tenantId}/patient-code`,
-        value: patient.patientCode
-      }
+        value: patient.patientCode,
+      },
     ],
     active: patient.archivedAt === null,
     name: [
       {
         use: 'official',
         family: patient.lastName,
-        given
-      }
+        given,
+      },
     ],
     telecom: telecom.length > 0 ? telecom : undefined,
     gender: normalizeGender(patient.gender),
-    birthDate: patient.birthDate
-      ? patient.birthDate.toISOString().slice(0, 10)
-      : undefined,
+    birthDate: patient.birthDate ? patient.birthDate.toISOString().slice(0, 10) : undefined,
     extension: patient.medicalRecord?.bloodType
       ? [
           {
             url: `${MEDCRM_SYSTEM_BASE}/fhir/StructureDefinition/blood-type`,
-            valueString: patient.medicalRecord.bloodType
-          }
+            valueString: patient.medicalRecord.bloodType,
+          },
         ]
-      : undefined
+      : undefined,
   };
 }
 
@@ -144,19 +141,16 @@ export function mapEncounter(encounter: EncounterLike): FhirEncounter {
     resourceType: 'Encounter',
     id: encounter.id,
     meta: { lastUpdated: encounter.startedAt.toISOString() },
-    status:
-      ENCOUNTER_STATUS_BY_INTERNAL[encounter.status] ?? 'in-progress',
+    status: ENCOUNTER_STATUS_BY_INTERNAL[encounter.status] ?? 'in-progress',
     class: {
       system: TERMINOLOGY_ACTCODE,
       code: 'AMB',
-      display: 'ambulatory'
+      display: 'ambulatory',
     },
-    type: encounter.encounterType
-      ? [{ text: encounter.encounterType }]
-      : undefined,
+    type: encounter.encounterType ? [{ text: encounter.encounterType }] : undefined,
     subject: {
       reference: `Patient/${encounter.patientId}`,
-      display: encounter.patient?.fullName
+      display: encounter.patient?.fullName,
     },
     participant: [
       {
@@ -166,24 +160,22 @@ export function mapEncounter(encounter: EncounterLike): FhirEncounter {
               {
                 system: TERMINOLOGY_PARTICIPATION_TYPE,
                 code: 'PPRF',
-                display: 'primary performer'
-              }
-            ]
-          }
+                display: 'primary performer',
+              },
+            ],
+          },
         ],
         individual: {
           reference: `Practitioner/${encounter.doctorEmployeeId}`,
           display: encounter.doctor
             ? `${encounter.doctor.lastName} ${encounter.doctor.firstName}`
-            : undefined
-        }
-      }
+            : undefined,
+        },
+      },
     ],
     period: {
       start: encounter.startedAt.toISOString(),
-      end: encounter.completedAt
-        ? encounter.completedAt.toISOString()
-        : undefined
+      end: encounter.completedAt ? encounter.completedAt.toISOString() : undefined,
     },
     reasonCode: reasonCode.length > 0 ? reasonCode : undefined,
     diagnosis:
@@ -191,25 +183,21 @@ export function mapEncounter(encounter: EncounterLike): FhirEncounter {
         ? encounter.diagnoses.map((d, index) => ({
             condition: {
               reference: `Condition/${d.id}`,
-              display: d.diagnosisCode
+              display: d.diagnosisCode,
             },
             use: {
               coding: [
                 {
                   system: TERMINOLOGY_DIAGNOSIS_ROLE,
                   code: d.isPrimary ? 'AD' : 'DD',
-                  display: d.isPrimary
-                    ? 'Admission diagnosis'
-                    : 'Discharge diagnosis'
-                }
-              ]
+                  display: d.isPrimary ? 'Admission diagnosis' : 'Discharge diagnosis',
+                },
+              ],
             },
-            rank: index + 1
+            rank: index + 1,
           }))
         : undefined,
-    partOf: encounter.episodeId
-      ? { reference: `EpisodeOfCare/${encounter.episodeId}` }
-      : undefined
+    partOf: encounter.episodeId ? { reference: `EpisodeOfCare/${encounter.episodeId}` } : undefined,
   };
 }
 
@@ -238,18 +226,18 @@ export function mapCondition(condition: ConditionLike): FhirCondition {
         {
           system: TERMINOLOGY_CONDITION_CLINICAL,
           code: 'active',
-          display: 'Active'
-        }
-      ]
+          display: 'Active',
+        },
+      ],
     },
     verificationStatus: {
       coding: [
         {
           system: TERMINOLOGY_CONDITION_VER_STATUS,
           code: mapVerificationStatus(condition.diagnosisType),
-          display: condition.diagnosisType
-        }
-      ]
+          display: condition.diagnosisType,
+        },
+      ],
     },
     category: [
       {
@@ -257,28 +245,29 @@ export function mapCondition(condition: ConditionLike): FhirCondition {
           {
             system: `${MEDCRM_SYSTEM_BASE}/fhir/CodeSystem/condition-category`,
             code: condition.isPrimary ? 'primary' : 'secondary',
-            display: condition.isPrimary ? 'Primary diagnosis' : 'Secondary diagnosis'
-          }
-        ]
-      }
+            display: condition.isPrimary ? 'Primary diagnosis' : 'Secondary diagnosis',
+          },
+        ],
+      },
     ],
     code: {
       coding: [
         {
-          system: codeSystem === 'ICD-11'
-            ? 'http://id.who.int/icd/release/11/mms'
-            : 'http://hl7.org/fhir/sid/icd-10',
+          system:
+            codeSystem === 'ICD-11'
+              ? 'http://id.who.int/icd/release/11/mms'
+              : 'http://hl7.org/fhir/sid/icd-10',
           code: condition.diagnosisCode,
-          display: condition.display ?? undefined
-        }
+          display: condition.display ?? undefined,
+        },
       ],
-      text: condition.display ?? undefined
+      text: condition.display ?? undefined,
     },
     subject: { reference: `Patient/${condition.patientId}` },
     encounter: { reference: `Encounter/${condition.encounterId}` },
     recordedDate: condition.createdAt.toISOString(),
     recorder: { reference: `Practitioner/${condition.createdBy}` },
-    note: condition.notes ? [{ text: condition.notes }] : undefined
+    note: condition.notes ? [{ text: condition.notes }] : undefined,
   };
 }
 
@@ -317,27 +306,23 @@ export type MedicationRequestLike = {
   }>;
 };
 
-export function mapMedicationRequest(
-  prescription: MedicationRequestLike
-): FhirMedicationRequest {
+export function mapMedicationRequest(prescription: MedicationRequestLike): FhirMedicationRequest {
   const firstItem = prescription.items[0];
 
   const dosageInstruction = prescription.items.map((item) => ({
     text: buildDosageText(item),
     route: item.route ? { text: item.route } : undefined,
-    timing: item.frequency
-      ? { code: { text: item.frequency } }
-      : undefined,
+    timing: item.frequency ? { code: { text: item.frequency } } : undefined,
     doseAndRate: item.dosage
       ? [
           {
             doseQuantity: {
               value: parseLeadingNumber(item.dosage),
-              unit: extractUnit(item.dosage) ?? undefined
-            }
-          }
+              unit: extractUnit(item.dosage) ?? undefined,
+            },
+          },
         ]
-      : undefined
+      : undefined,
   }));
 
   return {
@@ -352,10 +337,10 @@ export function mapMedicationRequest(
             {
               system: `${MEDCRM_SYSTEM_BASE}/fhir/CodeSystem/medication`,
               code: firstItem.itemCode,
-              display: firstItem.itemName
-            }
+              display: firstItem.itemName,
+            },
           ],
-          text: firstItem.itemName
+          text: firstItem.itemName,
         }
       : undefined,
     subject: { reference: `Patient/${prescription.patientId}` },
@@ -367,11 +352,11 @@ export function mapMedicationRequest(
       ? {
           quantity: {
             value: Number(firstItem.quantity),
-            unit: 'units'
-          }
+            unit: 'units',
+          },
         }
       : undefined,
-    note: prescription.notes ? [{ text: prescription.notes }] : undefined
+    note: prescription.notes ? [{ text: prescription.notes }] : undefined,
   };
 }
 
@@ -397,9 +382,7 @@ function extractUnit(value: string): string | undefined {
   return match?.[1];
 }
 
-function mapPrescriptionStatus(
-  status: string
-): FhirMedicationRequest['status'] {
+function mapPrescriptionStatus(status: string): FhirMedicationRequest['status'] {
   switch (status) {
     case 'ACTIVE':
       return 'active';
@@ -441,13 +424,12 @@ export function mapObservation(o: ObservationLike): FhirObservation {
       {
         coding: [
           {
-            system:
-              'http://terminology.hl7.org/CodeSystem/observation-category',
+            system: 'http://terminology.hl7.org/CodeSystem/observation-category',
             code: 'laboratory',
-            display: 'Laboratory'
-          }
-        ]
-      }
+            display: 'Laboratory',
+          },
+        ],
+      },
     ],
     code: {
       coding: [
@@ -456,22 +438,20 @@ export function mapObservation(o: ObservationLike): FhirObservation {
             ? 'http://loinc.org'
             : `${MEDCRM_SYSTEM_BASE}/terminology/observation`,
           code: o.observationCode,
-          display: o.observationName
-        }
+          display: o.observationName,
+        },
       ],
-      text: o.observationName
+      text: o.observationName,
     },
     subject: { reference: `Patient/${o.patientId}` },
-    encounter: o.encounterId
-      ? { reference: `Encounter/${o.encounterId}` }
-      : undefined,
+    encounter: o.encounterId ? { reference: `Encounter/${o.encounterId}` } : undefined,
     effectiveDateTime: o.observedAt.toISOString(),
     valueString: numericValue === undefined ? o.value : undefined,
     valueQuantity:
       numericValue !== undefined
         ? {
             value: numericValue,
-            unit: o.unit ?? undefined
+            unit: o.unit ?? undefined,
           }
         : undefined,
     interpretation: o.abnormalFlag
@@ -481,13 +461,13 @@ export function mapObservation(o: ObservationLike): FhirObservation {
               {
                 system: TERMINOLOGY_OBSERVATION_INTERPRETATION,
                 code: o.abnormalFlag,
-                display: interpretationDisplay(o.abnormalFlag)
-              }
-            ]
-          }
+                display: interpretationDisplay(o.abnormalFlag),
+              },
+            ],
+          },
         ]
       : undefined,
-    referenceRange: o.referenceRange ? [{ text: o.referenceRange }] : undefined
+    referenceRange: o.referenceRange ? [{ text: o.referenceRange }] : undefined,
   };
 }
 
@@ -532,7 +512,7 @@ export function buildBundle(input: BuildBundleInput): FhirBundle {
   const entry: FhirBundleEntry[] = input.resources.map((resource) => ({
     fullUrl: `${base}/${resource.resourceType}/${resource.id}`,
     resource,
-    search: input.type === 'searchset' ? { mode: 'match' } : undefined
+    search: input.type === 'searchset' ? { mode: 'match' } : undefined,
   }));
 
   return {
@@ -542,6 +522,6 @@ export function buildBundle(input: BuildBundleInput): FhirBundle {
     type: input.type,
     timestamp: new Date().toISOString(),
     total: entry.length,
-    entry
+    entry,
   };
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -22,7 +22,7 @@ export function ConfirmDialog({
   cancelLabel = 'Отмена',
   variant = 'danger',
   onConfirm,
-  onCancel
+  onCancel,
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -45,7 +45,11 @@ export function ConfirmDialog({
           <button className="secondary-button" onClick={onCancel} type="button">
             {cancelLabel}
           </button>
-          <button className={`button ${variant === 'danger' ? 'danger-button' : ''}`} onClick={onConfirm} type="button">
+          <button
+            className={`button ${variant === 'danger' ? 'danger-button' : ''}`}
+            onClick={onConfirm}
+            type="button"
+          >
             {confirmLabel}
           </button>
         </div>

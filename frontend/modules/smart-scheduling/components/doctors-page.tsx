@@ -1,10 +1,10 @@
 'use client';
 
 import { CalendarDays, Clock3 } from 'lucide-react';
-import { BootstrapPayload, Doctor } from '@/shared/types/bootstrap';
-import { formatVisitTime } from '@/shared/ui/status';
-import { SkeletonCard } from '@/shared/ui/skeleton';
 import { useAppointments, useDoctors } from '../hooks/use-scheduling';
+import { BootstrapPayload, Doctor } from '@/shared/types/bootstrap';
+import { SkeletonCard } from '@/shared/ui/skeleton';
+import { formatVisitTime } from '@/shared/ui/status';
 
 function initials(name: string) {
   return name
@@ -17,8 +17,11 @@ function initials(name: string) {
 }
 
 function doctorStats(doctor: Doctor, appointments: ReturnType<typeof useAppointments>['data']) {
-  const items = appointments?.items.filter((appointment) => appointment.employeeId === doctor.id) ?? [];
-  const active = items.filter((appointment) => ['CHECKED_IN', 'IN_PROGRESS'].includes(appointment.status)).length;
+  const items =
+    appointments?.items.filter((appointment) => appointment.employeeId === doctor.id) ?? [];
+  const active = items.filter((appointment) =>
+    ['CHECKED_IN', 'IN_PROGRESS'].includes(appointment.status),
+  ).length;
   const completed = items.filter((appointment) => appointment.status === 'COMPLETED').length;
   const next = items.find((appointment) => new Date(appointment.startAt).getTime() >= Date.now());
   const progress = items.length ? Math.round((completed / items.length) * 100) : 0;
@@ -29,7 +32,7 @@ function doctorStats(doctor: Doctor, appointments: ReturnType<typeof useAppointm
     completed,
     remaining: Math.max(items.length - completed, 0),
     next,
-    progress
+    progress,
   };
 }
 
@@ -81,7 +84,9 @@ export function DoctorsPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                 <span className="avatar">{initials(doctor.name)}</span>
                 <div>
                   <strong>{doctor.name}</strong>
-                  <span>{doctor.role} · {doctor.branchName}</span>
+                  <span>
+                    {doctor.role} · {doctor.branchName}
+                  </span>
                 </div>
                 <span className="status-badge status-success">На смене</span>
               </div>

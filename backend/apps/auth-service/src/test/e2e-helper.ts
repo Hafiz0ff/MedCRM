@@ -1,10 +1,10 @@
 import 'reflect-metadata';
-import { Test } from '@nestjs/testing';
+import { PrismaService } from '@core/database/prisma.service';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
 import express from 'express';
 import { AppModule } from '../app.module';
-import { PrismaService } from '@core/database/prisma.service';
 
 export interface TestContext {
   app: INestApplication;
@@ -24,7 +24,9 @@ export async function setupE2eTest(): Promise<TestContext> {
   const app = moduleFixture.createNestApplication();
   app.use(express.json());
   app.use((req: any, res: any, next: any) => {
-    console.log(`[E2E-MIDDLEWARE] ${req.method} ${req.url} | Content-Type: ${req.headers['content-type']}`);
+    console.log(
+      `[E2E-MIDDLEWARE] ${req.method} ${req.url} | Content-Type: ${req.headers['content-type']}`,
+    );
     console.log('[E2E-MIDDLEWARE] body:', req.body);
     next();
   });
@@ -48,8 +50,8 @@ export async function setupE2eTest(): Promise<TestContext> {
     body: JSON.stringify({
       tenantCode: 'demo-clinic',
       email: 'admin@demo.clinic',
-      password: 'Admin123!'
-    })
+      password: 'Admin123!',
+    }),
   });
 
   if (!loginRes.ok) {
@@ -61,14 +63,18 @@ export async function setupE2eTest(): Promise<TestContext> {
 
   // Find tenant, branch, and admin user in DB
   const tenant = await prisma.tenant.findUniqueOrThrow({ where: { code: 'demo-clinic' } });
-  const branch = await prisma.branch.findFirstOrThrow({ where: { tenantId: tenant.id, code: 'main' } });
-  const admin = await prisma.user.findFirstOrThrow({ where: { tenantId: tenant.id, email: 'admin@demo.clinic' } });
+  const branch = await prisma.branch.findFirstOrThrow({
+    where: { tenantId: tenant.id, code: 'main' },
+  });
+  const admin = await prisma.user.findFirstOrThrow({
+    where: { tenantId: tenant.id, email: 'admin@demo.clinic' },
+  });
 
   const authHeaders = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`,
+    Authorization: `Bearer ${accessToken}`,
     'x-tenant-id': tenant.id,
-    'x-branch-id': branch.id
+    'x-branch-id': branch.id,
   };
 
   return {
@@ -78,7 +84,7 @@ export async function setupE2eTest(): Promise<TestContext> {
     authHeaders,
     tenantId: tenant.id,
     branchId: branch.id,
-    adminId: admin.id
+    adminId: admin.id,
   };
 }
 

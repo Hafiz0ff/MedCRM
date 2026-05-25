@@ -1,14 +1,14 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { WorkingScheduleDto, ScheduleExceptionDto } from '../dto/organization-structure.schemas';
 
 @Injectable()
 export class SchedulesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly audit: AuditLoggerService
+    private readonly audit: AuditLoggerService,
   ) {}
 
   // Working Schedules
@@ -19,9 +19,9 @@ export class SchedulesService {
       where: {
         tenantId: user.tenantId,
         entityType,
-        entityId
+        entityId,
       },
-      orderBy: { weekday: 'asc' }
+      orderBy: { weekday: 'asc' },
     });
   }
 
@@ -40,8 +40,8 @@ export class SchedulesService {
         breakEnd: dto.breakEnd,
         recurrenceRule: dto.recurrenceRule,
         timezone: dto.timezone,
-        isActive: dto.isActive
-      }
+        isActive: dto.isActive,
+      },
     });
 
     await this.audit.log({
@@ -50,7 +50,7 @@ export class SchedulesService {
       action: 'schedule.working.created',
       entityType: 'working_schedule',
       entityId: schedule.id,
-      newValuesJson: schedule
+      newValuesJson: schedule,
     });
 
     return schedule;
@@ -58,7 +58,7 @@ export class SchedulesService {
 
   async updateWorkingSchedule(user: AuthenticatedUser, id: string, dto: WorkingScheduleDto) {
     const current = await this.prisma.workingSchedule.findFirst({
-      where: { id, tenantId: user.tenantId }
+      where: { id, tenantId: user.tenantId },
     });
     if (!current) throw new NotFoundException('Schedule not found');
 
@@ -74,8 +74,8 @@ export class SchedulesService {
         breakEnd: dto.breakEnd,
         recurrenceRule: dto.recurrenceRule,
         timezone: dto.timezone,
-        isActive: dto.isActive
-      }
+        isActive: dto.isActive,
+      },
     });
 
     await this.audit.log({
@@ -85,7 +85,7 @@ export class SchedulesService {
       entityType: 'working_schedule',
       entityId: schedule.id,
       oldValuesJson: current,
-      newValuesJson: schedule
+      newValuesJson: schedule,
     });
 
     return schedule;
@@ -93,7 +93,7 @@ export class SchedulesService {
 
   async deleteWorkingSchedule(user: AuthenticatedUser, id: string) {
     const current = await this.prisma.workingSchedule.findFirst({
-      where: { id, tenantId: user.tenantId }
+      where: { id, tenantId: user.tenantId },
     });
     if (!current) throw new NotFoundException('Schedule not found');
 
@@ -106,7 +106,7 @@ export class SchedulesService {
       userId: user.userId,
       action: 'schedule.working.deleted',
       entityType: 'working_schedule',
-      entityId: id
+      entityId: id,
     });
 
     return { success: true };
@@ -120,9 +120,9 @@ export class SchedulesService {
       where: {
         tenantId: user.tenantId,
         entityType,
-        entityId
+        entityId,
       },
-      orderBy: { exceptionDate: 'asc' }
+      orderBy: { exceptionDate: 'asc' },
     });
   }
 
@@ -138,8 +138,8 @@ export class SchedulesService {
         reason: dto.reason,
         startTime: dto.startTime,
         endTime: dto.endTime,
-        isDayOff: dto.isDayOff
-      }
+        isDayOff: dto.isDayOff,
+      },
     });
 
     await this.audit.log({
@@ -148,7 +148,7 @@ export class SchedulesService {
       action: 'schedule.exception.created',
       entityType: 'schedule_exception',
       entityId: exception.id,
-      newValuesJson: exception
+      newValuesJson: exception,
     });
 
     return exception;
@@ -156,7 +156,7 @@ export class SchedulesService {
 
   async updateException(user: AuthenticatedUser, id: string, dto: ScheduleExceptionDto) {
     const current = await this.prisma.scheduleException.findFirst({
-      where: { id, tenantId: user.tenantId }
+      where: { id, tenantId: user.tenantId },
     });
     if (!current) throw new NotFoundException('Exception not found');
 
@@ -169,8 +169,8 @@ export class SchedulesService {
         reason: dto.reason,
         startTime: dto.startTime,
         endTime: dto.endTime,
-        isDayOff: dto.isDayOff
-      }
+        isDayOff: dto.isDayOff,
+      },
     });
 
     await this.audit.log({
@@ -180,7 +180,7 @@ export class SchedulesService {
       entityType: 'schedule_exception',
       entityId: exception.id,
       oldValuesJson: current,
-      newValuesJson: exception
+      newValuesJson: exception,
     });
 
     return exception;
@@ -188,7 +188,7 @@ export class SchedulesService {
 
   async deleteException(user: AuthenticatedUser, id: string) {
     const current = await this.prisma.scheduleException.findFirst({
-      where: { id, tenantId: user.tenantId }
+      where: { id, tenantId: user.tenantId },
     });
     if (!current) throw new NotFoundException('Exception not found');
 
@@ -201,7 +201,7 @@ export class SchedulesService {
       userId: user.userId,
       action: 'schedule.exception.deleted',
       entityType: 'schedule_exception',
-      entityId: id
+      entityId: id,
     });
 
     return { success: true };
@@ -210,25 +210,35 @@ export class SchedulesService {
   // Helpers
   private async assertEntityAccess(user: AuthenticatedUser, entityType: string, entityId: string) {
     if (entityType === 'branch') {
-      const branch = await this.prisma.branch.findFirst({ where: { id: entityId, tenantId: user.tenantId } });
+      const branch = await this.prisma.branch.findFirst({
+        where: { id: entityId, tenantId: user.tenantId },
+      });
       if (!branch) throw new NotFoundException('Branch not found');
       if (!user.branchIds.includes(entityId)) throw new ForbiddenException('Branch access denied');
     } else if (entityType === 'room') {
-      const room = await this.prisma.room.findFirst({ where: { id: entityId, tenantId: user.tenantId } });
+      const room = await this.prisma.room.findFirst({
+        where: { id: entityId, tenantId: user.tenantId },
+      });
       if (!room) throw new NotFoundException('Room not found');
-      if (!user.branchIds.includes(room.branchId)) throw new ForbiddenException('Room access denied');
+      if (!user.branchIds.includes(room.branchId))
+        throw new ForbiddenException('Room access denied');
     } else if (entityType === 'employee') {
       const employee = await this.prisma.employee.findFirst({
         where: { id: entityId, tenantId: user.tenantId },
-        include: { positions: true }
+        include: { positions: true },
       });
       if (!employee) throw new NotFoundException('Employee not found');
-      const hasAccess = employee.positions.length === 0 || employee.positions.some(pos => user.branchIds.includes(pos.branchId));
+      const hasAccess =
+        employee.positions.length === 0 ||
+        employee.positions.some((pos) => user.branchIds.includes(pos.branchId));
       if (!hasAccess) throw new ForbiddenException('Employee access denied');
     } else if (entityType === 'equipment') {
-      const equipment = await this.prisma.equipment.findFirst({ where: { id: entityId, tenantId: user.tenantId } });
+      const equipment = await this.prisma.equipment.findFirst({
+        where: { id: entityId, tenantId: user.tenantId },
+      });
       if (!equipment) throw new NotFoundException('Equipment not found');
-      if (!user.branchIds.includes(equipment.branchId)) throw new ForbiddenException('Equipment access denied');
+      if (!user.branchIds.includes(equipment.branchId))
+        throw new ForbiddenException('Equipment access denied');
     } else {
       throw new Error('Invalid entity type');
     }

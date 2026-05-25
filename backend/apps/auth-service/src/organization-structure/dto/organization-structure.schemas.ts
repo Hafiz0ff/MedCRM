@@ -5,7 +5,7 @@ export const SpecialtySchema = z.object({
   code: z.string().min(2).max(120),
   name: z.string().min(2).max(255),
   internationalCode: z.string().max(80).optional().nullable(),
-  isSystem: z.boolean().optional().default(false)
+  isSystem: z.boolean().optional().default(false),
 });
 export type SpecialtyDto = z.infer<typeof SpecialtySchema>;
 
@@ -16,7 +16,7 @@ export const PositionSchema = z.object({
   description: z.string().optional().nullable(),
   isMedicalStaff: z.boolean().optional().default(true),
   isSystem: z.boolean().optional().default(false),
-  isActive: z.boolean().optional().default(true)
+  isActive: z.boolean().optional().default(true),
 });
 export type PositionDto = z.infer<typeof PositionSchema>;
 
@@ -25,7 +25,7 @@ export const RoomTypeSchema = z.object({
   code: z.string().min(2).max(120),
   name: z.string().min(2).max(255),
   color: z.string().max(40).optional().nullable(),
-  isSystem: z.boolean().optional().default(false)
+  isSystem: z.boolean().optional().default(false),
 });
 export type RoomTypeDto = z.infer<typeof RoomTypeSchema>;
 
@@ -33,7 +33,7 @@ export type RoomTypeDto = z.infer<typeof RoomTypeSchema>;
 export const EquipmentCategorySchema = z.object({
   code: z.string().min(2).max(120),
   name: z.string().min(2).max(255),
-  isSystem: z.boolean().optional().default(false)
+  isSystem: z.boolean().optional().default(false),
 });
 export type EquipmentCategoryDto = z.infer<typeof EquipmentCategorySchema>;
 
@@ -45,7 +45,7 @@ export const BranchSchema = z.object({
   phone: z.string().max(60).optional().nullable(),
   timezone: z.string().max(80).default('Europe/Moscow'),
   workingHoursJson: z.any().optional(),
-  isActive: z.boolean().optional().default(true)
+  isActive: z.boolean().optional().default(true),
 });
 export type BranchDto = z.infer<typeof BranchSchema>;
 
@@ -57,7 +57,7 @@ export const DepartmentSchema = z.object({
   name: z.string().min(2).max(255),
   description: z.string().optional().nullable(),
   color: z.string().max(40).optional().nullable(),
-  isActive: z.boolean().optional().default(true)
+  isActive: z.boolean().optional().default(true),
 });
 export type DepartmentDto = z.infer<typeof DepartmentSchema>;
 
@@ -76,7 +76,7 @@ export const EmployeeSchema = z.object({
   dismissalDate: z.string().datetime().or(z.string().date()).optional().nullable(),
   employmentType: z.string().max(60).default('FULL_TIME'),
   photoFileId: z.string().uuid().optional().nullable(),
-  status: z.string().max(40).default('ACTIVE')
+  status: z.string().max(40).default('ACTIVE'),
 });
 export type EmployeeDto = z.infer<typeof EmployeeSchema>;
 
@@ -91,7 +91,7 @@ export const EmployeePositionSchema = z.object({
   workRate: z.string().max(40).default('1.0'),
   isPrimary: z.boolean().optional().default(true),
   activeFrom: z.string().datetime().optional(),
-  activeTo: z.string().datetime().optional().nullable()
+  activeTo: z.string().datetime().optional().nullable(),
 });
 export type EmployeePositionDto = z.infer<typeof EmployeePositionSchema>;
 
@@ -108,7 +108,7 @@ export const RoomSchema = z.object({
   scheduleJson: z.any().optional(),
   status: z.string().max(40).default('ACTIVE'),
   isActive: z.boolean().optional().default(true),
-  specialtyIds: z.array(z.string().uuid()).optional()
+  specialtyIds: z.array(z.string().uuid()).optional(),
 });
 export type RoomDto = z.infer<typeof RoomSchema>;
 
@@ -126,7 +126,7 @@ export const EquipmentSchema = z.object({
   maintenanceDate: z.string().datetime().or(z.string().date()).optional().nullable(),
   calibrationDate: z.string().datetime().or(z.string().date()).optional().nullable(),
   status: z.string().max(40).default('ACTIVE'),
-  isSharedResource: z.boolean().optional().default(false)
+  isSharedResource: z.boolean().optional().default(false),
 });
 export type EquipmentDto = z.infer<typeof EquipmentSchema>;
 
@@ -139,7 +139,7 @@ export const EmployeeRoomAssignmentSchema = z.object({
   specialtyId: z.string().uuid().optional().nullable(),
   activeFrom: z.string().datetime().optional(),
   activeTo: z.string().datetime().optional().nullable(),
-  workScheduleJson: z.any().optional()
+  workScheduleJson: z.any().optional(),
 });
 export type EmployeeRoomAssignmentDto = z.infer<typeof EmployeeRoomAssignmentSchema>;
 
@@ -150,11 +150,19 @@ export const WorkingScheduleSchema = z.object({
   weekday: z.number().int().min(1).max(7),
   startTime: z.string().regex(/^\d{2}:\d{2}$/),
   endTime: z.string().regex(/^\d{2}:\d{2}$/),
-  breakStart: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
-  breakEnd: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
+  breakStart: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional()
+    .nullable(),
+  breakEnd: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional()
+    .nullable(),
   recurrenceRule: z.string().optional().nullable(),
   timezone: z.string().max(80).default('Europe/Moscow'),
-  isActive: z.boolean().optional().default(true)
+  isActive: z.boolean().optional().default(true),
 });
 export type WorkingScheduleDto = z.infer<typeof WorkingScheduleSchema>;
 
@@ -164,8 +172,16 @@ export const ScheduleExceptionSchema = z.object({
   entityId: z.string().uuid(),
   exceptionDate: z.string().datetime().or(z.string().date()),
   reason: z.string().optional().nullable(),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
-  isDayOff: z.boolean().optional().default(false)
+  startTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional()
+    .nullable(),
+  endTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional()
+    .nullable(),
+  isDayOff: z.boolean().optional().default(false),
 });
 export type ScheduleExceptionDto = z.infer<typeof ScheduleExceptionSchema>;

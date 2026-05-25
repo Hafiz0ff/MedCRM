@@ -1,14 +1,23 @@
-import { Body, Controller, Get, Param, Post, Patch, Query, UseGuards, UsePipes } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { RequirePermissions } from '@core/security/permissions.decorator';
 import { RequireModule } from '@core/security/modules.decorator';
+import { RequirePermissions } from '@core/security/permissions.decorator';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Patch,
+  Query,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ModuleEnabledGuard } from '../auth/guards/module-enabled.guard';
 import { RbacGuard } from '../auth/guards/rbac.guard';
-import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
-import { ReceptionService } from './reception.service';
 import {
   CheckInSchema,
   CheckInDto,
@@ -19,8 +28,9 @@ import {
   CreateInvoiceSchema,
   CreateInvoiceDto,
   PayInvoiceSchema,
-  PayInvoiceDto
+  PayInvoiceDto,
 } from './dto/reception.dto';
+import { ReceptionService } from './reception.service';
 
 @ApiTags('reception')
 @ApiBearerAuth()
@@ -35,7 +45,7 @@ export class ReceptionController {
   getDashboard(
     @CurrentUser() user: AuthenticatedUser,
     @Query('branchId') branchId?: string,
-    @Query('date') date?: string
+    @Query('date') date?: string,
   ) {
     return this.reception.getDashboard(user, branchId, date);
   }
@@ -45,7 +55,7 @@ export class ReceptionController {
   recalculateDashboard(
     @CurrentUser() user: AuthenticatedUser,
     @Body('branchId') branchId: string,
-    @Body('date') date: string
+    @Body('date') date: string,
   ) {
     return this.reception.recalculateDashboard(user.tenantId, branchId, date);
   }
@@ -63,7 +73,7 @@ export class ReceptionController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
     @Body('status') status: string,
-    @Body('reason') reason?: string
+    @Body('reason') reason?: string,
   ) {
     return this.reception.transitionVisit(user, id, status, reason);
   }
@@ -80,7 +90,7 @@ export class ReceptionController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
     @Body('status') status: string,
-    @Body('reason') reason?: string
+    @Body('reason') reason?: string,
   ) {
     return this.reception.updateQueueStatus(user, id, status, reason);
   }
@@ -90,7 +100,7 @@ export class ReceptionController {
   updateQueuePriority(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body('priority') priority: string
+    @Body('priority') priority: string,
   ) {
     return this.reception.updateQueuePriority(user, id, priority);
   }
@@ -134,7 +144,7 @@ export class ReceptionController {
   payInvoice(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() dto: PayInvoiceDto
+    @Body() dto: PayInvoiceDto,
   ) {
     return this.reception.payInvoice(user, id, dto);
   }

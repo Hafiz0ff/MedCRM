@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   CalendarPlus,
@@ -10,21 +9,22 @@ import {
   ChevronRight,
   AlertTriangle,
 } from 'lucide-react';
-import { BootstrapPayload } from '@/shared/types/bootstrap';
-import type { Appointment } from '@/shared/types/bootstrap';
-import { getRealtimeSocket } from '@/shared/realtime/socket';
-import { formatVisitTime, statusLabel, statusTone } from '@/shared/ui/status';
-import { DatePicker } from '@/shared/ui/date-picker';
-import { useToast } from '@/shared/ui/toast';
-import { CreateAppointmentForm } from './create-appointment-form';
-import { WeekView } from './week-view';
-import { RoomUtilizationPanel } from './room-utilization-panel';
+import { useEffect, useState } from 'react';
 import {
   useAppointments,
   useTransitionAppointment,
   useReschedule,
-  useDoctors
+  useDoctors,
 } from '../hooks/use-scheduling';
+import { CreateAppointmentForm } from './create-appointment-form';
+import { RoomUtilizationPanel } from './room-utilization-panel';
+import { WeekView } from './week-view';
+import { getRealtimeSocket } from '@/shared/realtime/socket';
+import { BootstrapPayload } from '@/shared/types/bootstrap';
+import type { Appointment } from '@/shared/types/bootstrap';
+import { DatePicker } from '@/shared/ui/date-picker';
+import { formatVisitTime, statusLabel, statusTone } from '@/shared/ui/status';
+import { useToast } from '@/shared/ui/toast';
 
 export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
   const branchId = bootstrap.branches[0]?.id;
@@ -104,18 +104,19 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
 
   // Find if slot has overlapping (conflicting) appointments
   const getSlotAppointments = (doctorId: string, timeHour: string) => {
-    const apps = appointments.data?.items.filter((item) => {
-      if (item.employeeId !== doctorId) return false;
-      const appStart = new Date(item.startAt);
-      const [h, m] = timeHour.split(':');
-      const slotTime = new Date(selectedDate);
-      slotTime.setHours(Number(h), Number(m), 0, 0);
-      const slotTimeEnd = new Date(slotTime.getTime() + 30 * 60000); // 30 mins slot duration
+    const apps =
+      appointments.data?.items.filter((item) => {
+        if (item.employeeId !== doctorId) return false;
+        const appStart = new Date(item.startAt);
+        const [h, m] = timeHour.split(':');
+        const slotTime = new Date(selectedDate);
+        slotTime.setHours(Number(h), Number(m), 0, 0);
+        const slotTimeEnd = new Date(slotTime.getTime() + 30 * 60000); // 30 mins slot duration
 
-      // Matches if app starts inside slot, or spans across it
-      const appEnd = new Date(item.endAt);
-      return appStart < slotTimeEnd && appEnd > slotTime;
-    }) ?? [];
+        // Matches if app starts inside slot, or spans across it
+        const appEnd = new Date(item.endAt);
+        return appStart < slotTimeEnd && appEnd > slotTime;
+      }) ?? [];
 
     return apps;
   };
@@ -140,11 +141,24 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
           >
             Сегодня
           </button>
-          <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden' }}>
+          <div
+            style={{
+              display: 'flex',
+              border: '1px solid var(--border)',
+              borderRadius: '8px',
+              overflow: 'hidden',
+            }}
+          >
             <button
               className="ghost-button"
               onClick={() => handleDateOffset(-1)}
-              style={{ padding: '8px 12px', minHeight: 'auto', background: 'var(--surface)', borderRight: '1px solid var(--border)', borderRadius: 0 }}
+              style={{
+                padding: '8px 12px',
+                minHeight: 'auto',
+                background: 'var(--surface)',
+                borderRight: '1px solid var(--border)',
+                borderRadius: 0,
+              }}
               type="button"
               aria-label="Предыдущий день"
             >
@@ -153,7 +167,12 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
             <button
               className="ghost-button"
               onClick={() => handleDateOffset(1)}
-              style={{ padding: '8px 12px', minHeight: 'auto', background: 'var(--surface)', borderRadius: 0 }}
+              style={{
+                padding: '8px 12px',
+                minHeight: 'auto',
+                background: 'var(--surface)',
+                borderRadius: 0,
+              }}
               type="button"
               aria-label="Следующий день"
             >
@@ -162,7 +181,9 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
           </div>
           <button
             className="button"
-            onClick={() => document.getElementById('create-appointment')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() =>
+              document.getElementById('create-appointment')?.scrollIntoView({ behavior: 'smooth' })
+            }
             type="button"
           >
             <CalendarPlus size={17} />
@@ -171,20 +192,54 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
         </div>
       </div>
 
-      <div className="schedule-shell" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', alignItems: 'start' }}>
+      <div
+        className="schedule-shell"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 340px',
+          gap: '24px',
+          alignItems: 'start',
+        }}
+      >
         <section className="content-panel" style={{ overflow: 'hidden' }}>
-          <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid var(--border)', paddingBottom: '12px', marginBottom: '16px' }}>
+          <div
+            className="panel-header"
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '16px',
+              borderBottom: '1px solid var(--border)',
+              paddingBottom: '12px',
+              marginBottom: '16px',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <DatePicker value={selectedDate} onChange={setSelectedDate} />
             </div>
             <div className="segmented" aria-label="Вид календаря">
-              <button className={view === 'day' ? 'active' : ''} onClick={() => setView('day')} type="button">День</button>
-              <button className={view === 'week' ? 'active' : ''} onClick={() => setView('week')} type="button">Неделя</button>
+              <button
+                className={view === 'day' ? 'active' : ''}
+                onClick={() => setView('day')}
+                type="button"
+              >
+                День
+              </button>
+              <button
+                className={view === 'week' ? 'active' : ''}
+                onClick={() => setView('week')}
+                type="button"
+              >
+                Неделя
+              </button>
             </div>
           </div>
 
           {appointments.isLoading ? (
-            <p className="muted" style={{ padding: '20px' }}>Загрузка расписания...</p>
+            <p className="muted" style={{ padding: '20px' }}>
+              Загрузка расписания...
+            </p>
           ) : null}
 
           {view === 'week' ? (
@@ -199,7 +254,7 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                   border: '1px solid var(--border)',
                   borderRadius: '10px',
                   background: 'var(--surface)',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
                 }}
               >
                 {/* Headers */}
@@ -213,7 +268,7 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                     fontWeight: 'bold',
                     fontSize: '12px',
                     color: 'var(--muted)',
-                    textAlign: 'center'
+                    textAlign: 'center',
                   }}
                 >
                   Время
@@ -227,7 +282,7 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                       borderBottom: '1px solid var(--border)',
                       borderRight: '1px solid var(--border)',
                       padding: '12px',
-                      textAlign: 'center'
+                      textAlign: 'center',
                     }}
                   >
                     <strong style={{ fontSize: '13px', display: 'block', color: 'var(--ink)' }}>
@@ -258,7 +313,7 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                         background: isOffHours ? 'var(--surface-soft)' : 'transparent',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
                       }}
                     >
                       {hour}
@@ -284,13 +339,18 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                                 {
                                   id,
                                   newStartAt: targetStart.toISOString(),
-                                  newEndAt: targetEnd.toISOString()
+                                  newEndAt: targetEnd.toISOString(),
                                 },
                                 {
-                                  onSuccess: () => toast('success', 'Перенос успешен', 'Визит перенесен'),
+                                  onSuccess: () =>
+                                    toast('success', 'Перенос успешен', 'Визит перенесен'),
                                   onError: (err: any) =>
-                                    toast('error', 'Ошибка переноса', err.message || 'Не удалось перенести визит')
-                                }
+                                    toast(
+                                      'error',
+                                      'Ошибка переноса',
+                                      err.message || 'Не удалось перенести визит',
+                                    ),
+                                },
                               );
                             }
                           }}
@@ -303,7 +363,7 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '4px',
-                            position: 'relative'
+                            position: 'relative',
                           }}
                         >
                           {slotApps.length > 0 ? (
@@ -318,18 +378,36 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                                 style={{
                                   padding: '6px 8px',
                                   borderRadius: '6px',
-                                  border: hasConflict ? '1px solid var(--danger)' : '1px solid var(--line)',
-                                  background: hasConflict ? 'rgba(239, 68, 68, 0.08)' : 'var(--surface)',
+                                  border: hasConflict
+                                    ? '1px solid var(--danger)'
+                                    : '1px solid var(--line)',
+                                  background: hasConflict
+                                    ? 'rgba(239, 68, 68, 0.08)'
+                                    : 'var(--surface)',
                                   boxShadow: 'var(--shadow-sm)',
                                   fontSize: '11px',
                                   cursor: 'grab',
                                   display: 'flex',
                                   flexDirection: 'column',
-                                  gap: '2px'
+                                  gap: '2px',
                                 }}
                               >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
-                                  <strong style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', color: 'var(--ink)' }}>
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}
+                                >
+                                  <strong
+                                    style={{
+                                      textOverflow: 'ellipsis',
+                                      overflow: 'hidden',
+                                      whiteSpace: 'nowrap',
+                                      color: 'var(--ink)',
+                                    }}
+                                  >
                                     {appointment.patient.fullName}
                                   </strong>
                                   <span style={{ fontSize: '9px', fontWeight: 'bold' }}>
@@ -339,12 +417,33 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                                 <span className="muted" style={{ fontSize: '10px' }}>
                                   {appointment.service?.name ?? 'Без услуги'}
                                 </span>
-                                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginTop: '2px' }}>
-                                  <span className={`status-badge status-${statusTone(appointment.status)}`} style={{ fontSize: '8px', padding: '1px 4px', minHeight: '14px' }}>
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    gap: '4px',
+                                    alignItems: 'center',
+                                    marginTop: '2px',
+                                  }}
+                                >
+                                  <span
+                                    className={`status-badge status-${statusTone(appointment.status)}`}
+                                    style={{
+                                      fontSize: '8px',
+                                      padding: '1px 4px',
+                                      minHeight: '14px',
+                                    }}
+                                  >
                                     {statusLabel(appointment.status)}
                                   </span>
                                   {hasConflict && (
-                                    <span style={{ color: 'var(--danger)', display: 'inline-flex', alignItems: 'center' }} title="Конфликт кабинета или врача">
+                                    <span
+                                      style={{
+                                        color: 'var(--danger)',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                      }}
+                                      title="Конфликт кабинета или врача"
+                                    >
                                       <AlertTriangle size={10} />
                                     </span>
                                   )}
@@ -360,14 +459,14 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                                 height: '100%',
                                 minHeight: '44px',
                                 borderRadius: '4px',
-                                border: '1px dashed transparent',
+                                border: '1px dashed var(--line)',
                                 display: 'grid',
                                 placeItems: 'center',
                                 padding: 0,
                                 fontSize: '11px',
-                                color: 'transparent',
+                                color: 'var(--muted)',
                                 cursor: 'pointer',
-                                transition: 'all 0.15s ease'
+                                transition: 'all 0.15s ease',
                               }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.borderColor = 'var(--line-strong)';
@@ -375,8 +474,8 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                                 e.currentTarget.style.background = 'var(--surface-soft)';
                               }}
                               onMouseLeave={(e) => {
-                                e.currentTarget.style.borderColor = 'transparent';
-                                e.currentTarget.style.color = 'transparent';
+                                e.currentTarget.style.borderColor = 'var(--line)';
+                                e.currentTarget.style.color = 'var(--muted)';
                                 e.currentTarget.style.background = 'transparent';
                               }}
                               type="button"
@@ -386,7 +485,7 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                           )}
                         </div>
                       );
-                    })
+                    }),
                   ];
                 })}
               </div>
@@ -409,7 +508,10 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                   <p className="muted">Быстрые действия доступны без открытия карточки.</p>
                 </div>
               </div>
-              <div className="list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div
+                className="list"
+                style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+              >
                 {appointments.data.items.map((appointment) => (
                   <div
                     className="row"
@@ -421,31 +523,54 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                       padding: '10px 14px',
                       border: '1px solid var(--border)',
                       borderRadius: '8px',
-                      background: 'var(--surface)'
+                      background: 'var(--surface)',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
                       <strong>
-                        <Clock3 size={14} style={{ inlineSize: '14px', marginInlineEnd: '6px', verticalAlign: 'middle' }} />
+                        <Clock3
+                          size={14}
+                          style={{
+                            inlineSize: '14px',
+                            marginInlineEnd: '6px',
+                            verticalAlign: 'middle',
+                          }}
+                        />
                         {formatVisitTime(appointment.startAt)} · {appointment.patient.fullName}
                       </strong>
                       <span className={`status-badge status-${statusTone(appointment.status)}`}>
                         {statusLabel(appointment.status)}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
                       <span className="muted" style={{ fontSize: '12px' }}>
-                        {appointment.service?.name ?? 'Без услуги'} · {appointment.appointmentNumber}
+                        {appointment.service?.name ?? 'Без услуги'} ·{' '}
+                        {appointment.appointmentNumber}
                       </span>
                       <div className="inline-actions" style={{ gap: '6px' }}>
                         {appointment.status === 'SCHEDULED' && (
                           <button
                             className="secondary-button"
                             onClick={() =>
-                              transition.mutate({ id: appointment.id, action: 'confirm' }, {
-                                onSuccess: () => toast('success', 'Подтверждено'),
-                                onError: () => toast('error', 'Ошибка')
-                              })
+                              transition.mutate(
+                                { id: appointment.id, action: 'confirm' },
+                                {
+                                  onSuccess: () => toast('success', 'Подтверждено'),
+                                  onError: () => toast('error', 'Ошибка'),
+                                },
+                              )
                             }
                             style={{ padding: '3px 8px', fontSize: '11px', minHeight: 'auto' }}
                             type="button"
@@ -457,10 +582,13 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                           <button
                             className="secondary-button"
                             onClick={() =>
-                              transition.mutate({ id: appointment.id, action: 'check-in' }, {
-                                onSuccess: () => toast('success', 'Прибыл'),
-                                onError: () => toast('error', 'Ошибка')
-                              })
+                              transition.mutate(
+                                { id: appointment.id, action: 'check-in' },
+                                {
+                                  onSuccess: () => toast('success', 'Прибыл'),
+                                  onError: () => toast('error', 'Ошибка'),
+                                },
+                              )
                             }
                             style={{ padding: '3px 8px', fontSize: '11px', minHeight: 'auto' }}
                             type="button"
@@ -468,21 +596,30 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                             Отметить приход
                           </button>
                         )}
-                        {appointment.status !== 'CANCELLED' && appointment.status !== 'COMPLETED' && (
-                          <button
-                            className="secondary-button"
-                            onClick={() =>
-                              transition.mutate({ id: appointment.id, action: 'cancel' }, {
-                                onSuccess: () => toast('success', 'Отменено'),
-                                onError: () => toast('error', 'Ошибка')
-                              })
-                            }
-                            style={{ padding: '3px 8px', fontSize: '11px', minHeight: 'auto', color: 'var(--danger)' }}
-                            type="button"
-                          >
-                            Отменить
-                          </button>
-                        )}
+                        {appointment.status !== 'CANCELLED' &&
+                          appointment.status !== 'COMPLETED' && (
+                            <button
+                              className="secondary-button"
+                              onClick={() =>
+                                transition.mutate(
+                                  { id: appointment.id, action: 'cancel' },
+                                  {
+                                    onSuccess: () => toast('success', 'Отменено'),
+                                    onError: () => toast('error', 'Ошибка'),
+                                  },
+                                )
+                              }
+                              style={{
+                                padding: '3px 8px',
+                                fontSize: '11px',
+                                minHeight: 'auto',
+                                color: 'var(--danger)',
+                              }}
+                              type="button"
+                            >
+                              Отменить
+                            </button>
+                          )}
                       </div>
                     </div>
                   </div>

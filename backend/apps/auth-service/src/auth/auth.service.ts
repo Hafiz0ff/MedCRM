@@ -1,15 +1,15 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { randomBytes, randomUUID, randomInt } from 'node:crypto';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { REDIS_CLIENT } from '@core/cache/redis.module';
+import { PrismaService } from '@core/database/prisma.service';
+import { AuthenticatedUser, JwtAccessPayload } from '@core/security/jwt-payload';
+import { Inject, Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { Response } from 'express';
 import Redis from 'ioredis';
-import { randomBytes, randomUUID } from 'node:crypto';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
-import { REDIS_CLIENT } from '@core/cache/redis.module';
-import { PrismaService } from '@core/database/prisma.service';
-import { AuthenticatedUser, JwtAccessPayload } from '@core/security/jwt-payload';
 import { LoginDto } from './dto/login.dto';
 import { MfaConfirmDto, MfaVerifyDto } from './dto/mfa.dto';
 import { generateSecret, verifyTOTP } from './utils/totp';
@@ -57,7 +57,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly audit: AuditLoggerService,
-    @Inject(REDIS_CLIENT) private readonly redis: Redis
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
   async login(dto: LoginDto, metadata: RequestMetadata): Promise<TokenResult> {
@@ -73,14 +73,14 @@ export class AuthService {
           where: {
             tenantId: tenant.id,
             activeTo: null,
-            ...(dto.branchId ? { branchId: dto.branchId } : {})
+            ...(dto.branchId ? { branchId: dto.branchId } : {}),
           },
           include: {
             branch: true,
-            role: { include: { permissions: { include: { permission: true } } } }
-          }
-        }
-      }
+            role: { include: { permissions: { include: { permission: true } } } },
+          },
+        },
+      },
     });
 
     if (!user || user.status !== 'active') {
@@ -88,7 +88,7 @@ export class AuthService {
         tenantId: tenant.id,
         action: 'auth.login.failed',
         ipAddress: metadata.ipAddress,
-        userAgent: this.userAgent(metadata)
+        userAgent: this.userAgent(metadata),
       });
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -100,13 +100,13 @@ export class AuthService {
         userId: user.id,
         action: 'auth.login.failed',
         ipAddress: metadata.ipAddress,
-        userAgent: this.userAgent(metadata)
+        userAgent: this.userAgent(metadata),
       });
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const twoFactor = await this.prisma.user2faSettings.findUnique({
-      where: { userId: user.id }
+      where: { userId: user.id },
     });
 
     if (twoFactor && twoFactor.isEnabled) {
@@ -115,12 +115,12 @@ export class AuthService {
           sub: user.id,
           tenant_id: tenant.id,
           branch_id: dto.branchId,
-          is_mfa_pending: true
+          is_mfa_pending: true,
         },
         {
           secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
-          expiresIn: '5m'
-        }
+          expiresIn: '5m',
+        },
       );
 
       await this.audit.log({
@@ -128,7 +128,7 @@ export class AuthService {
         userId: user.id,
         action: 'auth.2fa.required',
         ipAddress: metadata.ipAddress,
-        userAgent: this.userAgent(metadata)
+        userAgent: this.userAgent(metadata),
       });
 
       return { mfaRequired: true, mfaToken };
@@ -141,7 +141,7 @@ export class AuthService {
       sub: user.id,
       tenant_id: tenant.id,
       session_id: sessionId,
-      fingerprint
+      fingerprint,
     });
     const accessToken = await this.signAccessToken({
       sub: user.id,
@@ -149,7 +149,7 @@ export class AuthService {
       branch_ids: context.branchIds,
       role_ids: context.roleIds,
       permissions: context.permissions,
-      session_id: sessionId
+      session_id: sessionId,
     });
 
     await this.prisma.userSession.create({
@@ -162,8 +162,8 @@ export class AuthService {
         userAgent: this.userAgent(metadata),
         deviceName: dto.deviceName,
         tokenFingerprint: fingerprint,
-        expiresAt: new Date(Date.now() + SESSION_SECONDS * 1000)
-      }
+        expiresAt: new Date(Date.now() + SESSION_SECONDS * 1000),
+      },
     });
 
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
@@ -173,10 +173,14 @@ export class AuthService {
       userId: user.id,
       action: 'auth.login.success',
       ipAddress: metadata.ipAddress,
-      userAgent: this.userAgent(metadata)
+      userAgent: this.userAgent(metadata),
     });
 
-    return { accessToken, refreshToken, bootstrap: await this.bootstrapFromIds(user.id, tenant.id, context) };
+    return {
+      accessToken,
+      refreshToken,
+      bootstrap: await this.bootstrapFromIds(user.id, tenant.id, context),
+    };
   }
 
   async refresh(refreshToken: string | undefined, metadata: RequestMetadata): Promise<TokenResult> {
@@ -187,7 +191,7 @@ export class AuthService {
     let payload: RefreshPayload;
     try {
       payload = await this.jwt.verifyAsync<RefreshPayload>(refreshToken, {
-        secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET')
+        secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET'),
       });
     } catch {
       throw new UnauthorizedException('Refresh token is invalid');
@@ -195,7 +199,7 @@ export class AuthService {
 
     const session = await this.prisma.userSession.findUnique({
       where: { id: payload.session_id },
-      include: { user: true, tenant: true }
+      include: { user: true, tenant: true },
     });
 
     if (!session || session.revokedAt || session.expiresAt <= new Date()) {
@@ -214,7 +218,7 @@ export class AuthService {
       sub: session.userId,
       tenant_id: session.tenantId,
       session_id: session.id,
-      fingerprint: nextFingerprint
+      fingerprint: nextFingerprint,
     });
     const nextAccessToken = await this.signAccessToken({
       sub: session.userId,
@@ -222,7 +226,7 @@ export class AuthService {
       branch_ids: context.branchIds,
       role_ids: context.roleIds,
       permissions: context.permissions,
-      session_id: session.id
+      session_id: session.id,
     });
 
     await this.prisma.userSession.update({
@@ -232,15 +236,15 @@ export class AuthService {
         tokenFingerprint: nextFingerprint,
         ipAddress: metadata.ipAddress,
         userAgent: this.userAgent(metadata),
-        lastActivityAt: new Date()
-      }
+        lastActivityAt: new Date(),
+      },
     });
     await this.cacheSession(session.id, session.tenantId, session.userId, nextFingerprint);
 
     return {
       accessToken: nextAccessToken,
       refreshToken: nextRefreshToken,
-      bootstrap: await this.bootstrapFromIds(session.userId, session.tenantId, context)
+      bootstrap: await this.bootstrapFromIds(session.userId, session.tenantId, context),
     };
   }
 
@@ -249,7 +253,7 @@ export class AuthService {
     await this.audit.log({
       tenantId: user.tenantId,
       userId: user.userId,
-      action: 'auth.logout'
+      action: 'auth.logout',
     });
   }
 
@@ -259,8 +263,8 @@ export class AuthService {
         userId: user.userId,
         tenantId: user.tenantId,
         id: { not: user.sessionId },
-        revokedAt: null
-      }
+        revokedAt: null,
+      },
     });
 
     for (const session of sessions) {
@@ -271,12 +275,60 @@ export class AuthService {
       tenantId: user.tenantId,
       userId: user.userId,
       action: 'auth.revoke_all_other_sessions',
-      newValuesJson: { count: sessions.length }
+      newValuesJson: { count: sessions.length },
     });
 
     return { count: sessions.length };
   }
+  async getActiveSessions(user: AuthenticatedUser): Promise<any[]> {
+    return this.prisma.userSession.findMany({
+      where: {
+        userId: user.userId,
+        tenantId: user.tenantId,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        deviceName: true,
+        ipAddress: true,
+        userAgent: true,
+        lastActivityAt: true,
+        createdAt: true,
+      },
+      orderBy: { lastActivityAt: 'desc' },
+    });
+  }
 
+  async revokeSessionById(
+    user: AuthenticatedUser,
+    sessionId: string,
+  ): Promise<{ success: boolean }> {
+    const session = await this.prisma.userSession.findFirst({
+      where: {
+        id: sessionId,
+        userId: user.userId,
+        tenantId: user.tenantId,
+        revokedAt: null,
+      },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Session not found or already revoked');
+    }
+
+    await this.revokeSession(sessionId);
+
+    await this.audit.log({
+      tenantId: user.tenantId,
+      userId: user.userId,
+      action: 'auth.session_revoked',
+      entityType: 'session',
+      entityId: sessionId,
+    });
+
+    return { success: true };
+  }
   async bootstrap(user: AuthenticatedUser, branchId?: string): Promise<BootstrapPayload> {
     const context = await this.buildAuthContext(user.userId, user.tenantId, branchId);
     return this.bootstrapFromIds(user.userId, user.tenantId, context);
@@ -288,7 +340,7 @@ export class AuthService {
       sameSite: 'lax',
       secure: this.config.get<string>('NODE_ENV') === 'production',
       maxAge: SESSION_SECONDS * 1000,
-      path: '/auth/refresh'
+      path: '/auth/refresh',
     });
   }
 
@@ -298,12 +350,12 @@ export class AuthService {
         userId,
         tenantId,
         activeTo: null,
-        ...(branchId ? { branchId } : {})
+        ...(branchId ? { branchId } : {}),
       },
       include: {
         branch: true,
-        role: { include: { permissions: { include: { permission: true } } } }
-      }
+        role: { include: { permissions: { include: { permission: true } } } },
+      },
     });
 
     if (branchRoles.length === 0) {
@@ -312,16 +364,16 @@ export class AuthService {
 
     const activeTenantModules = await this.prisma.tenantModule.findMany({
       where: { tenantId, enabled: true },
-      include: { module: true }
+      include: { module: true },
     });
 
     const coreModules = await this.prisma.systemModule.findMany({
-      where: { isCore: true }
+      where: { isCore: true },
     });
 
     const enabledModuleCodes = new Set([
       ...activeTenantModules.map((tm) => tm.module.code),
-      ...coreModules.map((m) => m.code)
+      ...coreModules.map((m) => m.code),
     ]);
 
     const branchIds = [...new Set(branchRoles.map((item) => item.branchId))];
@@ -331,14 +383,14 @@ export class AuthService {
         branchRoles.flatMap((item) =>
           item.role.permissions
             .filter((rp) => enabledModuleCodes.has(rp.permission.moduleCode))
-            .map((rolePermission) => rolePermission.permission.code)
-        )
-      )
+            .map((rolePermission) => rolePermission.permission.code),
+        ),
+      ),
     ].sort();
     const branches = branchRoles.map((item) => ({
       id: item.branch.id,
       code: item.branch.code,
-      name: item.branch.name
+      name: item.branch.name,
     }));
 
     return { branchIds, roleIds, permissions, branches };
@@ -347,12 +399,12 @@ export class AuthService {
   private async bootstrapFromIds(
     _userId: string,
     tenantId: string,
-    context: Awaited<ReturnType<AuthService['buildAuthContext']>>
+    context: Awaited<ReturnType<AuthService['buildAuthContext']>>,
   ): Promise<BootstrapPayload> {
     const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
     const tenantModules = await this.prisma.tenantModule.findMany({
       where: { tenantId, enabled: true },
-      include: { module: true }
+      include: { module: true },
     });
 
     return {
@@ -361,30 +413,37 @@ export class AuthService {
         code: tenant.code,
         name: tenant.name,
         locale: tenant.defaultLocale,
-        subscriptionPlan: tenant.subscriptionPlan
+        subscriptionPlan: tenant.subscriptionPlan,
       },
       enabledModules: tenantModules.map((item) => item.module.code).sort(),
       permissions: context.permissions,
       branches: context.branches,
-      featureFlags: Object.fromEntries(tenantModules.map((item) => [`${item.module.code}.enabled`, true]))
+      featureFlags: Object.fromEntries(
+        tenantModules.map((item) => [`${item.module.code}.enabled`, true]),
+      ),
     };
   }
 
   private async signAccessToken(payload: JwtAccessPayload): Promise<string> {
     return this.jwt.signAsync(payload, {
       secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
-      expiresIn: this.config.get<string>('JWT_ACCESS_TTL', '15m') as JwtSignOptions['expiresIn']
+      expiresIn: this.config.get<string>('JWT_ACCESS_TTL', '15m') as JwtSignOptions['expiresIn'],
     });
   }
 
   private async signRefreshToken(payload: RefreshPayload): Promise<string> {
     return this.jwt.signAsync(payload, {
       secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.config.get<string>('JWT_REFRESH_TTL', '30d') as JwtSignOptions['expiresIn']
+      expiresIn: this.config.get<string>('JWT_REFRESH_TTL', '30d') as JwtSignOptions['expiresIn'],
     });
   }
 
-  private async cacheSession(sessionId: string, tenantId: string, userId: string, fingerprint: string): Promise<void> {
+  private async cacheSession(
+    sessionId: string,
+    tenantId: string,
+    userId: string,
+    fingerprint: string,
+  ): Promise<void> {
     await this.redis
       .multi()
       .hset(`session:${sessionId}:metadata`, { tenantId, userId })
@@ -397,7 +456,7 @@ export class AuthService {
   private async revokeSession(sessionId: string): Promise<void> {
     await this.prisma.userSession.updateMany({
       where: { id: sessionId, revokedAt: null },
-      data: { revokedAt: new Date() }
+      data: { revokedAt: new Date() },
     });
     await this.redis.set(`session:${sessionId}:revoked`, '1', 'EX', SESSION_SECONDS);
   }
@@ -406,7 +465,7 @@ export class AuthService {
     let payload: { sub: string; tenant_id: string; branch_id?: string; is_mfa_pending?: boolean };
     try {
       payload = await this.jwt.verifyAsync(dto.mfaToken, {
-        secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET')
+        secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
       });
     } catch {
       throw new UnauthorizedException('MFA token is invalid or expired');
@@ -417,23 +476,56 @@ export class AuthService {
     }
 
     const mfaSettings = await this.prisma.user2faSettings.findUnique({
-      where: { userId: payload.sub }
+      where: { userId: payload.sub },
     });
 
     if (!mfaSettings || !mfaSettings.isEnabled) {
       throw new UnauthorizedException('2FA is not enabled for this user');
     }
 
-    const isValid = verifyTOTP(dto.code, mfaSettings.secretHash);
+    let isValid = false;
+    let isBackupCodeUsed = false;
+    let updatedBackupCodes: any = null;
+
+    if (dto.code.length === 8) {
+      const hashedCodes = mfaSettings.backupCodes ? (mfaSettings.backupCodes as string[]) : [];
+      for (let i = 0; i < hashedCodes.length; i++) {
+        const match = await argon2.verify(hashedCodes[i], dto.code);
+        if (match) {
+          isValid = true;
+          isBackupCodeUsed = true;
+          hashedCodes.splice(i, 1);
+          updatedBackupCodes = hashedCodes;
+          break;
+        }
+      }
+    } else {
+      isValid = verifyTOTP(dto.code, mfaSettings.secretHash);
+    }
+
     if (!isValid) {
       await this.audit.log({
         tenantId: payload.tenant_id,
         userId: payload.sub,
-        action: 'auth.2fa.failed',
+        action: isBackupCodeUsed ? 'auth.backup_code.failed' : 'auth.2fa.failed',
         ipAddress: metadata.ipAddress,
-        userAgent: this.userAgent(metadata)
+        userAgent: this.userAgent(metadata),
       });
-      throw new UnauthorizedException('Invalid 2FA code');
+      throw new UnauthorizedException(
+        isBackupCodeUsed ? 'Invalid backup code' : 'Invalid 2FA code',
+      );
+    }
+
+    if (isBackupCodeUsed) {
+      await this.prisma.user2faSettings.update({
+        where: { userId: payload.sub },
+        data: { backupCodes: updatedBackupCodes },
+      });
+      await this.audit.log({
+        tenantId: payload.tenant_id,
+        userId: payload.sub,
+        action: 'auth.backup_code.used',
+      });
     }
 
     const context = await this.buildAuthContext(payload.sub, payload.tenant_id, payload.branch_id);
@@ -443,7 +535,7 @@ export class AuthService {
       sub: payload.sub,
       tenant_id: payload.tenant_id,
       session_id: sessionId,
-      fingerprint
+      fingerprint,
     });
     const accessToken = await this.signAccessToken({
       sub: payload.sub,
@@ -451,7 +543,7 @@ export class AuthService {
       branch_ids: context.branchIds,
       role_ids: context.roleIds,
       permissions: context.permissions,
-      session_id: sessionId
+      session_id: sessionId,
     });
 
     await this.prisma.userSession.create({
@@ -464,21 +556,35 @@ export class AuthService {
         userAgent: this.userAgent(metadata),
         deviceName: dto.deviceName,
         tokenFingerprint: fingerprint,
-        expiresAt: new Date(Date.now() + SESSION_SECONDS * 1000)
-      }
+        expiresAt: new Date(Date.now() + SESSION_SECONDS * 1000),
+      },
     });
 
-    await this.prisma.user.update({ where: { id: payload.sub }, data: { lastLoginAt: new Date() } });
+    await this.prisma.user.update({
+      where: { id: payload.sub },
+      data: { lastLoginAt: new Date() },
+    });
     await this.cacheSession(sessionId, payload.tenant_id, payload.sub, fingerprint);
     await this.audit.log({
       tenantId: payload.tenant_id,
       userId: payload.sub,
       action: 'auth.login.success',
       ipAddress: metadata.ipAddress,
-      userAgent: this.userAgent(metadata)
+      userAgent: this.userAgent(metadata),
     });
 
-    return { accessToken, refreshToken, bootstrap: await this.bootstrapFromIds(payload.sub, payload.tenant_id, context) };
+    return {
+      accessToken,
+      refreshToken,
+      bootstrap: await this.bootstrapFromIds(payload.sub, payload.tenant_id, context),
+    };
+  }
+
+  async getMfaStatus(user: AuthenticatedUser): Promise<{ isEnabled: boolean }> {
+    const settings = await this.prisma.user2faSettings.findUnique({
+      where: { userId: user.userId },
+    });
+    return { isEnabled: settings?.isEnabled ?? false };
   }
 
   async enableMfa(user: AuthenticatedUser): Promise<{ secret: string; qrCodeUri: string }> {
@@ -490,27 +596,30 @@ export class AuthService {
       where: { userId: user.userId },
       update: {
         secretHash: secret,
-        isEnabled: false
+        isEnabled: false,
       },
       create: {
         userId: user.userId,
         secretHash: secret,
-        isEnabled: false
-      }
+        isEnabled: false,
+      },
     });
 
     await this.audit.log({
       tenantId: user.tenantId,
       userId: user.userId,
-      action: 'auth.2fa.setup_initiated'
+      action: 'auth.2fa.setup_initiated',
     });
 
     return { secret, qrCodeUri };
   }
 
-  async confirmMfa(user: AuthenticatedUser, dto: MfaConfirmDto): Promise<{ success: boolean }> {
+  async confirmMfa(
+    user: AuthenticatedUser,
+    dto: MfaConfirmDto,
+  ): Promise<{ success: boolean; backupCodes: string[] }> {
     const mfaSettings = await this.prisma.user2faSettings.findUnique({
-      where: { userId: user.userId }
+      where: { userId: user.userId },
     });
 
     if (!mfaSettings) {
@@ -522,23 +631,34 @@ export class AuthService {
       throw new UnauthorizedException('Invalid 2FA code');
     }
 
+    const plaintextBackupCodes: string[] = [];
+    const hashedBackupCodes: string[] = [];
+    for (let i = 0; i < 10; i++) {
+      const code = String(randomInt(10000000, 99999999));
+      plaintextBackupCodes.push(code);
+      hashedBackupCodes.push(await argon2.hash(code));
+    }
+
     await this.prisma.user2faSettings.update({
       where: { userId: user.userId },
-      data: { isEnabled: true }
+      data: {
+        isEnabled: true,
+        backupCodes: hashedBackupCodes,
+      },
     });
 
     await this.audit.log({
       tenantId: user.tenantId,
       userId: user.userId,
-      action: 'auth.2fa.enabled'
+      action: 'auth.2fa.enabled',
     });
 
-    return { success: true };
+    return { success: true, backupCodes: plaintextBackupCodes };
   }
 
   async disableMfa(user: AuthenticatedUser, dto: MfaConfirmDto): Promise<{ success: boolean }> {
     const mfaSettings = await this.prisma.user2faSettings.findUnique({
-      where: { userId: user.userId }
+      where: { userId: user.userId },
     });
 
     if (!mfaSettings || !mfaSettings.isEnabled) {
@@ -551,13 +671,13 @@ export class AuthService {
     }
 
     await this.prisma.user2faSettings.delete({
-      where: { userId: user.userId }
+      where: { userId: user.userId },
     });
 
     await this.audit.log({
       tenantId: user.tenantId,
       userId: user.userId,
-      action: 'auth.2fa.disabled'
+      action: 'auth.2fa.disabled',
     });
 
     return { success: true };

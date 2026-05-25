@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InventoryService } from '../inventory-warehouse/inventory.service';
 import {
   UpdateMedicalRecordDto,
@@ -13,7 +18,7 @@ import {
   AmendEncounterDto,
   CreateClinicalTemplateDto,
   AssignDiagnosisDto,
-  CreatePrescriptionDto
+  CreatePrescriptionDto,
 } from './dto/emr.dto';
 
 @Injectable()
@@ -21,18 +26,18 @@ export class EmrService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditLoggerService,
-    private readonly inventory: InventoryService
+    private readonly inventory: InventoryService,
   ) {}
 
   async getOrCreateMedicalRecord(user: AuthenticatedUser, patientId: string) {
     const patient = await this.prisma.patient.findUnique({
-      where: { id: patientId }
+      where: { id: patientId },
     });
     if (!patient) throw new NotFoundException('Пациент не найден');
     if (patient.tenantId !== user.tenantId) throw new ForbiddenException();
 
     let record = await this.prisma.medicalRecord.findUnique({
-      where: { patientId }
+      where: { patientId },
     });
 
     if (!record) {
@@ -44,8 +49,8 @@ export class EmrService {
           medicalRecordNumber,
           allergiesJson: [],
           chronicConditionsJson: [],
-          emergencyContactsJson: []
-        }
+          emergencyContactsJson: [],
+        },
       });
 
       await this.audit.log({
@@ -54,24 +59,35 @@ export class EmrService {
         action: 'medical_record.created',
         entityType: 'medical_record',
         entityId: record.id,
-        newValuesJson: record
+        newValuesJson: record,
       });
     }
 
     return record;
   }
 
-  async updateMedicalRecord(user: AuthenticatedUser, patientId: string, dto: UpdateMedicalRecordDto) {
+  async updateMedicalRecord(
+    user: AuthenticatedUser,
+    patientId: string,
+    dto: UpdateMedicalRecordDto,
+  ) {
     const record = await this.getOrCreateMedicalRecord(user, patientId);
 
     const updated = await this.prisma.medicalRecord.update({
       where: { id: record.id },
       data: {
         bloodType: dto.bloodType !== undefined ? dto.bloodType : record.bloodType,
-        allergiesJson: dto.allergiesJson !== undefined ? dto.allergiesJson : record.allergiesJson ?? undefined,
-        chronicConditionsJson: dto.chronicConditionsJson !== undefined ? dto.chronicConditionsJson : record.chronicConditionsJson ?? undefined,
-        emergencyContactsJson: dto.emergencyContactsJson !== undefined ? dto.emergencyContactsJson : record.emergencyContactsJson ?? undefined
-      }
+        allergiesJson:
+          dto.allergiesJson !== undefined ? dto.allergiesJson : (record.allergiesJson ?? undefined),
+        chronicConditionsJson:
+          dto.chronicConditionsJson !== undefined
+            ? dto.chronicConditionsJson
+            : (record.chronicConditionsJson ?? undefined),
+        emergencyContactsJson:
+          dto.emergencyContactsJson !== undefined
+            ? dto.emergencyContactsJson
+            : (record.emergencyContactsJson ?? undefined),
+      },
     });
 
     await this.audit.log({
@@ -81,7 +97,7 @@ export class EmrService {
       entityType: 'medical_record',
       entityId: record.id,
       oldValuesJson: record,
-      newValuesJson: updated
+      newValuesJson: updated,
     });
 
     return updated;
@@ -89,7 +105,8 @@ export class EmrService {
 
   async createEpisodeOfCare(user: AuthenticatedUser, dto: CreateEpisodeOfCareDto) {
     const patient = await this.prisma.patient.findUnique({ where: { id: dto.patientId } });
-    if (!patient || patient.tenantId !== user.tenantId) throw new NotFoundException('Пациент не найден');
+    if (!patient || patient.tenantId !== user.tenantId)
+      throw new NotFoundException('Пациент не найден');
 
     const episode = await this.prisma.episodeOfCare.create({
       data: {
@@ -102,8 +119,8 @@ export class EmrService {
         startDate: new Date(dto.startDate),
         endDate: dto.endDate ? new Date(dto.endDate) : null,
         clinicalSummary: dto.clinicalSummary,
-        status: 'ACTIVE'
-      }
+        status: 'ACTIVE',
+      },
     });
 
     await this.audit.log({
@@ -112,7 +129,7 @@ export class EmrService {
       action: 'episode_of_care.created',
       entityType: 'episode_of_care',
       entityId: episode.id,
-      newValuesJson: episode
+      newValuesJson: episode,
     });
 
     return episode;
@@ -127,10 +144,19 @@ export class EmrService {
       where: { id },
       data: {
         status: dto.status !== undefined ? dto.status : episode.status,
-        endDate: dto.endDate !== undefined ? (dto.endDate ? new Date(dto.endDate) : null) : episode.endDate,
-        clinicalSummary: dto.clinicalSummary !== undefined ? dto.clinicalSummary : episode.clinicalSummary,
-        responsibleDoctorId: dto.responsibleDoctorId !== undefined ? dto.responsibleDoctorId : episode.responsibleDoctorId
-      }
+        endDate:
+          dto.endDate !== undefined
+            ? dto.endDate
+              ? new Date(dto.endDate)
+              : null
+            : episode.endDate,
+        clinicalSummary:
+          dto.clinicalSummary !== undefined ? dto.clinicalSummary : episode.clinicalSummary,
+        responsibleDoctorId:
+          dto.responsibleDoctorId !== undefined
+            ? dto.responsibleDoctorId
+            : episode.responsibleDoctorId,
+      },
     });
 
     await this.audit.log({
@@ -140,7 +166,7 @@ export class EmrService {
       entityType: 'episode_of_care',
       entityId: id,
       oldValuesJson: episode,
-      newValuesJson: updated
+      newValuesJson: updated,
     });
 
     return updated;
@@ -150,7 +176,7 @@ export class EmrService {
     return this.prisma.episodeOfCare.findMany({
       where: { tenantId: user.tenantId, patientId },
       include: { doctor: true, branch: true },
-      orderBy: { startDate: 'desc' }
+      orderBy: { startDate: 'desc' },
     });
   }
 
@@ -158,7 +184,7 @@ export class EmrService {
     let currentEncounter = null;
     if (encounterId) {
       currentEncounter = await this.prisma.encounter.findUnique({
-        where: { id: encounterId }
+        where: { id: encounterId },
       });
       if (!currentEncounter) throw new NotFoundException('Осмотр не найден');
       if (currentEncounter.tenantId !== user.tenantId) throw new ForbiddenException();
@@ -175,19 +201,19 @@ export class EmrService {
           data: {
             episodeId: dto.episodeId || null,
             departmentId: dto.departmentId || null,
-            encounterType: dto.encounterType
-          }
+            encounterType: dto.encounterType,
+          },
         });
 
         // Clean up child elements if they exist
         const compositions = await tx.clinicalComposition.findMany({
-          where: { encounterId: encounter.id }
+          where: { encounterId: encounter.id },
         });
-        const compIds = compositions.map(c => c.id);
+        const compIds = compositions.map((c) => c.id);
         const sections = await tx.clinicalSection.findMany({
-          where: { compositionId: { in: compIds } }
+          where: { compositionId: { in: compIds } },
         });
-        const sectionIds = sections.map(s => s.id);
+        const sectionIds = sections.map((s) => s.id);
 
         await tx.clinicalElement.deleteMany({ where: { sectionId: { in: sectionIds } } });
         await tx.clinicalSection.deleteMany({ where: { compositionId: { in: compIds } } });
@@ -203,8 +229,8 @@ export class EmrService {
             departmentId: dto.departmentId || null,
             encounterType: dto.encounterType,
             startedAt: new Date(dto.startedAt),
-            status: 'DRAFT'
-          }
+            status: 'DRAFT',
+          },
         });
       }
 
@@ -217,8 +243,8 @@ export class EmrService {
               templateId: comp.templateId || null,
               compositionType: comp.compositionType,
               title: comp.title,
-              status: 'DRAFT'
-            }
+              status: 'DRAFT',
+            },
           });
 
           for (const sec of comp.sections) {
@@ -228,8 +254,8 @@ export class EmrService {
                 compositionId: createdComp.id,
                 sectionCode: sec.sectionCode,
                 sectionName: sec.sectionName,
-                sortOrder: sec.sortOrder
-              }
+                sortOrder: sec.sortOrder,
+              },
             });
 
             for (const elem of sec.elements) {
@@ -241,8 +267,8 @@ export class EmrService {
                   fieldType: elem.fieldType,
                   fieldValueJson: elem.fieldValueJson as any,
                   unit: elem.unit || null,
-                  terminologyCode: elem.terminologyCode || null
-                }
+                  terminologyCode: elem.terminologyCode || null,
+                },
               });
             }
           }
@@ -258,7 +284,7 @@ export class EmrService {
       action: currentEncounter ? 'encounter.updated' : 'encounter.created',
       entityType: 'encounter',
       entityId: result.id,
-      newValuesJson: result
+      newValuesJson: result,
     });
 
     return this.getEncounter(user, result.id);
@@ -272,28 +298,28 @@ export class EmrService {
           include: {
             sections: {
               include: {
-                elements: true
-              }
-            }
-          }
+                elements: true,
+              },
+            },
+          },
         },
         diagnoses: true,
         prescriptions: {
           include: {
             items: {
               include: {
-                linkedService: true
-              }
-            }
-          }
+                linkedService: true,
+              },
+            },
+          },
         },
         labOrders: true,
         procedureOrders: true,
         signatures: true,
         medicalFiles: true,
         patient: true,
-        doctor: true
-      }
+        doctor: true,
+      },
     });
 
     if (!encounter) throw new NotFoundException('Осмотр не найден');
@@ -315,7 +341,7 @@ export class EmrService {
       completedAt: encounter.completedAt,
       compositions: encounter.compositions,
       diagnoses: encounter.diagnoses,
-      prescriptions: encounter.prescriptions
+      prescriptions: encounter.prescriptions,
     };
 
     const serialized = JSON.stringify(snapshot);
@@ -329,8 +355,8 @@ export class EmrService {
           isLocked: true,
           completedAt: new Date(),
           signedAt: new Date(),
-          signedBy: user.userId
-        }
+          signedBy: user.userId,
+        },
       });
 
       await tx.digitalSignature.create({
@@ -342,8 +368,8 @@ export class EmrService {
           signatureHash: dto.signatureHash,
           signedPayloadHash: calculatedHash,
           signatureProvider: dto.signatureProvider,
-          signedAt: new Date()
-        }
+          signedAt: new Date(),
+        },
       });
 
       return updated;
@@ -355,7 +381,7 @@ export class EmrService {
       action: 'encounter.signed',
       entityType: 'encounter',
       entityId: id,
-      newValuesJson: result
+      newValuesJson: result,
     });
 
     if (encounter.appointmentId) {
@@ -363,7 +389,7 @@ export class EmrService {
         user.tenantId,
         encounter.appointmentId,
         id,
-        encounter.departmentId || undefined
+        encounter.departmentId || undefined,
       );
     }
 
@@ -382,7 +408,7 @@ export class EmrService {
       completedAt: encounter.completedAt,
       compositions: encounter.compositions,
       diagnoses: encounter.diagnoses,
-      prescriptions: encounter.prescriptions
+      prescriptions: encounter.prescriptions,
     };
 
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -393,8 +419,8 @@ export class EmrService {
           versionNumber: encounter.currentVersion,
           snapshotJson: snapshot as any,
           amendmentReason: dto.amendmentReason,
-          createdBy: user.userId
-        }
+          createdBy: user.userId,
+        },
       });
 
       return tx.encounter.update({
@@ -404,8 +430,8 @@ export class EmrService {
           isLocked: false, // UNLOCK!
           currentVersion: encounter.currentVersion + 1,
           signedAt: null,
-          signedBy: null
-        }
+          signedBy: null,
+        },
       });
     });
 
@@ -415,7 +441,7 @@ export class EmrService {
       action: 'encounter.amended',
       entityType: 'encounter',
       entityId: id,
-      newValuesJson: updated
+      newValuesJson: updated,
     });
 
     return this.getEncounter(user, id);
@@ -428,7 +454,7 @@ export class EmrService {
 
     return this.prisma.encounterVersion.findMany({
       where: { tenantId: user.tenantId, encounterId: id },
-      orderBy: { versionNumber: 'desc' }
+      orderBy: { versionNumber: 'desc' },
     });
   }
 
@@ -446,8 +472,8 @@ export class EmrService {
         diagnosisType: dto.diagnosisType,
         isPrimary: dto.isPrimary,
         notes: dto.notes,
-        createdBy: user.userId
-      }
+        createdBy: user.userId,
+      },
     });
 
     await this.audit.log({
@@ -456,13 +482,17 @@ export class EmrService {
       action: 'diagnosis.assigned',
       entityType: 'encounter_diagnosis',
       entityId: diagnosis.id,
-      newValuesJson: diagnosis
+      newValuesJson: diagnosis,
     });
 
     return diagnosis;
   }
 
-  async createPrescription(user: AuthenticatedUser, encounterId: string, dto: CreatePrescriptionDto) {
+  async createPrescription(
+    user: AuthenticatedUser,
+    encounterId: string,
+    dto: CreatePrescriptionDto,
+  ) {
     const encounter = await this.prisma.encounter.findUnique({ where: { id: encounterId } });
     if (!encounter) throw new NotFoundException('Осмотр не найден');
     if (encounter.tenantId !== user.tenantId) throw new ForbiddenException();
@@ -477,7 +507,7 @@ export class EmrService {
         notes: dto.notes,
         createdBy: user.userId,
         items: {
-          create: dto.items.map(item => ({
+          create: dto.items.map((item) => ({
             tenantId: user.tenantId,
             itemCode: item.itemCode,
             itemName: item.itemName,
@@ -487,11 +517,11 @@ export class EmrService {
             route: item.route || null,
             quantity: item.quantity !== undefined ? item.quantity : null,
             instructions: item.instructions || null,
-            linkedServiceId: item.linkedServiceId || null
-          }))
-        }
+            linkedServiceId: item.linkedServiceId || null,
+          })),
+        },
       },
-      include: { items: true }
+      include: { items: true },
     });
 
     await this.audit.log({
@@ -500,7 +530,7 @@ export class EmrService {
       action: 'prescription.created',
       entityType: 'prescription',
       entityId: prescription.id,
-      newValuesJson: prescription
+      newValuesJson: prescription,
     });
 
     return prescription;
@@ -512,17 +542,17 @@ export class EmrService {
         isActive: true,
         OR: [
           { code: { contains: query, mode: 'insensitive' } },
-          { nameRu: { contains: query, mode: 'insensitive' } }
-        ]
+          { nameRu: { contains: query, mode: 'insensitive' } },
+        ],
       },
-      take: 20
+      take: 20,
     });
   }
 
   async getClinicalTemplates(user: AuthenticatedUser) {
     return this.prisma.clinicalTemplate.findMany({
       where: { tenantId: user.tenantId, isActive: true },
-      include: { specialty: true }
+      include: { specialty: true },
     });
   }
 
@@ -538,8 +568,8 @@ export class EmrService {
         uiSchemaJson: dto.uiSchemaJson as any,
         createdBy: user.userId,
         isSystem: false,
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     await this.audit.log({
@@ -548,7 +578,7 @@ export class EmrService {
       action: 'clinical_template.created',
       entityType: 'clinical_template',
       entityId: template.id,
-      newValuesJson: template
+      newValuesJson: template,
     });
 
     return template;
@@ -558,42 +588,43 @@ export class EmrService {
   async fhirExportPatient(user: AuthenticatedUser, patientId: string) {
     const patient = await this.prisma.patient.findUnique({
       where: { id: patientId },
-      include: { contacts: true, medicalRecord: true }
+      include: { contacts: true, medicalRecord: true },
     });
-    if (!patient || patient.tenantId !== user.tenantId) throw new NotFoundException('Пациент не найден');
+    if (!patient || patient.tenantId !== user.tenantId)
+      throw new NotFoundException('Пациент не найден');
 
     return {
       resourceType: 'Patient',
       id: patient.id,
       meta: {
-        lastUpdated: patient.updatedAt.toISOString()
+        lastUpdated: patient.updatedAt.toISOString(),
       },
       identifier: [
         {
           system: `http://medcrm.ru/tenant/${user.tenantId}/patient-code`,
-          value: patient.patientCode
-        }
+          value: patient.patientCode,
+        },
       ],
       name: [
         {
           use: 'official',
           family: patient.lastName,
-          given: [patient.firstName, patient.middleName].filter(Boolean)
-        }
+          given: [patient.firstName, patient.middleName].filter(Boolean),
+        },
       ],
-      telecom: patient.contacts.map(c => ({
-        system: c.type === 'PHONE' ? 'phone' : (c.type === 'EMAIL' ? 'email' : 'other'),
+      telecom: patient.contacts.map((c) => ({
+        system: c.type === 'PHONE' ? 'phone' : c.type === 'EMAIL' ? 'email' : 'other',
         value: c.value,
-        use: c.isPrimary ? 'home' : 'work'
+        use: c.isPrimary ? 'home' : 'work',
       })),
       gender: patient.gender ? patient.gender.toLowerCase() : 'unknown',
       birthDate: patient.birthDate ? patient.birthDate.toISOString().slice(0, 10) : null,
       extension: [
         {
           url: 'http://medcrm.ru/fhir/StructureDefinition/blood-type',
-          valueString: patient.medicalRecord?.bloodType || 'Unknown'
-        }
-      ]
+          valueString: patient.medicalRecord?.bloodType || 'Unknown',
+        },
+      ],
     };
   }
 
@@ -607,11 +638,11 @@ export class EmrService {
       class: {
         system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
         code: 'AMB',
-        display: 'ambulatory'
+        display: 'ambulatory',
       },
       subject: {
         reference: `Patient/${enc.patientId}`,
-        display: enc.patient.fullName
+        display: enc.patient.fullName,
       },
       participant: [
         {
@@ -621,49 +652,50 @@ export class EmrService {
                 {
                   system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType',
                   code: 'PPRF',
-                  display: 'primary performer'
-                }
-              ]
-            }
+                  display: 'primary performer',
+                },
+              ],
+            },
           ],
           individual: {
             reference: `Practitioner/${enc.doctorEmployeeId}`,
-            display: `${enc.doctor.lastName} ${enc.doctor.firstName}`
-          }
-        }
+            display: `${enc.doctor.lastName} ${enc.doctor.firstName}`,
+          },
+        },
       ],
       period: {
         start: enc.startedAt.toISOString(),
-        end: enc.completedAt ? enc.completedAt.toISOString() : undefined
+        end: enc.completedAt ? enc.completedAt.toISOString() : undefined,
       },
-      reasonCode: enc.compositions.map(c => ({
-        text: c.title
+      reasonCode: enc.compositions.map((c) => ({
+        text: c.title,
       })),
       diagnosis: enc.diagnoses.map((d, index) => ({
         condition: {
           reference: `Condition/${d.id}`,
-          display: d.diagnosisCode
+          display: d.diagnosisCode,
         },
         use: {
           coding: [
             {
               system: 'http://terminology.hl7.org/CodeSystem/diagnosis-role',
               code: d.isPrimary ? 'AD' : 'DD',
-              display: d.isPrimary ? 'Admission diagnosis' : 'Discharge diagnosis'
-            }
-          ]
+              display: d.isPrimary ? 'Admission diagnosis' : 'Discharge diagnosis',
+            },
+          ],
         },
-        rank: index + 1
-      }))
+        rank: index + 1,
+      })),
     };
   }
 
   async fhirExportObservation(user: AuthenticatedUser, elementId: string) {
     const elem = await this.prisma.clinicalElement.findUnique({
       where: { id: elementId },
-      include: { section: { include: { composition: { include: { encounter: true } } } } }
+      include: { section: { include: { composition: { include: { encounter: true } } } } },
     });
-    if (!elem || elem.tenantId !== user.tenantId) throw new NotFoundException('Клинический элемент не найден');
+    if (!elem || elem.tenantId !== user.tenantId)
+      throw new NotFoundException('Клинический элемент не найден');
 
     return {
       resourceType: 'Observation',
@@ -672,24 +704,29 @@ export class EmrService {
       code: {
         coding: [
           {
-            system: elem.terminologyCode ? 'http://loinc.org' : 'http://medcrm.ru/terminology/local',
+            system: elem.terminologyCode
+              ? 'http://loinc.org'
+              : 'http://medcrm.ru/terminology/local',
             code: elem.terminologyCode || elem.fieldCode,
-            display: elem.fieldCode
-          }
-        ]
+            display: elem.fieldCode,
+          },
+        ],
       },
       subject: {
-        reference: `Patient/${elem.section.composition.encounter.patientId}`
+        reference: `Patient/${elem.section.composition.encounter.patientId}`,
       },
       encounter: {
-        reference: `Encounter/${elem.section.composition.encounterId}`
+        reference: `Encounter/${elem.section.composition.encounterId}`,
       },
       effectiveDateTime: elem.createdAt.toISOString(),
       valueString: elem.fieldType === 'text' ? String(elem.fieldValueJson) : undefined,
-      valueQuantity: elem.fieldType === 'number' ? {
-        value: Number(elem.fieldValueJson),
-        unit: elem.unit || undefined
-      } : undefined
+      valueQuantity:
+        elem.fieldType === 'number'
+          ? {
+              value: Number(elem.fieldValueJson),
+              unit: elem.unit || undefined,
+            }
+          : undefined,
     };
   }
 }

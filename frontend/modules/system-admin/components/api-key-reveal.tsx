@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import { Check, Copy, KeyRound, ShieldAlert } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 export type ApiKeyRevealPayload = {
   providerName: string;
@@ -56,8 +56,8 @@ export function ApiKeyRevealDialog({ payload, onClose }: Props) {
           {payload.reason === 'rotated' ? 'Ключ обновлён' : 'Ключ выдан'}: {payload.providerName}
         </h3>
         <p>
-          <strong>Сохраните ключ сейчас.</strong> После закрытия этого окна полное значение больше нигде не отображается —
-          бэкенд хранит только argon2-хэш и sha256-fingerprint.
+          <strong>Сохраните ключ сейчас.</strong> После закрытия этого окна полное значение больше
+          нигде не отображается — бэкенд хранит только argon2-хэш и sha256-fingerprint.
         </p>
 
         <div className="api-key-reveal-box">
@@ -82,7 +82,8 @@ export function ApiKeyRevealDialog({ payload, onClose }: Props) {
         </div>
 
         <div className="settings-callout">
-          <ShieldAlert size={14} /> Передавайте ключ только по защищённому каналу. Никогда не пересылайте по email или мессенджерам.
+          <ShieldAlert size={14} /> Передавайте ключ только по защищённому каналу. Никогда не
+          пересылайте по email или мессенджерам.
         </div>
 
         <div className="confirm-actions">

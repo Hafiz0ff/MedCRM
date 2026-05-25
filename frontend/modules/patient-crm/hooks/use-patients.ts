@@ -4,7 +4,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/shared/api/client-api';
 import { Patient } from '@/shared/types/bootstrap';
 
-type ListResponse = { items: Patient[]; total: number; page: number; pageSize: number; duplicateCandidates?: Patient[] };
+type ListResponse = {
+  items: Patient[];
+  total: number;
+  page: number;
+  pageSize: number;
+  duplicateCandidates?: Patient[];
+};
 
 export function usePatients(q: string, status?: string, tagId?: string) {
   const params = new URLSearchParams();
@@ -17,30 +23,38 @@ export function usePatients(q: string, status?: string, tagId?: string) {
 
   return useQuery({
     queryKey: ['patients', q, status, tagId],
-    queryFn: () => apiFetch<ListResponse>(url)
+    queryFn: () => apiFetch<ListResponse>(url),
   });
 }
 
 export function usePatient(id: string) {
-  return useQuery({ queryKey: ['patient', id], queryFn: () => apiFetch<Patient>(`/patients/${id}`) });
+  return useQuery({
+    queryKey: ['patient', id],
+    queryFn: () => apiFetch<Patient>(`/patients/${id}`),
+  });
 }
 
 export function useCreatePatient() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { firstName: string; lastName: string; phone?: string; registrationBranchId?: string }) =>
-      apiFetch<Patient>('/patients', { method: 'POST', body: JSON.stringify(input) }),
+    mutationFn: (input: {
+      firstName: string;
+      lastName: string;
+      phone?: string;
+      registrationBranchId?: string;
+    }) => apiFetch<Patient>('/patients', { method: 'POST', body: JSON.stringify(input) }),
     onSuccess: (patient) => {
       queryClient.invalidateQueries({ queryKey: ['patients'] });
       queryClient.setQueryData(['patient', patient.id], patient);
-    }
+    },
   });
 }
 
 export function useUpdatePatient(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: Partial<Patient>) => apiFetch<Patient>(`/patients/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+    mutationFn: (input: Partial<Patient>) =>
+      apiFetch<Patient>(`/patients/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: ['patient', id] });
       const previous = queryClient.getQueryData<Patient>(['patient', id]);
@@ -53,7 +67,7 @@ export function useUpdatePatient(id: string) {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['patient', id] });
       queryClient.invalidateQueries({ queryKey: ['patients'] });
-    }
+    },
   });
 }
 
@@ -68,7 +82,7 @@ export type PatientTimelineEvent = {
 export function usePatientTimeline(id: string) {
   return useQuery({
     queryKey: ['patient-timeline', id],
-    queryFn: () => apiFetch<PatientTimelineEvent[]>(`/patients/${id}/timeline`)
+    queryFn: () => apiFetch<PatientTimelineEvent[]>(`/patients/${id}/timeline`),
   });
 }
 
@@ -76,11 +90,14 @@ export function useAddPatientContact(patientId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (contact: { type: string; value: string; isPrimary?: boolean; comment?: string }) =>
-      apiFetch<any>(`/patients/${patientId}/contacts`, { method: 'POST', body: JSON.stringify(contact) }),
+      apiFetch<any>(`/patients/${patientId}/contacts`, {
+        method: 'POST',
+        body: JSON.stringify(contact),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patient', patientId] });
       queryClient.invalidateQueries({ queryKey: ['patient-timeline', patientId] });
-    }
+    },
   });
 }
 
@@ -92,7 +109,7 @@ export function useDeletePatientContact(patientId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patient', patientId] });
       queryClient.invalidateQueries({ queryKey: ['patient-timeline', patientId] });
-    }
+    },
   });
 }
 
@@ -104,14 +121,15 @@ export function useAddPatientNote(patientId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patient', patientId] });
       queryClient.invalidateQueries({ queryKey: ['patient-timeline', patientId] });
-    }
+    },
   });
 }
 
 export function useListTags() {
   return useQuery({
     queryKey: ['patient-tags'],
-    queryFn: () => apiFetch<Array<{ id: string; name: string; color: string; code: string }>>('/patients/tags')
+    queryFn: () =>
+      apiFetch<Array<{ id: string; name: string; color: string; code: string }>>('/patients/tags'),
   });
 }
 
@@ -123,7 +141,7 @@ export function useAssignPatientTag(patientId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patient', patientId] });
       queryClient.invalidateQueries({ queryKey: ['patient-timeline', patientId] });
-    }
+    },
   });
 }
 
@@ -135,8 +153,6 @@ export function useRemovePatientTag(patientId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patient', patientId] });
       queryClient.invalidateQueries({ queryKey: ['patient-timeline', patientId] });
-    }
+    },
   });
 }
-
-

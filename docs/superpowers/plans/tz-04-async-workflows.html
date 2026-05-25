@@ -1,0 +1,1566 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ТЗ №4. Async Workflows & Notifications — MedCRM</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #101828;
+        --muted: #667085;
+        --line: #d9e1ea;
+        --surface: #ffffff;
+        --soft: #f6f8fb;
+        --brand: #079685;
+        --brand-dark: #04786b;
+        --brand-soft: #e7f8f5;
+        --blue: #2563eb;
+        --amber: #b45309;
+        --red: #b42318;
+        --green: #15803d;
+        --violet: #6d28d9;
+        --shadow: 0 16px 40px rgba(16, 24, 40, 0.08);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #eef3f7;
+        color: var(--ink);
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Arial,
+          sans-serif;
+        line-height: 1.55;
+      }
+      .page {
+        width: min(1180px, calc(100% - 40px));
+        margin: 32px auto;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+      }
+      header.cover {
+        padding: 56px 56px 40px;
+        background:
+          linear-gradient(135deg, rgba(180, 83, 9, 0.1), rgba(7, 150, 133, 0.16)), #fbfdff;
+        border-bottom: 1px solid var(--line);
+      }
+      main {
+        padding: 36px 56px 56px;
+      }
+      h1,
+      h2,
+      h3,
+      h4 {
+        margin: 0;
+        line-height: 1.18;
+      }
+      h1 {
+        max-width: 880px;
+        font-size: 42px;
+        font-weight: 760;
+      }
+      h2 {
+        margin-top: 48px;
+        padding-top: 26px;
+        border-top: 1px solid var(--line);
+        font-size: 26px;
+      }
+      h3 {
+        margin-top: 28px;
+        font-size: 19px;
+      }
+      h4 {
+        margin-top: 18px;
+        font-size: 16px;
+        color: #344054;
+      }
+      p {
+        margin: 10px 0 0;
+      }
+      ul,
+      ol {
+        margin: 10px 0 0;
+        padding-left: 22px;
+      }
+      li + li {
+        margin-top: 6px;
+      }
+      table {
+        width: 100%;
+        margin-top: 14px;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th,
+      td {
+        vertical-align: top;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        text-align: left;
+      }
+      th {
+        background: #f3f7fa;
+        font-weight: 700;
+      }
+      code {
+        padding: 2px 5px;
+        border-radius: 5px;
+        background: #edf2f7;
+        color: #243244;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 0.92em;
+      }
+      pre {
+        margin-top: 12px;
+        padding: 16px 18px;
+        background: #0b1220;
+        color: #e6edf3;
+        border-radius: 10px;
+        overflow-x: auto;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+      }
+      .meta {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 28px;
+      }
+      .meta div,
+      .note,
+      .decision,
+      .warning,
+      .danger,
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.85);
+        padding: 14px 16px;
+      }
+      .meta span,
+      .eyebrow {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .meta strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 15px;
+      }
+      .lead {
+        max-width: 820px;
+        margin-top: 18px;
+        color: #344054;
+        font-size: 18px;
+      }
+      .toc {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 24px;
+        margin-top: 18px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--soft);
+      }
+      .toc a {
+        color: var(--brand-dark);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .toc a:hover {
+        text-decoration: underline;
+      }
+      .two {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 16px;
+      }
+      .three {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 16px;
+      }
+      .four {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+      }
+      .card {
+        padding: 18px;
+      }
+      .card h3 {
+        margin-top: 0;
+      }
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        margin: 4px 6px 0 0;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: var(--brand-soft);
+        color: var(--brand-dark);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .tag.blue {
+        background: #eff6ff;
+        color: #1e40af;
+      }
+      .tag.amber {
+        background: #fffbeb;
+        color: #92400e;
+      }
+      .tag.red {
+        background: #fef2f2;
+        color: #991b1b;
+      }
+      .tag.violet {
+        background: #f5f3ff;
+        color: #5b21b6;
+      }
+      .tag.green {
+        background: #f0fdf4;
+        color: #166534;
+      }
+      .tag.gray {
+        background: #f3f4f6;
+        color: #374151;
+      }
+      .note {
+        background: #f8fbff;
+        border-color: #c7d8f0;
+      }
+      .decision {
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+      }
+      .warning {
+        background: #fff7ed;
+        border-color: #fed7aa;
+      }
+      .danger {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #7f1d1d;
+      }
+      .small {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .stage {
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--brand);
+        border-radius: 10px;
+        padding: 16px 18px;
+        margin-top: 14px;
+        background: #fbfeff;
+      }
+      .stage h3 {
+        margin-top: 0;
+      }
+      .stage .stage-meta {
+        display: inline-block;
+        margin-right: 10px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--brand-soft);
+        color: var(--brand-dark);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .kpi {
+        border-radius: 12px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, #ffffff, #f7fafc);
+      }
+      .kpi .label {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .kpi .value {
+        display: block;
+        margin-top: 6px;
+        font-size: 26px;
+        font-weight: 760;
+      }
+      .kpi .hint {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .check {
+        padding-left: 0;
+        list-style: none;
+      }
+      .check li {
+        position: relative;
+        padding: 6px 0 6px 26px;
+        border-bottom: 1px dashed #e5e7eb;
+      }
+      .check li:before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 11px;
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1.5px solid var(--brand);
+        background: #fff;
+      }
+      .check li:last-child {
+        border-bottom: 0;
+      }
+      .file-tree {
+        margin-top: 12px;
+        padding: 16px 20px;
+        background: #0b1220;
+        color: #e6edf3;
+        border-radius: 10px;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.7;
+        overflow-x: auto;
+      }
+      .file-tree b {
+        color: #7dd3fc;
+        font-weight: 700;
+      }
+      .file-tree i {
+        color: #a5b4fc;
+        font-style: normal;
+      }
+      .file-tree em {
+        color: #fcd34d;
+        font-style: normal;
+      }
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+      .step {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fbfeff;
+        padding: 14px;
+        position: relative;
+      }
+      .step b {
+        display: block;
+        color: var(--brand-dark);
+        font-size: 13px;
+        letter-spacing: 0.02em;
+      }
+      .step h4 {
+        margin-top: 6px;
+        font-size: 15px;
+      }
+      .step p {
+        margin-top: 6px;
+        color: #344054;
+        font-size: 13px;
+      }
+      @media (max-width: 860px) {
+        .page {
+          width: 100%;
+          margin: 0;
+          border-width: 0;
+        }
+        header.cover,
+        main {
+          padding: 28px 20px;
+        }
+        h1 {
+          font-size: 30px;
+        }
+        .meta,
+        .two,
+        .three,
+        .four,
+        .toc,
+        .flow {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media print {
+        body {
+          background: #fff;
+        }
+        .page {
+          width: 100%;
+          margin: 0;
+          border: 0;
+          box-shadow: none;
+        }
+        header.cover,
+        main {
+          padding: 24px 32px;
+        }
+        pre {
+          background: #f4f4f5;
+          color: #111827;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <article class="page">
+      <header class="cover">
+        <span class="eyebrow">MedCRM · ТЗ №4 · Async Workflows & Notifications</span>
+        <h1>Очереди, воркеры и автоматические напоминания</h1>
+        <p class="lead">
+          Включить BullMQ-воркеры и оживить уже существующий контур уведомлений:
+          <code>notifications_queue</code>, <code>message_templates</code>,
+          <code>appointment_notifications</code>, <code>chatbot_flows</code>. Цель — автоматические
+          напоминания пациентам по SMS / Telegram / WhatsApp / email, ночные агрегации KPI, фоновые
+          задачи FHIR-sync и outbox для интеграций. Это первая фича, которая моментально окупает
+          себя — снижает no-show rate на 20–40%.
+        </p>
+        <section class="meta">
+          <div><span>Версия</span><strong>1.0</strong></div>
+          <div><span>Дата</span><strong>25 мая 2026</strong></div>
+          <div><span>Проект</span><strong>xiewan1230-maker/MedCRM</strong></div>
+          <div><span>Фокус</span><strong>BullMQ, notifications, jobs, outbox</strong></div>
+        </section>
+      </header>
+
+      <main>
+        <nav class="toc">
+          <a href="#purpose">1. Назначение</a>
+          <a href="#as-is">2. Состояние «как есть»</a>
+          <a href="#goals">3. Цели и Out of Scope</a>
+          <a href="#arch">4. Архитектура</a>
+          <a href="#queues">5. Очереди</a>
+          <a href="#workers">6. Воркеры</a>
+          <a href="#flows">7. Notification flows</a>
+          <a href="#templates">8. Templates studio</a>
+          <a href="#providers">9. Channel providers</a>
+          <a href="#outbox">10. Outbox для интеграций</a>
+          <a href="#observability">11. Observability воркеров</a>
+          <a href="#files">12. Структура файлов</a>
+          <a href="#plan">13. Этапы работ</a>
+          <a href="#acceptance">14. Acceptance</a>
+          <a href="#metrics">15. Метрики и риски</a>
+        </nav>
+
+        <section id="purpose">
+          <h2>1. Назначение</h2>
+          <p>
+            В <code>backend/package.json</code> уже установлена <code>bullmq</code>, в Prisma —
+            модели <code>NotificationsQueue</code>, <code>MessageTemplate</code>,
+            <code>NotificationRule</code>, <code>AppointmentNotification</code>,
+            <code>ChatbotFlow</code>. Но в <code>backend/apps/auth-service/src/</code>
+            нет ни одного воркера: модели наполняются seed-данными, но никто их не обрабатывает.
+          </p>
+          <p>
+            Цель ТЗ №4 — построить полный async-контур: producer-сервис (создаёт jobs), очереди в
+            Redis (BullMQ), worker-приложение(я), channel-providers (Telegram Bot, SMS-агрегатор,
+            WhatsApp Business, email), retry-policies, observability (Bull Board + Prometheus). И
+            запустить три флагманские бизнес-фичи: appointment-reminders, missed-visit follow-up,
+            daily KPI aggregator.
+          </p>
+          <div class="decision">
+            <span class="eyebrow">Принцип</span>
+            <strong
+              >«Producer пишет в outbox + queue, worker читает и выполняет, всё
+              идемпотентно»</strong
+            >
+            <p class="small">
+              Любая повторная доставка job не приводит к повторному эффекту — гарантии delivery
+              «at-least-once».
+            </p>
+          </div>
+        </section>
+
+        <section id="as-is">
+          <h2>2. Состояние «как есть»</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Слой</th>
+                <th>Сейчас</th>
+                <th>Дыра</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>BullMQ</td>
+                <td><code>bullmq@^5</code> установлен в backend.</td>
+                <td>
+                  Нет ни одного <code>Queue</code>, <code>Worker</code>, <code>QueueEvents</code> в
+                  коде.
+                </td>
+              </tr>
+              <tr>
+                <td>Redis</td>
+                <td>Стоит в docker-compose, есть <code>REDIS_URL</code>.</td>
+                <td>Используется только Socket.IO redis-adapter (опционально), не для очередей.</td>
+              </tr>
+              <tr>
+                <td>Notifications schema</td>
+                <td>Полная: queue, templates, rules, channels, campaigns, chatbot, attachments.</td>
+                <td>Никто не пишет в очередь, никто не читает.</td>
+              </tr>
+              <tr>
+                <td>Communications service</td>
+                <td>
+                  В <code>auth-service/src/communications/</code> есть controller/service/module.
+                </td>
+                <td>В основном CRUD по шаблонам/каналам, нет dispatch и нет провайдеров.</td>
+              </tr>
+              <tr>
+                <td>Channel providers</td>
+                <td>Нет адаптеров: ни Telegram Bot, ни SMS gateway, ни email, ни WhatsApp.</td>
+                <td>Полное отсутствие — фича невозможна без них.</td>
+              </tr>
+              <tr>
+                <td>Cron / Schedules</td>
+                <td>Нет.</td>
+                <td>
+                  Никто не считает ежедневные KPI, не сканирует appointments на reminder-окна.
+                </td>
+              </tr>
+              <tr>
+                <td>Bull Board</td>
+                <td>Нет.</td>
+                <td>Нет UI мониторинга очередей.</td>
+              </tr>
+              <tr>
+                <td>Outbox</td>
+                <td>Нет.</td>
+                <td>Интеграции и webhooks при отказе провайдера теряются.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="goals">
+          <h2>3. Цели и Out of Scope</h2>
+          <div class="two">
+            <div class="card">
+              <h3>Цели</h3>
+              <ul>
+                <li>
+                  Запустить BullMQ-инфраструктуру (queues, workers, schedulers, queue-events).
+                </li>
+                <li>
+                  Выделить worker-runtime как отдельное Nest-приложение в
+                  <code>backend/apps/worker</code>.
+                </li>
+                <li>Реализовать channel-adapters: SMS, Telegram, Email; WhatsApp — заготовка.</li>
+                <li>
+                  Запустить три ключевых flow: appointment reminder (24h, 2h), no-show follow-up,
+                  daily KPI aggregator.
+                </li>
+                <li>
+                  Templates UI (CRUD + preview + переменные {patient}, {appointment}, {clinic}).
+                </li>
+                <li>
+                  Tenant-настройки каналов: connect Telegram bot, SMS gateway credentials, email
+                  SMTP.
+                </li>
+                <li>
+                  Outbox-pattern для надёжной публикации событий во внешние интеграции и webhooks.
+                </li>
+                <li>Bull Board UI для админов; Prometheus-метрики; OpenTelemetry-трасировка.</li>
+                <li>Idempotency-keys и DLQ (dead-letter queue).</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Out of Scope</h3>
+              <ul>
+                <li>
+                  Полная маркетинг-платформа (сегментация, A/B) — это
+                  <code>CommunicationCampaign</code> v2, отдельное ТЗ.
+                </li>
+                <li>Сложный chatbot-конструктор (drag&amp;drop) — отдельное ТЗ.</li>
+                <li>Voice / IVR / SIP — отдельное ТЗ.</li>
+                <li>Push-уведомления native mobile — после Patient Portal MVP (ТЗ №5).</li>
+                <li>Полноценный workflow engine (Temporal / Camunda) — пока используем BullMQ.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="arch">
+          <h2>4. Архитектура</h2>
+          <div class="flow">
+            <div class="step">
+              <b>Step 1 · Trigger</b>
+              <h4>Producer</h4>
+              <p>
+                HTTP-эндпоинт, доменное событие (event bus), либо cron (BullMQ scheduler) кладёт job
+                в очередь.
+              </p>
+            </div>
+            <div class="step">
+              <b>Step 2 · Queue</b>
+              <h4>Redis (BullMQ)</h4>
+              <p>Очередь хранит job с payload, retry-policy, delay, dedup-key.</p>
+            </div>
+            <div class="step">
+              <b>Step 3 · Worker</b>
+              <h4>backend/apps/worker</h4>
+              <p>
+                Pulls job, выполняет логику, использует channel-adapter, пишет результат в
+                <code>NotificationsQueue</code>.
+              </p>
+            </div>
+            <div class="step">
+              <b>Step 4 · Provider</b>
+              <h4>SMS / TG / WA / Email</h4>
+              <p>
+                Внешний сервис принимает payload; webhook возвращает <code>delivery_status</code>.
+              </p>
+            </div>
+          </div>
+
+          <h3>4.1. Топология процессов</h3>
+          <pre><code>backend/
+  apps/
+    api-gateway/     ← edge proxy
+    auth-service/    ← REST + Domain
+    worker/          ← NEW: BullMQ workers, Nest-app, не слушает HTTP
+                       Запускается отдельным контейнером, scale-out independent</code></pre>
+          <p>
+            <code>worker</code> подключается к Redis и Prisma тем же способом, что и
+            <code>auth-service</code>; зависимости в <code>backend/core/*</code> разделяются.
+          </p>
+
+          <h3>4.2. Гарантии</h3>
+          <ul>
+            <li>
+              <strong>At-least-once delivery</strong>: BullMQ хранит job до явного
+              <code>completed</code>; повторная доставка возможна при падении воркера.
+            </li>
+            <li>
+              <strong>Idempotency</strong>: каждый job имеет
+              <code>jobId = stableHash(payload)</code>; повторная постановка с тем же id — no-op
+              (BullMQ <code>removeOnComplete + jobId</code>).
+            </li>
+            <li>
+              <strong>Retry с backoff</strong>: exponential, base 30s, до 6 попыток; затем — DLQ.
+            </li>
+            <li>
+              <strong>DLQ</strong>: отдельная очередь <code>*.dlq</code>; админ видит её в Bull
+              Board и может re-queue.
+            </li>
+            <li>
+              <strong>Concurrency</strong>: каждая очередь имеет свой concurrency limit; per-tenant
+              rate-limit через BullMQ <code>Worker.limiter</code>.
+            </li>
+          </ul>
+        </section>
+
+        <section id="queues">
+          <h2>5. Очереди</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Queue</th>
+                <th>Назначение</th>
+                <th>Producer</th>
+                <th>Concurrency</th>
+                <th>Retry</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>notifications.dispatch</code></td>
+                <td>Отправка single-message по каналу</td>
+                <td>scanner, AppointmentService, ChatbotService</td>
+                <td>20 / worker</td>
+                <td>6× exp backoff</td>
+              </tr>
+              <tr>
+                <td><code>notifications.schedule-scan</code></td>
+                <td>Cron: сканирует ближайшие визиты, кладёт jobs в dispatch</td>
+                <td>BullMQ Scheduler (каждые 5 мин)</td>
+                <td>1</td>
+                <td>3×</td>
+              </tr>
+              <tr>
+                <td><code>notifications.dlq</code></td>
+                <td>DLQ для dispatch</td>
+                <td>auto при exhaust retries</td>
+                <td>manual</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><code>appointments.no-show</code></td>
+                <td>Follow-up при missed appointment</td>
+                <td>Cron: 30 мин после appointment.endAt</td>
+                <td>10</td>
+                <td>3×</td>
+              </tr>
+              <tr>
+                <td><code>kpi.daily-aggregate</code></td>
+                <td>Daily KPI (доктора, финансы, marketing)</td>
+                <td>Cron: 01:00 локально</td>
+                <td>1 per tenant</td>
+                <td>3×</td>
+              </tr>
+              <tr>
+                <td><code>kpi.hourly-aggregate</code></td>
+                <td>Operational KPI каждый час</td>
+                <td>Cron: каждые 60 мин</td>
+                <td>1 per tenant</td>
+                <td>3×</td>
+              </tr>
+              <tr>
+                <td><code>integrations.outbox</code></td>
+                <td>Доставка событий в Webhooks / HL7 / FHIR</td>
+                <td>OutboxRelay</td>
+                <td>20</td>
+                <td>10× exp</td>
+              </tr>
+              <tr>
+                <td><code>integrations.outbox.dlq</code></td>
+                <td>DLQ outbox</td>
+                <td>auto</td>
+                <td>manual</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><code>audit.checkpoint</code></td>
+                <td>Hash-chain checkpoint (ТЗ №3)</td>
+                <td>Cron: каждый час</td>
+                <td>1</td>
+                <td>3×</td>
+              </tr>
+              <tr>
+                <td><code>maintenance.cleanup</code></td>
+                <td>Очистка истекших sessions, idempotency keys, временных файлов</td>
+                <td>Cron: ночью</td>
+                <td>1</td>
+                <td>3×</td>
+              </tr>
+              <tr>
+                <td><code>billing.usage-meter</code></td>
+                <td>Подсчёт active users / appointments для subscription</td>
+                <td>Cron: ежедневно</td>
+                <td>1 per tenant</td>
+                <td>5×</td>
+              </tr>
+              <tr>
+                <td><code>communications.campaigns</code></td>
+                <td>Запуск рассылок (campaign-aware)</td>
+                <td>CampaignService при schedule</td>
+                <td>5</td>
+                <td>5×</td>
+              </tr>
+              <tr>
+                <td><code>phi.backfill</code></td>
+                <td>Batched шифрование PHI (ТЗ №3)</td>
+                <td>миграционный скрипт</td>
+                <td>2</td>
+                <td>3×</td>
+              </tr>
+              <tr>
+                <td><code>documents.render</code></td>
+                <td>PDF-рендер (счёт, рецепт, выписка)</td>
+                <td>HTTP-эндпоинт</td>
+                <td>10</td>
+                <td>3×</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="workers">
+          <h2>6. Воркеры</h2>
+          <p>Каждый воркер — это NestJS-модуль с обработчиком очереди. Пример:</p>
+          <pre><code>// backend/apps/worker/src/notifications/notifications-dispatch.worker.ts
+import { Worker, Job } from 'bullmq';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+
+@Injectable()
+export class NotificationsDispatchWorker implements OnModuleInit {
+  private readonly logger = new Logger(NotificationsDispatchWorker.name);
+  private worker!: Worker&lt;DispatchJobPayload&gt;;
+
+  constructor(
+    private readonly channels: ChannelProviderRegistry,
+    private readonly db: PrismaService,
+    private readonly templates: TemplateService,
+  ) {}
+
+  onModuleInit() {
+    this.worker = new Worker&lt;DispatchJobPayload&gt;(
+      'notifications.dispatch',
+      async (job) =&gt; this.handle(job),
+      {
+        connection: { url: process.env.REDIS_URL },
+        concurrency: 20,
+        limiter: { max: 60, duration: 1000 },
+      },
+    );
+
+    this.worker.on('failed', (job, err) =&gt; {
+      this.logger.warn(`dispatch failed id=${job?.id} attempts=${job?.attemptsMade}`, err);
+    });
+  }
+
+  async handle(job: Job&lt;DispatchJobPayload&gt;) {
+    const { tenantId, queueRecordId } = job.data;
+
+    return await this.db.$transaction(async (tx) =&gt; {
+      const rec = await tx.notificationsQueue.findFirstOrThrow({
+        where: { id: queueRecordId, tenantId },
+      });
+
+      if (rec.deliveryStatus !== 'PENDING') return { skipped: rec.deliveryStatus };
+
+      const tmpl = await this.templates.compile(rec.templateId, rec.payloadJson);
+
+      const provider = this.channels.get(rec.channelType, tenantId);
+      const result = await provider.send({
+        to: tmpl.recipient,
+        subject: tmpl.subject,
+        body: tmpl.body,
+        meta: { queueId: rec.id, appointmentId: rec.appointmentId },
+      });
+
+      await tx.notificationsQueue.update({
+        where: { id: rec.id },
+        data: {
+          deliveryStatus: result.status,
+          retryCount: { increment: 1 },
+          processedAt: new Date(),
+        },
+      });
+
+      return result;
+    });
+  }
+}</code></pre>
+
+          <h3>6.1. Идемпотентность и dedup</h3>
+          <pre><code>await queue.add('dispatch', payload, {
+  jobId: `nq:${queueRecordId}`,    // unique key
+  attempts: 6,
+  backoff: { type: 'exponential', delay: 30_000 },
+  removeOnComplete: { count: 1000, age: 60 * 60 * 24 * 7 },
+  removeOnFail:     { count: 5000, age: 60 * 60 * 24 * 30 },
+});</code></pre>
+
+          <h3>6.2. Schedule scanner</h3>
+          <pre><code>// каждые 5 минут
+async scan() {
+  const now = new Date();
+  const horizon24 = new Date(now.getTime() + 24 * 3600_000);
+  const horizon2  = new Date(now.getTime() + 2  * 3600_000);
+
+  for (const tenant of await this.tenants.activeForReminders()) {
+    const appts = await this.prisma.appointment.findMany({
+      where: {
+        tenantId: tenant.id,
+        startAt: { gte: now, lte: horizon24 },
+        status:  { in: ['SCHEDULED', 'CONFIRMED'] },
+        notifications: { none: { type: 'REMINDER_24H' } },
+      },
+      include: { patient: true, doctor: true },
+    });
+
+    for (const a of appts) {
+      await this.enqueueReminder(a, 'REMINDER_24H');
+      if (a.startAt &lt; horizon2) await this.enqueueReminder(a, 'REMINDER_2H');
+    }
+  }
+}</code></pre>
+        </section>
+
+        <section id="flows">
+          <h2>7. Notification flows</h2>
+
+          <h3>7.1. Appointment reminder</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Окно</th>
+                <th>Канал-приоритет</th>
+                <th>Текст (пример)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>−24h</td>
+                <td>Telegram → WhatsApp → SMS</td>
+                <td>
+                  <code
+                    >{patient.firstName}, напоминаем: завтра в {appointment.startAt|time} вас ждёт
+                    {doctor.lastName}. Подтвердить: /yes Отменить: /no</code
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>−2h</td>
+                <td>SMS → Telegram</td>
+                <td>
+                  <code
+                    >Через 2 часа: {clinic.name}, кабинет {appointment.room.code}. Адрес:
+                    {clinic.addressShort}.</code
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>+30мин (не пришёл)</td>
+                <td>Telegram → SMS</td>
+                <td><code>Мы не дождались Вас. Хотите перенести? /reschedule</code></td>
+              </tr>
+              <tr>
+                <td>День после</td>
+                <td>Telegram → email</td>
+                <td><code>Спасибо за визит. Оцените: /1 /2 /3 /4 /5</code></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>7.2. No-show follow-up</h3>
+          <ol>
+            <li>
+              Через 30 минут после <code>endAt</code> со статусом <code>NO_SHOW</code> или
+              <code>SCHEDULED</code> (не check-in): автоматически создаётся
+              <code>conversation</code> с пациентом, отправляется reminder.
+            </li>
+            <li>
+              Если пациент отвечает <code>/reschedule</code> — bot предлагает 3 ближайших слота у
+              того же врача.
+            </li>
+            <li>
+              Если ответа нет 24 часа — задача закрывается; pattern-репорт «постоянные no-show»
+              подсвечивается в патиент-карте.
+            </li>
+          </ol>
+
+          <h3>7.3. Daily KPI aggregator</h3>
+          <ul>
+            <li>Cron 01:00 локального tenant-timezone.</li>
+            <li>
+              Считает: appointments_total, completed, no_show, average ticket, gross revenue, debt
+              aging, доктор-load.
+            </li>
+            <li>
+              Записывает в <code>FinancialDailyAggregate</code>, <code>DoctorKpiMetric</code>,
+              <code>DwFactAppointment</code>, <code>DwFactPayment</code>.
+            </li>
+            <li>
+              Опционально: отправляет краткую сводку в Telegram-чат тенанта (главврач, директор).
+            </li>
+          </ul>
+
+          <h3>7.4. Operational hourly</h3>
+          <ul>
+            <li>
+              Каждый час: пересчёт текущей загрузки кабинетов, врачей, длины очереди, среднего
+              времени ожидания.
+            </li>
+            <li>
+              Публикуется в Socket.IO канал <code>operations:&lt;tenantId&gt;</code> — обновляет
+              dashboard live.
+            </li>
+          </ul>
+        </section>
+
+        <section id="templates">
+          <h2>8. Templates studio</h2>
+          <p>UI для редактирования шаблонов в Settings → Коммуникации → Шаблоны.</p>
+
+          <h3>8.1. Возможности</h3>
+          <ul>
+            <li>
+              CRUD <code>MessageTemplate</code> с разделением по <code>channelType</code> (TELEGRAM
+              / WHATSAPP / SMS / EMAIL) и <code>languageCode</code>.
+            </li>
+            <li>
+              Системные шаблоны (<code>isSystem: true</code>) не редактируются полностью — только
+              override на уровне тенанта.
+            </li>
+            <li>
+              Переменные через Handlebars-like синтаксис: <code>{{patient.firstName}}</code>,
+              <code>{{appointment.startAt | date "dd.MM HH:mm"}}</code>,
+              <code>{{clinic.name}}</code>.
+            </li>
+            <li>Preview справа: вставляются sample-данные.</li>
+            <li>Длина SMS-сообщения подсчитывается (160/70 chars в зависимости от кодировки).</li>
+            <li>Локализация ru / tj / en / uz; fallback на ru.</li>
+            <li>
+              Линтер шаблона: проверка переменных против whitelist, проверка незакрытых выражений.
+            </li>
+          </ul>
+
+          <h3>8.2. Рендеринг</h3>
+          <pre><code>// backend/core/templates/template.service.ts
+import Handlebars from 'handlebars';
+
+Handlebars.registerHelper('date', (val, fmt) =&gt; format(val, fmt));
+Handlebars.registerHelper('time', (val) =&gt; format(val, 'HH:mm'));
+
+compile(tmpl: MessageTemplate, payload: Record&lt;string, unknown&gt;) {
+  const t = Handlebars.compile(tmpl.templateBody, { noEscape: tmpl.channelType !== 'EMAIL' });
+  return { body: t(payload), subject: tmpl.subject ?? null };
+}</code></pre>
+
+          <h3>8.3. Notification rules</h3>
+          <p>Tenant-admin настраивает в Settings → Правила:</p>
+          <ul>
+            <li>Включить/выключить REMINDER_24H, REMINDER_2H, NO_SHOW_FOLLOWUP, POST_VISIT_NPS.</li>
+            <li>Изменить окно (например, REMINDER_24H → 36 часов).</li>
+            <li>Изменить порядок каналов (Telegram → SMS, или наоборот).</li>
+            <li>Quiet hours (не отправлять с 22:00 до 08:00).</li>
+          </ul>
+        </section>
+
+        <section id="providers">
+          <h2>9. Channel providers</h2>
+
+          <h3>9.1. Адаптерный интерфейс</h3>
+          <pre><code>// backend/core/communications/channel-provider.interface.ts
+export interface ChannelProvider {
+  readonly channelType: 'SMS' | 'TELEGRAM' | 'WHATSAPP' | 'EMAIL';
+  send(input: {
+    to: string;
+    subject?: string | null;
+    body: string;
+    meta?: Record&lt;string, unknown&gt;;
+  }): Promise&lt;{ status: 'SENT' | 'FAILED' | 'QUEUED'; externalId?: string; error?: string }&gt;;
+  handleWebhook?(payload: unknown): Promise&lt;{ queueId?: string; status: string }&gt;;
+}</code></pre>
+
+          <h3>9.2. Конкретные адаптеры</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Канал</th>
+                <th>Провайдер (рекомендация)</th>
+                <th>Альтернативы</th>
+                <th>Стоимость</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>SMS</td>
+                <td>InfoBip / SMS.ru / Beeline Business</td>
+                <td>Vonage, Twilio (международные)</td>
+                <td>~ 1.5–3 ₽ / СМС</td>
+              </tr>
+              <tr>
+                <td>Telegram</td>
+                <td>Bot API (long-polling или webhook)</td>
+                <td>—</td>
+                <td>бесплатно</td>
+              </tr>
+              <tr>
+                <td>WhatsApp</td>
+                <td>WhatsApp Business Platform (Cloud API)</td>
+                <td>Twilio for WhatsApp</td>
+                <td>per-conversation, $0.005–0.05</td>
+              </tr>
+              <tr>
+                <td>Email</td>
+                <td>Resend / Postmark / SES</td>
+                <td>—</td>
+                <td>~ $0.001 / письмо</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>9.3. Telegram-bot per tenant</h3>
+          <ul>
+            <li>
+              В Settings → Коммуникации → Telegram tenant-admin вводит <code>botToken</code>;
+              backend регистрирует webhook на
+              <code>POST /webhooks/telegram/&lt;tenantHash&gt;</code>.
+            </li>
+            <li>
+              Bot хранит конверсации, отвечает на <code>/yes</code>, <code>/no</code>,
+              <code>/reschedule</code>.
+            </li>
+            <li>Patient ⇄ TG chat связывается через one-time deeplink при первом визите.</li>
+            <li>
+              Текст сообщения берётся из шаблонов; кнопки (inline keyboard) — из конфигурации flow.
+            </li>
+          </ul>
+
+          <h3>9.4. WhatsApp opt-in</h3>
+          <ul>
+            <li>Шаблоны должны быть pre-approved Meta (HSM template).</li>
+            <li>24-часовое окно для free-form ответа.</li>
+            <li>
+              Запрет рекламных рассылок без явного opt-in (<code>CommunicationPreference</code>).
+            </li>
+          </ul>
+
+          <h3>9.5. SMS</h3>
+          <ul>
+            <li>Маршрутизация: per-tenant выбор gateway; primary + fallback.</li>
+            <li>Sender ID per tenant (одобренный): обычно имя клиники.</li>
+            <li>Учёт стоимости в <code>CommunicationMetric</code>.</li>
+          </ul>
+
+          <h3>9.6. Email</h3>
+          <ul>
+            <li>SPF/DKIM/DMARC настроить per-domain тенанта.</li>
+            <li>Шаблоны через MJML → HTML; рендерим в воркере, не на лету.</li>
+            <li>Опционально tracking pixel (с opt-in).</li>
+          </ul>
+        </section>
+
+        <section id="outbox">
+          <h2>10. Outbox для интеграций</h2>
+          <p>
+            Чтобы не терять события при отказе внешнего сервиса (Telegram, лаборатория, ОМС,
+            фискальная касса):
+          </p>
+          <ol>
+            <li>
+              Domain-операция пишет событие в <code>integration_outbox</code> в той же транзакции,
+              что и доменные данные.
+            </li>
+            <li>
+              Outbox-relay (cron каждые 5 секунд) читает unprocessed events и кладёт в queue
+              <code>integrations.outbox</code>.
+            </li>
+            <li>
+              Worker отправляет в провайдер (HTTP webhook, HL7 endpoint, FHIR push); при успехе —
+              помечает запись <code>processed_at</code>.
+            </li>
+            <li>При фейле — exponential backoff до 24 часов, потом DLQ.</li>
+          </ol>
+
+          <h3>10.1. Новая модель</h3>
+          <pre><code>model IntegrationOutbox {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  eventType     String   @map("event_type") @db.VarChar(120)
+  aggregateType String   @map("aggregate_type") @db.VarChar(120)
+  aggregateId   String   @map("aggregate_id") @db.Uuid
+  payloadJson   Json     @map("payload_json")
+  scheduledAt   DateTime @default(now()) @map("scheduled_at") @db.Timestamptz(6)
+  attemptCount  Int      @default(0) @map("attempt_count")
+  lastError     String?  @map("last_error")
+  processedAt   DateTime? @map("processed_at") @db.Timestamptz(6)
+  state         String   @default("PENDING") @db.VarChar(20)   // PENDING | IN_PROGRESS | DONE | FAILED
+
+  @@index([state, scheduledAt])
+  @@index([tenantId, aggregateType, aggregateId])
+  @@map("integration_outbox")
+}</code></pre>
+        </section>
+
+        <section id="observability">
+          <h2>11. Observability воркеров</h2>
+          <ul>
+            <li>
+              <strong>Bull Board UI</strong> (<code>@bull-board/express</code> +
+              <code>@bull-board/api</code>) на пути <code>/internal/v1/queues</code>; доступ —
+              только Platform Admin (RBAC).
+            </li>
+            <li>
+              <strong>Prometheus метрики</strong>:
+              <code>bullmq_queue_jobs_total{queue, state}</code>,
+              <code>bullmq_queue_jobs_duration_seconds</code>,
+              <code>bullmq_queue_jobs_failed_total</code>.
+            </li>
+            <li>
+              <strong>OpenTelemetry трасировка</strong>: producer создаёт span, в payload передаётся
+              <code>traceparent</code>; worker продолжает span. Sentry для ошибок.
+            </li>
+            <li>
+              <strong>Logs</strong>: structured JSON, поле <code>jobId</code>, <code>queue</code>,
+              <code>tenantId</code>; Loki / CloudWatch.
+            </li>
+            <li>
+              <strong>Alerts</strong>: DLQ size &gt; 0 → P1; lag &gt; 5 минут на
+              <code>notifications.dispatch</code> → P2; провайдер-success-rate &lt; 95% → P3.
+            </li>
+            <li><strong>Bull Board access</strong>: за reverse-proxy с RBAC; запрещён публично.</li>
+          </ul>
+        </section>
+
+        <section id="files">
+          <h2>12. Структура файлов</h2>
+          <div class="file-tree">
+            backend/ ├─ apps/ │ ├─ api-gateway/ │ ├─ auth-service/ │ └─ <b>worker/</b> ← NEW Nest
+            app │ └─ src/ │ ├─ main.ts │ ├─ app.module.ts │ ├─ notifications/ │ │ ├─
+            notifications-dispatch.worker.ts │ │ ├─ notifications-schedule-scan.worker.ts │ │ └─
+            no-show-followup.worker.ts │ ├─ kpi/ │ │ ├─ kpi-daily.worker.ts │ │ └─
+            kpi-hourly.worker.ts │ ├─ integrations/ │ │ └─ outbox-relay.worker.ts │ ├─ audit/ │ │ └─
+            audit-checkpoint.worker.ts │ ├─ maintenance/ │ │ ├─ cleanup-sessions.worker.ts │ │ └─
+            cleanup-files.worker.ts │ ├─ documents/ │ │ └─ documents-render.worker.ts │ └─
+            schedulers.module.ts ├─ core/ │ ├─ queue/ │ │ ├─ queue.module.ts │ │ ├─ queue-factory.ts
+            ← typed wrappers per queue │ │ ├─ queue-names.ts │ │ └─ scheduler.ts │ ├─
+            communications/ │ │ ├─ channel-provider.interface.ts │ │ ├─ channel-provider.registry.ts
+            │ │ └─ providers/ │ │ ├─ sms.infobip.adapter.ts │ │ ├─ sms.smsru.adapter.ts │ │ ├─
+            telegram.bot.adapter.ts │ │ ├─ whatsapp.cloud.adapter.ts │ │ └─ email.resend.adapter.ts
+            │ ├─ templates/ │ │ ├─ template.service.ts │ │ ├─ handlebars.helpers.ts │ │ └─
+            sms-length.ts │ └─ outbox/ │ ├─ outbox.service.ts │ └─ outbox.relay.ts ├─
+            apps/auth-service/src/communications/ │ ├─ webhooks/ │ │ ├─
+            telegram.webhook.controller.ts │ │ ├─ whatsapp.webhook.controller.ts │ │ ├─
+            sms.webhook.controller.ts │ │ └─ email.webhook.controller.ts │ ├─ rules/ │ │ ├─
+            rules.controller.ts │ │ └─ rules.service.ts │ └─ templates/ │ ├─ templates.controller.ts
+            │ └─ templates.service.ts ├─ frontend/modules/communications/ │ ├─ components/ │ │ ├─
+            templates-page.tsx │ │ ├─ template-editor.tsx │ │ ├─ rules-page.tsx │ │ ├─
+            channels-page.tsx │ │ └─ campaigns-page.tsx │ └─ hooks/ └─ infrastructure/docker/ ├─
+            Dockerfile ← existing; new build arg APP_NAME=worker └─ worker.entrypoint.sh
+          </div>
+
+          <p>
+            В <code>docker-compose.yml</code> добавляется сервис <code>worker</code> с
+            <code>APP_NAME=worker</code>; в проде это отдельный pod/deployment, который
+            масштабируется горизонтально по CPU.
+          </p>
+        </section>
+
+        <section id="plan">
+          <h2>13. Этапы работ</h2>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 1 · ~1 неделя</span>
+            <h3>Этап 1. Infrastructure setup</h3>
+            <ul>
+              <li>
+                Создать <code>backend/apps/worker</code> Nest-приложение со своим
+                <code>main.ts</code> (без HTTP-server).
+              </li>
+              <li>
+                Конфиг <code>nest-cli.json</code> с новой compile target;
+                <code>build:worker</code> script.
+              </li>
+              <li>Dockerfile: APP_NAME=worker; в <code>docker-compose.yml</code> новый сервис.</li>
+              <li>
+                Core <code>queue.module</code>: типизированные wrappers,
+                <code>queue-names.ts</code>.
+              </li>
+              <li>
+                Bull Board mounted в <code>auth-service</code> на <code>/internal/v1/queues</code>;
+                RBAC <code>platform.admin</code>.
+              </li>
+              <li>PR <code>feat(infra): worker app + bull board</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 2 · ~1.5 недели</span>
+            <h3>Этап 2. Notifications dispatch + scanner</h3>
+            <ul>
+              <li>Worker <code>notifications-dispatch</code> с channel-registry.</li>
+              <li>Channel providers: SMS (InfoBip stub + sms.ru), Email (Resend), Telegram bot.</li>
+              <li>Webhook controllers для приёма delivery-status.</li>
+              <li>Scanner worker (каждые 5 мин): 24h / 2h reminders.</li>
+              <li>Templates UI (CRUD + preview) во frontend.</li>
+              <li>Notification rules UI.</li>
+              <li>
+                E2E: создать appointment +24h → scanner → dispatch → Telegram-bot отправляет →
+                patient получает.
+              </li>
+              <li>PR-серия <code>feat(notifications): reminder pipeline</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 3 · ~1 неделя</span>
+            <h3>Этап 3. No-show follow-up + chatbot replies</h3>
+            <ul>
+              <li>Worker <code>no-show-followup</code>.</li>
+              <li>
+                Chatbot processor: команды <code>/yes</code>, <code>/no</code>,
+                <code>/reschedule</code>.
+              </li>
+              <li>Inline keyboard для Telegram.</li>
+              <li>Conversation + Message persisting.</li>
+              <li>PR <code>feat(communications): no-show followup + chatbot replies</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 4 · ~1 неделя</span>
+            <h3>Этап 4. KPI aggregators</h3>
+            <ul>
+              <li>Workers <code>kpi-daily</code>, <code>kpi-hourly</code>.</li>
+              <li>
+                Заполнение <code>FinancialDailyAggregate</code>, <code>DoctorKpiMetric</code>,
+                <code>DwFact*</code>.
+              </li>
+              <li>Опциональная отправка дайджеста главврачу в Telegram.</li>
+              <li>Аналитика-дашборд в frontend читает агрегаты (charts из ТЗ №2).</li>
+              <li>PR <code>feat(analytics): daily and hourly aggregators</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 5 · ~1 неделя</span>
+            <h3>Этап 5. Outbox + integrations</h3>
+            <ul>
+              <li>Миграция <code>integration_outbox</code>.</li>
+              <li><code>OutboxService.publish</code> внутри transactional операций.</li>
+              <li>Worker <code>outbox-relay</code>.</li>
+              <li>Webhooks subscriptions API; signature (HMAC) для исходящих.</li>
+              <li>
+                Smoke-тест: создать appointment → outbox event → webhook subscriber (mock) получает.
+              </li>
+              <li>PR <code>feat(integrations): transactional outbox</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 6 · ~1 неделя</span>
+            <h3>Этап 6. Observability + polish</h3>
+            <ul>
+              <li>Prometheus exporter в worker; Grafana-дашборд (template JSON в репо).</li>
+              <li>OpenTelemetry трасировка producer ↔ worker.</li>
+              <li>Sentry интеграция; алёрты на DLQ / lag.</li>
+              <li>WhatsApp Cloud API adapter (если есть утверждённый шаблон).</li>
+              <li>Документация (<code>docs/architecture/async-workflows.md</code>).</li>
+              <li>PR <code>feat(observability): metrics, traces, alerts for workers</code>.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="acceptance">
+          <h2>14. Acceptance criteria</h2>
+          <ul class="check">
+            <li>
+              Worker-приложение запускается отдельным контейнером и подключается к Postgres+Redis.
+            </li>
+            <li>
+              Все ключевые очереди созданы: notifications.dispatch, schedule-scan, no-show,
+              kpi.daily/hourly, outbox, audit.checkpoint, maintenance.cleanup, documents.render.
+            </li>
+            <li>Idempotency: повторная постановка job с тем же payload → no-op.</li>
+            <li>
+              Reminder 24h/2h отправляется минимум по одному реальному каналу (SMS либо Telegram);
+              пациент получает сообщение.
+            </li>
+            <li>
+              Chatbot обрабатывает <code>/yes</code>, <code>/no</code>, <code>/reschedule</code>;
+              статус appointment меняется соответствующе.
+            </li>
+            <li>
+              No-show follow-up создаёт conversation и сообщение через 30 минут после
+              <code>endAt</code>.
+            </li>
+            <li>
+              KPI daily/hourly worker наполняет агрегаты; ошибок не приводит к битым данным
+              (idempotent upsert).
+            </li>
+            <li>
+              Outbox-relay доставляет события на webhook subscriber; при отказе экспоненциальный
+              retry до 24 часов.
+            </li>
+            <li>
+              Bull Board доступен под Platform Admin; показывает счётчики, jobs, retries, DLQ.
+            </li>
+            <li>
+              Prometheus-метрики экспортируются; Grafana-дашборд с базовыми панелями добавлен в
+              репо.
+            </li>
+            <li>Sentry получает ошибки воркеров с контекстом jobId + tenantId.</li>
+            <li>Templates UI: CRUD + preview + sms length counter + lint работают.</li>
+            <li>
+              Notification rules UI: вкл/выкл REMINDER_24H/REMINDER_2H/NO_SHOW/POST_VISIT + quiet
+              hours.
+            </li>
+            <li>
+              E2E-тест: создать appointment → пройти полный цикл (reminder → no-show → followup →
+              reschedule) — green.
+            </li>
+            <li>DLQ имеет re-queue button в Bull Board.</li>
+          </ul>
+        </section>
+
+        <section id="metrics">
+          <h2>15. Метрики и риски</h2>
+
+          <h3>15.1. Метрики</h3>
+          <div class="four">
+            <div class="kpi">
+              <span class="label">No-show rate</span><span class="value">−20%…−40%</span
+              ><span class="hint">vs baseline без напоминаний</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Reminder delivery</span><span class="value">≥ 98%</span
+              ><span class="hint">SENT + DELIVERED</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Queue lag P95</span><span class="value">≤ 60 сек</span
+              ><span class="hint">от scheduled до processed</span>
+            </div>
+            <div class="kpi">
+              <span class="label">DLQ size</span><span class="value">0</span
+              ><span class="hint">в steady-state</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Worker uptime</span><span class="value">≥ 99.9%</span
+              ><span class="hint">SLA внутренний</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Cost / reminder</span><span class="value">≤ 3 ₽</span
+              ><span class="hint">SMS-канал на 1 сообщение</span>
+            </div>
+            <div class="kpi">
+              <span class="label">KPI daily ready</span><span class="value">04:00</span
+              ><span class="hint">все DwFact* посчитаны</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Outbox lag</span><span class="value">≤ 30 сек</span
+              ><span class="hint">P95 от commit до webhook</span>
+            </div>
+          </div>
+
+          <h3>15.2. Риски</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Риск</th>
+                <th>Митигация</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Дубль-отправка reminder из-за повторных jobs.</td>
+                <td>
+                  <code>jobId = stableHash(appointmentId+type)</code>; уникальные
+                  <code>(notificationsQueue.appointmentId, type)</code>.
+                </td>
+              </tr>
+              <tr>
+                <td>SMS-spam при баге scanner.</td>
+                <td>
+                  Rate-limit per-tenant в Worker (max 60 dispatch/sec); circuit-breaker per channel;
+                  ручной kill-switch.
+                </td>
+              </tr>
+              <tr>
+                <td>Telegram Bot blocked пациентом → reminder не доходит.</td>
+                <td>
+                  Fallback на SMS из channel-priority; запоминаем block-статус, не пытаемся
+                  отправлять снова.
+                </td>
+              </tr>
+              <tr>
+                <td>WhatsApp HSM-шаблон не одобрен Meta.</td>
+                <td>WhatsApp как «next-step»; продвигаем Telegram + SMS первым.</td>
+              </tr>
+              <tr>
+                <td>Worker падает на одной job → блокирует очередь.</td>
+                <td>
+                  Concurrency &gt; 1, isolate per job; sentry capture; auto-restart pod через k8s.
+                </td>
+              </tr>
+              <tr>
+                <td>Outbox-таблица растёт безгранично.</td>
+                <td>Retention 30 дней с processed_at; cleanup worker.</td>
+              </tr>
+              <tr>
+                <td>Bull Board exposed публично.</td>
+                <td>Mounted под <code>/internal/v1</code> с RBAC, gateway отрезает извне.</td>
+              </tr>
+              <tr>
+                <td>Сложно отлаживать distributed-job.</td>
+                <td>
+                  OpenTelemetry traceId сквозной; jobId в каждом лог-записи; replay из Bull Board.
+                </td>
+              </tr>
+              <tr>
+                <td>Quiet hours различаются по tenant timezone.</td>
+                <td>
+                  Хранить <code>Tenant.timezone</code>; scanner работает в локальном таймзоне
+                  tenant.
+                </td>
+              </tr>
+              <tr>
+                <td>Регуляторный риск рассылок (СПАМ).</td>
+                <td>
+                  Opt-in через <code>CommunicationPreference</code>; reminder = транзакционный (не
+                  маркетинговый); кампании — отдельно с явным opt-in.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="decision">
+            <span class="eyebrow">Definition of Done</span>
+            <strong
+              >Worker-приложение в проде, очереди заняты, SMS+Telegram reminders реально доходят,
+              no-show worker создает follow-up, KPI ежедневно считаются, outbox доставляет webhooks,
+              Bull Board и Grafana показывают метрики, no-show rate в пилотной клинике падает ≥
+              20%.</strong
+            >
+          </div>
+        </section>
+
+        <section>
+          <h2>Приложение А. Запуск worker локально</h2>
+          <pre><code>cd backend
+docker compose up -d postgres redis
+npm run prisma:migrate
+npm run prisma:seed
+
+# build all
+npm run build
+
+# start worker in dev
+npm --workspace backend run start:dev:worker
+
+# Bull Board будет доступен на gateway:
+# http://localhost:3000/internal/v1/queues (требует platform.admin RBAC)</code></pre>
+        </section>
+
+        <section>
+          <h2>Приложение Б. Связанные документы</h2>
+          <ul>
+            <li>ТЗ №1 DevOps Foundation — CI для worker app, Prometheus exporter включён.</li>
+            <li>ТЗ №2 Design System — UI для Templates / Rules / Channels.</li>
+            <li>
+              ТЗ №3 Security — outbox используется для audit checkpoint; backfill PHI через worker.
+            </li>
+            <li>ТЗ №5 Patient Portal — портал использует те же reminders + push.</li>
+            <li><code>docs/architecture/smart-scheduling.md</code> — лист ожидания, recurrence.</li>
+          </ul>
+        </section>
+
+        <footer
+          style="
+            margin-top: 56px;
+            padding-top: 22px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 13px;
+          "
+        >
+          Документ подготовлен в рамках roadmap MedCRM. Связанные ТЗ: №1 DevOps Foundation, №2
+          Design System, №3 Security Baseline, №5 Patient Portal MVP.
+        </footer>
+      </main>
+    </article>
+  </body>
+</html>

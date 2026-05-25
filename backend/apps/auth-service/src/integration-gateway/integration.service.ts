@@ -1,14 +1,20 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
+import { createHash } from 'crypto';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
-import { createHash } from 'crypto';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import {
   CreateLabOrderDto,
   SubmitLabResultDto,
   UploadFileMetadataDto,
   CallEventWebhookDto,
-  DeviceMeasurementDto
+  DeviceMeasurementDto,
 } from './dto/integration.dto';
 
 @Injectable()
@@ -17,7 +23,7 @@ export class IntegrationGatewayService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly audit: AuditLoggerService
+    private readonly audit: AuditLoggerService,
   ) {}
 
   // 1. API Gateway Webhook Logging & Throttling
@@ -29,10 +35,10 @@ export class IntegrationGatewayService {
     resPayload: any,
     statusCode: number,
     execTime: number,
-    correlationId?: string
+    correlationId?: string,
   ) {
     const provider = await this.prisma.integrationProvider.findFirst({
-      where: { tenantId, providerCode }
+      where: { tenantId, providerCode },
     });
 
     return this.prisma.integrationLog.create({
@@ -44,8 +50,8 @@ export class IntegrationGatewayService {
         responsePayload: resPayload as any,
         statusCode,
         executionTimeMs: execTime,
-        correlationId: correlationId || null
-      }
+        correlationId: correlationId || null,
+      },
     });
   }
 
@@ -55,10 +61,10 @@ export class IntegrationGatewayService {
     webhookType: string,
     headers: any,
     payload: any,
-    signature?: string
+    signature?: string,
   ) {
     const provider = await this.prisma.integrationProvider.findFirst({
-      where: { tenantId, providerCode, isActive: true }
+      where: { tenantId, providerCode, isActive: true },
     });
     if (!provider) throw new BadRequestException('Активный интеграционный провайдер не найден');
 
@@ -83,8 +89,8 @@ export class IntegrationGatewayService {
         externalEventId: payload.eventId || payload.id || null,
         requestHeadersJson: headers as any,
         payloadJson: payload as any,
-        processingStatus: 'RECEIVED'
-      }
+        processingStatus: 'RECEIVED',
+      },
     });
 
     await this.logIntegrationTransaction(
@@ -94,7 +100,7 @@ export class IntegrationGatewayService {
       payload,
       { status: 'ACCEPTED', eventId: event.id },
       202,
-      15
+      15,
     );
 
     return event;
@@ -104,10 +110,10 @@ export class IntegrationGatewayService {
   async createLabOrder(user: AuthenticatedUser, dto: CreateLabOrderDto) {
     const provider = dto.providerId
       ? await this.prisma.laboratoryProvider.findFirst({
-          where: { tenantId: user.tenantId, id: dto.providerId }
+          where: { tenantId: user.tenantId, id: dto.providerId },
         })
       : await this.prisma.laboratoryProvider.findFirst({
-          where: { tenantId: user.tenantId, isActive: true }
+          where: { tenantId: user.tenantId, isActive: true },
         });
 
     if (!provider) throw new BadRequestException('Активный лабораторный провайдер не найден');
@@ -123,8 +129,8 @@ export class IntegrationGatewayService {
           providerId: provider.id,
           priority: dto.priority,
           orderedBy: user.userId,
-          orderStatus: 'CREATED'
-        }
+          orderStatus: 'CREATED',
+        },
       });
 
       // Bulk create items
@@ -135,8 +141,8 @@ export class IntegrationGatewayService {
           testName: item.testName,
           loincCode: item.loincCode || null,
           sampleType: item.sampleType || null,
-          status: 'PENDING'
-        }))
+          status: 'PENDING',
+        })),
       });
 
       return dbOrder;
@@ -151,9 +157,9 @@ export class IntegrationGatewayService {
       where: { id: order.id },
       data: {
         orderStatus: 'SENT',
-        externalOrderId: `LIS-${provider.providerCode}-${Date.now()}`
+        externalOrderId: `LIS-${provider.providerCode}-${Date.now()}`,
       },
-      include: { items: true }
+      include: { items: true },
     });
 
     await this.logIntegrationTransaction(
@@ -164,7 +170,7 @@ export class IntegrationGatewayService {
       { status: 'SENT_SUCCESS', code: 200 },
       200,
       45,
-      correlationId
+      correlationId,
     );
 
     await this.audit.log({
@@ -173,7 +179,7 @@ export class IntegrationGatewayService {
       action: 'lab_order.sent',
       entityType: 'lab_order',
       entityId: order.id,
-      newValuesJson: updatedOrder as any
+      newValuesJson: updatedOrder as any,
     });
 
     return updatedOrder;
@@ -181,14 +187,14 @@ export class IntegrationGatewayService {
 
   async submitLabResult(tenantId: string, providerCode: string, dto: SubmitLabResultDto) {
     const provider = await this.prisma.laboratoryProvider.findFirst({
-      where: { tenantId, providerCode }
+      where: { tenantId, providerCode },
     });
     if (!provider) throw new NotFoundException('Лабораторный провайдер не найден');
 
     // Find the linked order
     const order = await this.prisma.labOrder.findFirst({
       where: { tenantId, externalOrderId: dto.externalOrderId },
-      include: { items: true }
+      include: { items: true },
     });
     if (!order) throw new NotFoundException(`Лабораторный заказ ${dto.externalOrderId} не найден`);
 
@@ -203,8 +209,8 @@ export class IntegrationGatewayService {
           externalResultId: dto.externalResultId,
           resultStatus: dto.resultStatus,
           resultJson: dto.results as any,
-          abnormalFlagsJson: dto.abnormalFlagsJson as any
-        }
+          abnormalFlagsJson: dto.abnormalFlagsJson as any,
+        },
       });
 
       // 2. Convert results into Clinical Observations (FHIR interoperability)
@@ -221,8 +227,8 @@ export class IntegrationGatewayService {
             referenceRange: obs.referenceRange || null,
             abnormalFlag: obs.abnormalFlag || null,
             sourceProviderId: provider.id,
-            labResultId: dbResult.id
-          }
+            labResultId: dbResult.id,
+          },
         });
       }
 
@@ -231,13 +237,13 @@ export class IntegrationGatewayService {
         where: { id: order.id },
         data: {
           orderStatus: 'COMPLETED',
-          completedAt: new Date()
-        }
+          completedAt: new Date(),
+        },
       });
 
       await tx.labOrderItem.updateMany({
         where: { labOrderId: order.id },
-        data: { status: 'COMPLETED' }
+        data: { status: 'COMPLETED' },
       });
 
       return dbResult;
@@ -250,7 +256,7 @@ export class IntegrationGatewayService {
       action: 'lab_result.received',
       entityType: 'lab_result',
       entityId: result.id,
-      newValuesJson: result as any
+      newValuesJson: result as any,
     });
 
     return result;
@@ -259,9 +265,10 @@ export class IntegrationGatewayService {
   // 3. S3 Cloud Storage Subsystem
   async registerFileMetadata(user: AuthenticatedUser, dto: UploadFileMetadataDto) {
     const activeStorage = await this.prisma.storageProvider.findFirst({
-      where: { tenantId: user.tenantId, isActive: true }
+      where: { tenantId: user.tenantId, isActive: true },
     });
-    if (!activeStorage) throw new BadRequestException('Активное облачное хранилище S3/MinIO не найдено');
+    if (!activeStorage)
+      throw new BadRequestException('Активное облачное хранилище S3/MinIO не найдено');
 
     const fileId = crypto.randomUUID();
     const objectKey = `${user.tenantId}/${dto.patientId || 'anonymous'}/${dto.fileCategory.toLowerCase()}/${fileId}.${dto.extension}`;
@@ -280,8 +287,8 @@ export class IntegrationGatewayService {
         mimeType: dto.mimeType,
         extension: dto.extension,
         fileSize: dto.fileSize,
-        objectKey
-      }
+        objectKey,
+      },
     });
 
     // Generate simulated expiring pre-signed upload URL (AWS S3 Signature V4 replica)
@@ -293,7 +300,7 @@ export class IntegrationGatewayService {
       action: 'file.uploaded',
       entityType: 'file',
       entityId: file.id,
-      newValuesJson: file as any
+      newValuesJson: file as any,
     });
 
     return { file, uploadUrl: preSignedUploadUrl };
@@ -301,13 +308,13 @@ export class IntegrationGatewayService {
 
   async getExpiringDownloadUrl(user: AuthenticatedUser, fileId: string) {
     const file = await this.prisma.file.findUnique({
-      where: { id: fileId }
+      where: { id: fileId },
     });
     if (!file) throw new NotFoundException('Файл не найден');
     if (file.tenantId !== user.tenantId) throw new ForbiddenException();
 
     const storage = await this.prisma.storageProvider.findUnique({
-      where: { id: file.storageProviderId }
+      where: { id: file.storageProviderId },
     });
     if (!storage) throw new NotFoundException('Хранилище файла не найдено');
 
@@ -320,7 +327,7 @@ export class IntegrationGatewayService {
   // 4. IP Telephony Integration Layer
   async processTelephonyWebhook(tenantId: string, dto: CallEventWebhookDto) {
     const provider = await this.prisma.telephonyProvider.findFirst({
-      where: { tenantId, providerCode: dto.providerCode, isActive: true }
+      where: { tenantId, providerCode: dto.providerCode, isActive: true },
     });
     if (!provider) throw new NotFoundException('Провайдер телефонии не найден');
 
@@ -330,7 +337,7 @@ export class IntegrationGatewayService {
       .digest('hex');
 
     const contact = await this.prisma.patientContact.findFirst({
-      where: { tenantId, normalizedValueHash: phoneHash }
+      where: { tenantId, normalizedValueHash: phoneHash },
     });
 
     let recordingFileId: string | null = null;
@@ -338,7 +345,7 @@ export class IntegrationGatewayService {
     // Simulate downloading recording audio file and storing in isolated S3 bucket
     if (dto.eventType === 'RECORDING_READY' && dto.recordingUrl) {
       const storage = await this.prisma.storageProvider.findFirst({
-        where: { tenantId, isActive: true }
+        where: { tenantId, isActive: true },
       });
       if (storage) {
         const fileId = crypto.randomUUID();
@@ -355,8 +362,8 @@ export class IntegrationGatewayService {
             mimeType: 'audio/mpeg',
             extension: 'mp3',
             fileSize: 450000, // 450 KB mock size
-            objectKey
-          }
+            objectKey,
+          },
         });
         recordingFileId = file.id;
 
@@ -366,7 +373,7 @@ export class IntegrationGatewayService {
           action: 'call.recording.saved',
           entityType: 'file',
           entityId: file.id,
-          newValuesJson: file as any
+          newValuesJson: file as any,
         });
       }
     }
@@ -381,8 +388,8 @@ export class IntegrationGatewayService {
         phoneNumber: dto.phone,
         direction: dto.direction,
         durationSeconds: dto.durationSeconds || 0,
-        recordingFileId
-      }
+        recordingFileId,
+      },
     });
 
     await this.logIntegrationTransaction(
@@ -392,7 +399,7 @@ export class IntegrationGatewayService {
       dto,
       { ok: true, callEventId: callEvent.id },
       200,
-      25
+      25,
     );
 
     return callEvent;
@@ -401,7 +408,7 @@ export class IntegrationGatewayService {
   // 5. Medical Device Measurements Telemetry normalizer
   async recordDeviceMeasurement(user: AuthenticatedUser, dto: DeviceMeasurementDto) {
     const device = await this.prisma.medicalDevice.findUnique({
-      where: { id: dto.deviceId }
+      where: { id: dto.deviceId },
     });
     if (!device || device.tenantId !== user.tenantId) {
       throw new BadRequestException('Указанный медицинский прибор не найден');
@@ -418,8 +425,8 @@ export class IntegrationGatewayService {
           encounterId: dto.encounterId || null,
           deviceId: dto.deviceId,
           measurementType: dto.measurementType,
-          measurementDataJson: dto.measurementData as any
-        }
+          measurementDataJson: dto.measurementData as any,
+        },
       });
 
       // 2. Normalize and create EMR clinical observation for direct EMR display!
@@ -432,8 +439,8 @@ export class IntegrationGatewayService {
           observationName: `${device.manufacturer} ${device.model} measurement`,
           value: data.value || '0',
           unit: data.unit || null,
-          sourceProviderId: device.id
-        }
+          sourceProviderId: device.id,
+        },
       });
 
       return dbMeas;
@@ -445,7 +452,7 @@ export class IntegrationGatewayService {
       action: 'device.measurement.received',
       entityType: 'device_measurement',
       entityId: result.id,
-      newValuesJson: result as any
+      newValuesJson: result as any,
     });
 
     return result;
@@ -458,8 +465,8 @@ export class IntegrationGatewayService {
       include: {
         patient: true,
         order: { include: { provider: true } },
-        observations: true
-      }
+        observations: true,
+      },
     });
 
     if (!result) throw new NotFoundException('Лабораторный результат не найден');
@@ -473,38 +480,40 @@ export class IntegrationGatewayService {
       category: [
         {
           coding: [
-            { system: 'http://terminology.hl7.org/CodeSystem/v2-0074', code: 'LAB', display: 'Laboratory' }
-          ]
-        }
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0074',
+              code: 'LAB',
+              display: 'Laboratory',
+            },
+          ],
+        },
       ],
       code: {
-        coding: [
-          { system: 'http://loinc.org', code: '11502-2', display: 'Laboratory report' }
-        ]
+        coding: [{ system: 'http://loinc.org', code: '11502-2', display: 'Laboratory report' }],
       },
       subject: {
         reference: `Patient/${result.patientId}`,
-        display: result.patient.fullName
+        display: result.patient.fullName,
       },
       effectiveDateTime: result.receivedAt.toISOString(),
       issued: result.receivedAt.toISOString(),
       performer: [
         {
           reference: `Organization/${result.order?.providerId}`,
-          display: result.order?.provider?.providerName || 'LIS Laboratory'
-        }
+          display: result.order?.provider?.providerName || 'LIS Laboratory',
+        },
       ],
       result: result.observations.map((obs) => ({
         reference: `Observation/${obs.id}`,
-        display: obs.observationName
-      }))
+        display: obs.observationName,
+      })),
     };
   }
 
   async getObservationFHIR(user: AuthenticatedUser, observationId: string) {
     const obs = await this.prisma.clinicalObservation.findUnique({
       where: { id: observationId },
-      include: { patient: true }
+      include: { patient: true },
     });
 
     if (!obs) throw new NotFoundException('Клиническое наблюдение не найдено');
@@ -516,19 +525,19 @@ export class IntegrationGatewayService {
       status: 'final',
       code: {
         coding: [
-          { system: 'http://loinc.org', code: obs.observationCode, display: obs.observationName }
-        ]
+          { system: 'http://loinc.org', code: obs.observationCode, display: obs.observationName },
+        ],
       },
       subject: {
         reference: `Patient/${obs.patientId}`,
-        display: obs.patient.fullName
+        display: obs.patient.fullName,
       },
       encounter: obs.encounterId ? { reference: `Encounter/${obs.encounterId}` } : undefined,
       effectiveDateTime: obs.observedAt.toISOString(),
       valueQuantity: {
         value: Number(obs.value) || obs.value,
         unit: obs.unit || undefined,
-        system: obs.unit ? 'http://unitsofmeasure.org' : undefined
+        system: obs.unit ? 'http://unitsofmeasure.org' : undefined,
       },
       interpretation: obs.abnormalFlag
         ? [
@@ -536,19 +545,19 @@ export class IntegrationGatewayService {
               coding: [
                 {
                   system: 'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation',
-                  code: obs.abnormalFlag
-                }
-              ]
-            }
+                  code: obs.abnormalFlag,
+                },
+              ],
+            },
           ]
         : undefined,
       referenceRange: obs.referenceRange
         ? [
             {
-              text: obs.referenceRange
-            }
+              text: obs.referenceRange,
+            },
           ]
-        : undefined
+        : undefined,
     };
   }
 }

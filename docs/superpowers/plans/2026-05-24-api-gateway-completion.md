@@ -96,6 +96,7 @@ Do not modify in this TЗ:
 ### Task 1: Add Gateway Route Table
 
 **Files:**
+
 - Create: `backend/apps/api-gateway/src/gateway-route.config.ts`
 - Test: `backend/apps/api-gateway/src/gateway-route.config.spec.ts`
 
@@ -106,7 +107,12 @@ Create `backend/apps/api-gateway/src/gateway-route.config.spec.ts`:
 ```ts
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { compatibilityRoutes, internalRoutes, publicRoutes, websocketRoutes } from './gateway-route.config';
+import {
+  compatibilityRoutes,
+  internalRoutes,
+  publicRoutes,
+  websocketRoutes,
+} from './gateway-route.config';
 
 describe('gateway route config', () => {
   it('proxies every implemented backend domain through the public v1 API', () => {
@@ -136,7 +142,7 @@ describe('gateway route config', () => {
       '/api/v1/schedules',
       '/api/v1/services',
       '/api/v1/slots',
-      '/api/v1/waiting-list'
+      '/api/v1/waiting-list',
     ]);
   });
 
@@ -152,7 +158,10 @@ describe('gateway route config', () => {
   });
 
   it('declares websocket proxy routes explicitly', () => {
-    assert.deepEqual(websocketRoutes.map((route) => route.gatewayPrefix), ['/socket.io']);
+    assert.deepEqual(
+      websocketRoutes.map((route) => route.gatewayPrefix),
+      ['/socket.io'],
+    );
   });
 });
 ```
@@ -241,18 +250,20 @@ const publicDomainPrefixes = [
   ['schedules', '/schedules', true],
   ['services', '/services', true],
   ['slots', '/slots', true],
-  ['waiting-list', '/waiting-list', true]
+  ['waiting-list', '/waiting-list', true],
 ] satisfies Array<[string, string, boolean]>;
 
-export const publicRoutes: GatewayRouteConfig[] = publicDomainPrefixes.map(([name, upstreamPrefix, requiresAuth]) => ({
-  kind: 'public',
-  gatewayPrefix: `/api/v1/${name}`,
-  upstreamPrefix,
-  targetEnv: authTarget,
-  rateLimitPolicy: name === 'auth' ? 'auth' : 'public',
-  requiresAuth,
-  description: `Public v1 proxy for ${upstreamPrefix}`
-}));
+export const publicRoutes: GatewayRouteConfig[] = publicDomainPrefixes.map(
+  ([name, upstreamPrefix, requiresAuth]) => ({
+    kind: 'public',
+    gatewayPrefix: `/api/v1/${name}`,
+    upstreamPrefix,
+    targetEnv: authTarget,
+    rateLimitPolicy: name === 'auth' ? 'auth' : 'public',
+    requiresAuth,
+    description: `Public v1 proxy for ${upstreamPrefix}`,
+  }),
+);
 
 const compatibilityPrefixes = [
   '/auth',
@@ -266,7 +277,7 @@ const compatibilityPrefixes = [
   '/waiting-list',
   '/resource-buffers',
   '/online-booking',
-  '/rooms'
+  '/rooms',
 ];
 
 export const compatibilityRoutes: GatewayRouteConfig[] = compatibilityPrefixes.map((prefix) => ({
@@ -276,7 +287,7 @@ export const compatibilityRoutes: GatewayRouteConfig[] = compatibilityPrefixes.m
   targetEnv: authTarget,
   rateLimitPolicy: prefix === '/auth' ? 'auth' : 'public',
   requiresAuth: prefix !== '/auth',
-  description: `Backward-compatible unversioned proxy for ${prefix}`
+  description: `Backward-compatible unversioned proxy for ${prefix}`,
 }));
 
 export const internalRoutes: GatewayRouteConfig[] = [
@@ -287,7 +298,7 @@ export const internalRoutes: GatewayRouteConfig[] = [
     targetEnv: internalTarget,
     rateLimitPolicy: 'internal',
     requiresAuth: true,
-    description: 'Internal auth service contract'
+    description: 'Internal auth service contract',
   },
   {
     kind: 'internal',
@@ -296,8 +307,8 @@ export const internalRoutes: GatewayRouteConfig[] = [
     targetEnv: internalTarget,
     rateLimitPolicy: 'internal',
     requiresAuth: false,
-    description: 'Internal auth-service health proxy'
-  }
+    description: 'Internal auth-service health proxy',
+  },
 ];
 
 export const websocketRoutes: GatewayRouteConfig[] = [
@@ -308,15 +319,15 @@ export const websocketRoutes: GatewayRouteConfig[] = [
     targetEnv: authTarget,
     rateLimitPolicy: 'websocket',
     requiresAuth: true,
-    description: 'Socket.IO realtime gateway proxy'
-  }
+    description: 'Socket.IO realtime gateway proxy',
+  },
 ];
 
 export const gatewayRoutes = [
   ...publicRoutes,
   ...compatibilityRoutes,
   ...internalRoutes,
-  ...websocketRoutes
+  ...websocketRoutes,
 ];
 ```
 
@@ -346,6 +357,7 @@ git commit -m "Add gateway route registry"
 ### Task 2: Add Request Correlation Middleware
 
 **Files:**
+
 - Create: `backend/apps/api-gateway/src/request-correlation.middleware.ts`
 - Test: `backend/apps/api-gateway/src/request-correlation.middleware.spec.ts`
 - Modify: `backend/apps/api-gateway/src/main.ts`
@@ -364,12 +376,12 @@ function runMiddleware(inputHeader?: string) {
   const req = {
     headers: inputHeader ? { 'x-request-id': inputHeader } : {},
     url: '/api/v1/patients',
-    method: 'GET'
+    method: 'GET',
   } as any;
   const res = {
     setHeader(name: string, value: string) {
       headers[name.toLowerCase()] = value;
-    }
+    },
   } as any;
   let nextCalled = false;
 
@@ -422,7 +434,11 @@ Create `backend/apps/api-gateway/src/request-correlation.middleware.ts`:
 import { NextFunction, Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 
-export function requestCorrelationMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function requestCorrelationMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   const incoming = req.headers['x-request-id'];
   const requestId = typeof incoming === 'string' && incoming.length > 0 ? incoming : randomUUID();
 
@@ -445,7 +461,7 @@ import { requestCorrelationMiddleware } from './request-correlation.middleware';
 Then inside `bootstrap`, immediately after `const authTarget = ...`:
 
 ```ts
-  app.use(requestCorrelationMiddleware);
+app.use(requestCorrelationMiddleware);
 ```
 
 - [ ] **Step 5: Run gateway tests and typecheck**
@@ -477,6 +493,7 @@ git commit -m "Add gateway request correlation"
 ### Task 3: Add Gateway Rate Limit Boundary
 
 **Files:**
+
 - Create: `backend/apps/api-gateway/src/rate-limit.middleware.ts`
 - Test: `backend/apps/api-gateway/src/rate-limit.middleware.spec.ts`
 - Modify: `backend/apps/api-gateway/src/main.ts`
@@ -511,7 +528,7 @@ function makeRes() {
     json(body: unknown) {
       this.body = body;
       return this;
-    }
+    },
   } as any;
 }
 
@@ -541,7 +558,7 @@ describe('createRateLimitMiddleware', () => {
     assert.equal(second.statusCode, 429);
     assert.deepEqual(second.body, {
       error: 'rate_limited',
-      message: 'Too many requests'
+      message: 'Too many requests',
     });
   });
 });
@@ -584,7 +601,7 @@ const defaultMaxByPolicy: Record<RateLimitPolicy, number> = {
   auth: 20,
   public: 300,
   internal: 1000,
-  websocket: 120
+  websocket: 120,
 };
 
 function policyForPath(path: string): RateLimitPolicy {
@@ -611,7 +628,8 @@ export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>) {
     const max = maxByPolicy[policy];
     const key = clientKey(req, policy);
     const existing = buckets.get(key);
-    const bucket = existing && existing.resetAt > now ? existing : { count: 0, resetAt: now + windowMs };
+    const bucket =
+      existing && existing.resetAt > now ? existing : { count: 0, resetAt: now + windowMs };
 
     bucket.count += 1;
     buckets.set(key, bucket);
@@ -624,7 +642,7 @@ export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>) {
     if (bucket.count > max) {
       res.status(429).json({
         error: 'rate_limited',
-        message: 'Too many requests'
+        message: 'Too many requests',
       });
       return;
     }
@@ -645,17 +663,17 @@ import { createRateLimitMiddleware } from './rate-limit.middleware';
 Then after request correlation:
 
 ```ts
-  app.use(
-    createRateLimitMiddleware({
-      windowMs: Number(config.get<string>('GATEWAY_RATE_LIMIT_WINDOW_MS', '60000')),
-      maxByPolicy: {
-        auth: Number(config.get<string>('GATEWAY_RATE_LIMIT_AUTH_MAX', '20')),
-        public: Number(config.get<string>('GATEWAY_RATE_LIMIT_PUBLIC_MAX', '300')),
-        internal: Number(config.get<string>('GATEWAY_RATE_LIMIT_INTERNAL_MAX', '1000')),
-        websocket: Number(config.get<string>('GATEWAY_RATE_LIMIT_WEBSOCKET_MAX', '120'))
-      }
-    })
-  );
+app.use(
+  createRateLimitMiddleware({
+    windowMs: Number(config.get<string>('GATEWAY_RATE_LIMIT_WINDOW_MS', '60000')),
+    maxByPolicy: {
+      auth: Number(config.get<string>('GATEWAY_RATE_LIMIT_AUTH_MAX', '20')),
+      public: Number(config.get<string>('GATEWAY_RATE_LIMIT_PUBLIC_MAX', '300')),
+      internal: Number(config.get<string>('GATEWAY_RATE_LIMIT_INTERNAL_MAX', '1000')),
+      websocket: Number(config.get<string>('GATEWAY_RATE_LIMIT_WEBSOCKET_MAX', '120')),
+    },
+  }),
+);
 ```
 
 - [ ] **Step 5: Add env defaults**
@@ -693,6 +711,7 @@ git commit -m "Add gateway rate limit policy boundary"
 ### Task 4: Centralize Proxy Creation and Register All Routes
 
 **Files:**
+
 - Create: `backend/apps/api-gateway/src/proxy.factory.ts`
 - Modify: `backend/apps/api-gateway/src/main.ts`
 - Modify: `docker-compose.yml`
@@ -711,7 +730,10 @@ const logger = new Logger('GatewayProxy');
 
 function resolveTarget(config: ConfigService, route: GatewayRouteConfig): string {
   if (route.targetEnv === 'AUTH_SERVICE_INTERNAL_URL') {
-    return config.get<string>('AUTH_SERVICE_INTERNAL_URL') ?? config.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001');
+    return (
+      config.get<string>('AUTH_SERVICE_INTERNAL_URL') ??
+      config.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001')
+    );
   }
   return config.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001');
 }
@@ -738,13 +760,15 @@ export function createGatewayProxy(config: ConfigService, route: GatewayRouteCon
         if (!res.headersSent) {
           res.writeHead(502, { 'Content-Type': 'application/json' });
         }
-        res.end(JSON.stringify({
-          error: 'bad_gateway',
-          route: route.gatewayPrefix,
-          requestId: req.headers['x-request-id']
-        }));
-      }
-    }
+        res.end(
+          JSON.stringify({
+            error: 'bad_gateway',
+            route: route.gatewayPrefix,
+            requestId: req.headers['x-request-id'],
+          }),
+        );
+      },
+    },
   };
 
   return createProxyMiddleware(options);
@@ -763,9 +787,9 @@ import { createGatewayProxy } from './proxy.factory';
 Remove the current inline `app.use('/auth', ...)`, loop over `proxiedPrefixes`, and explicit `/socket.io` proxy. Replace with:
 
 ```ts
-  for (const route of gatewayRoutes) {
-    app.use(route.gatewayPrefix, createGatewayProxy(config, route));
-  }
+for (const route of gatewayRoutes) {
+  app.use(route.gatewayPrefix, createGatewayProxy(config, route));
+}
 ```
 
 - [ ] **Step 3: Add internal URL env for containers**
@@ -773,7 +797,7 @@ Remove the current inline `app.use('/auth', ...)`, loop over `proxiedPrefixes`, 
 Modify `docker-compose.yml` `api-gateway.environment`:
 
 ```yaml
-      AUTH_SERVICE_INTERNAL_URL: ${AUTH_SERVICE_INTERNAL_URL:-http://auth-service:3001}
+AUTH_SERVICE_INTERNAL_URL: ${AUTH_SERVICE_INTERNAL_URL:-http://auth-service:3001}
 ```
 
 Add to `.env.example`:
@@ -826,6 +850,7 @@ git commit -m "Route all domains through gateway"
 ### Task 5: Add OpenAPI Route Discovery
 
 **Files:**
+
 - Create: `backend/apps/api-gateway/src/openapi.controller.ts`
 - Modify: `backend/apps/api-gateway/src/app.module.ts`
 
@@ -851,8 +876,8 @@ export class OpenApiController {
         upstreamPrefix: route.upstreamPrefix,
         rateLimitPolicy: route.rateLimitPolicy,
         requiresAuth: route.requiresAuth,
-        description: route.description
-      }))
+        description: route.description,
+      })),
     };
   }
 
@@ -864,9 +889,9 @@ export class OpenApiController {
         {
           service: 'auth-service',
           openApiJson: '/internal/v1/auth-service/docs-json',
-          swaggerUi: '/internal/v1/auth-service/docs'
-        }
-      ]
+          swaggerUi: '/internal/v1/auth-service/docs',
+        },
+      ],
     };
   }
 }
@@ -883,7 +908,7 @@ import { OpenApiController } from './openapi.controller';
 Then:
 
 ```ts
-controllers: [HealthController, OpenApiController]
+controllers: [HealthController, OpenApiController];
 ```
 
 - [ ] **Step 3: Expose Swagger JSON**
@@ -891,9 +916,9 @@ controllers: [HealthController, OpenApiController]
 Modify `backend/apps/api-gateway/src/main.ts` Swagger setup:
 
 ```ts
-  SwaggerModule.setup('docs', app, document, {
-    jsonDocumentUrl: 'docs-json'
-  });
+SwaggerModule.setup('docs', app, document, {
+  jsonDocumentUrl: 'docs-json',
+});
 ```
 
 - [ ] **Step 4: Run typecheck**
@@ -932,6 +957,7 @@ git commit -m "Expose gateway route discovery"
 ### Task 6: Harden Websocket Gateway Proxy
 
 **Files:**
+
 - Modify: `backend/apps/api-gateway/src/proxy.factory.ts`
 - Modify: `backend/apps/api-gateway/src/gateway-route.config.ts`
 
@@ -995,6 +1021,7 @@ git commit -m "Harden gateway websocket proxy"
 ### Task 7: Final Verification
 
 **Files:**
+
 - Modify only if previous verification finds a concrete failure.
 
 - [ ] **Step 1: Check worktree before verification**

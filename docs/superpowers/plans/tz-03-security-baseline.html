@@ -1,0 +1,1785 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ТЗ №3. Security Baseline — MedCRM</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #101828;
+        --muted: #667085;
+        --line: #d9e1ea;
+        --surface: #ffffff;
+        --soft: #f6f8fb;
+        --brand: #079685;
+        --brand-dark: #04786b;
+        --brand-soft: #e7f8f5;
+        --blue: #2563eb;
+        --amber: #b45309;
+        --red: #b42318;
+        --green: #15803d;
+        --violet: #6d28d9;
+        --shadow: 0 16px 40px rgba(16, 24, 40, 0.08);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #eef3f7;
+        color: var(--ink);
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Arial,
+          sans-serif;
+        line-height: 1.55;
+      }
+      .page {
+        width: min(1180px, calc(100% - 40px));
+        margin: 32px auto;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+      }
+      header.cover {
+        padding: 56px 56px 40px;
+        background:
+          linear-gradient(135deg, rgba(180, 35, 24, 0.1), rgba(7, 150, 133, 0.14)), #fbfdff;
+        border-bottom: 1px solid var(--line);
+      }
+      main {
+        padding: 36px 56px 56px;
+      }
+      h1,
+      h2,
+      h3,
+      h4 {
+        margin: 0;
+        line-height: 1.18;
+      }
+      h1 {
+        max-width: 880px;
+        font-size: 42px;
+        font-weight: 760;
+      }
+      h2 {
+        margin-top: 48px;
+        padding-top: 26px;
+        border-top: 1px solid var(--line);
+        font-size: 26px;
+      }
+      h3 {
+        margin-top: 28px;
+        font-size: 19px;
+      }
+      h4 {
+        margin-top: 18px;
+        font-size: 16px;
+        color: #344054;
+      }
+      p {
+        margin: 10px 0 0;
+      }
+      ul,
+      ol {
+        margin: 10px 0 0;
+        padding-left: 22px;
+      }
+      li + li {
+        margin-top: 6px;
+      }
+      table {
+        width: 100%;
+        margin-top: 14px;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th,
+      td {
+        vertical-align: top;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        text-align: left;
+      }
+      th {
+        background: #f3f7fa;
+        font-weight: 700;
+      }
+      code {
+        padding: 2px 5px;
+        border-radius: 5px;
+        background: #edf2f7;
+        color: #243244;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 0.92em;
+      }
+      pre {
+        margin-top: 12px;
+        padding: 16px 18px;
+        background: #0b1220;
+        color: #e6edf3;
+        border-radius: 10px;
+        overflow-x: auto;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+      }
+      .meta {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 28px;
+      }
+      .meta div,
+      .note,
+      .decision,
+      .warning,
+      .danger,
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.85);
+        padding: 14px 16px;
+      }
+      .meta span,
+      .eyebrow {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .meta strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 15px;
+      }
+      .lead {
+        max-width: 820px;
+        margin-top: 18px;
+        color: #344054;
+        font-size: 18px;
+      }
+      .toc {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 24px;
+        margin-top: 18px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--soft);
+      }
+      .toc a {
+        color: var(--brand-dark);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .toc a:hover {
+        text-decoration: underline;
+      }
+      .two {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 16px;
+      }
+      .three {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 16px;
+      }
+      .four {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+      }
+      .card {
+        padding: 18px;
+      }
+      .card h3 {
+        margin-top: 0;
+      }
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        margin: 4px 6px 0 0;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: var(--brand-soft);
+        color: var(--brand-dark);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .tag.blue {
+        background: #eff6ff;
+        color: #1e40af;
+      }
+      .tag.amber {
+        background: #fffbeb;
+        color: #92400e;
+      }
+      .tag.red {
+        background: #fef2f2;
+        color: #991b1b;
+      }
+      .tag.violet {
+        background: #f5f3ff;
+        color: #5b21b6;
+      }
+      .tag.green {
+        background: #f0fdf4;
+        color: #166534;
+      }
+      .tag.gray {
+        background: #f3f4f6;
+        color: #374151;
+      }
+      .note {
+        background: #f8fbff;
+        border-color: #c7d8f0;
+      }
+      .decision {
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+      }
+      .warning {
+        background: #fff7ed;
+        border-color: #fed7aa;
+      }
+      .danger {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #7f1d1d;
+      }
+      .small {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .stage {
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--brand);
+        border-radius: 10px;
+        padding: 16px 18px;
+        margin-top: 14px;
+        background: #fbfeff;
+      }
+      .stage h3 {
+        margin-top: 0;
+      }
+      .stage .stage-meta {
+        display: inline-block;
+        margin-right: 10px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--brand-soft);
+        color: var(--brand-dark);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .kpi {
+        border-radius: 12px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, #ffffff, #f7fafc);
+      }
+      .kpi .label {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .kpi .value {
+        display: block;
+        margin-top: 6px;
+        font-size: 26px;
+        font-weight: 760;
+      }
+      .kpi .hint {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .check {
+        padding-left: 0;
+        list-style: none;
+      }
+      .check li {
+        position: relative;
+        padding: 6px 0 6px 26px;
+        border-bottom: 1px dashed #e5e7eb;
+      }
+      .check li:before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 11px;
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1.5px solid var(--brand);
+        background: #fff;
+      }
+      .check li:last-child {
+        border-bottom: 0;
+      }
+      .file-tree {
+        margin-top: 12px;
+        padding: 16px 20px;
+        background: #0b1220;
+        color: #e6edf3;
+        border-radius: 10px;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.7;
+        overflow-x: auto;
+      }
+      .file-tree b {
+        color: #7dd3fc;
+        font-weight: 700;
+      }
+      .file-tree i {
+        color: #a5b4fc;
+        font-style: normal;
+      }
+      .file-tree em {
+        color: #fcd34d;
+        font-style: normal;
+      }
+      .threat {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr 1.4fr;
+        gap: 14px;
+        margin-top: 14px;
+      }
+      .threat .card {
+        padding: 14px 16px;
+      }
+      .threat .sev {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .sev.high {
+        background: #fef2f2;
+        color: #991b1b;
+      }
+      .sev.med {
+        background: #fffbeb;
+        color: #92400e;
+      }
+      .sev.low {
+        background: #eff6ff;
+        color: #1e40af;
+      }
+      @media (max-width: 860px) {
+        .page {
+          width: 100%;
+          margin: 0;
+          border-width: 0;
+        }
+        header.cover,
+        main {
+          padding: 28px 20px;
+        }
+        h1 {
+          font-size: 30px;
+        }
+        .meta,
+        .two,
+        .three,
+        .four,
+        .toc,
+        .threat {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media print {
+        body {
+          background: #fff;
+        }
+        .page {
+          width: 100%;
+          margin: 0;
+          border: 0;
+          box-shadow: none;
+        }
+        header.cover,
+        main {
+          padding: 24px 32px;
+        }
+        pre {
+          background: #f4f4f5;
+          color: #111827;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <article class="page">
+      <header class="cover">
+        <span class="eyebrow">MedCRM · ТЗ №3 · Security & Compliance Baseline</span>
+        <h1>Tenant isolation, 2FA и приватность медицинских данных</h1>
+        <p class="lead">
+          Перевести MedCRM с «security-in-code» на полноценный комплаенс-уровень: PostgreSQL
+          Row-Level Security как hard boundary между тенантами, обязательная 2FA для
+          администраторов, неизменяемый audit-log с hash-chain, column-level шифрование PHI, ротация
+          секретов, OWASP-baseline и подготовка к ФЗ-152 (РФ), Закону РТ о персональных данных и
+          GDPR-эквивалентам.
+        </p>
+        <section class="meta">
+          <div><span>Версия</span><strong>1.0</strong></div>
+          <div><span>Дата</span><strong>25 мая 2026</strong></div>
+          <div><span>Проект</span><strong>xiewan1230-maker/MedCRM</strong></div>
+          <div><span>Фокус</span><strong>Security, compliance, multi-tenant</strong></div>
+        </section>
+      </header>
+
+      <main>
+        <nav class="toc">
+          <a href="#purpose">1. Назначение</a>
+          <a href="#as-is">2. Состояние «как есть»</a>
+          <a href="#threats">3. Threat model</a>
+          <a href="#goals">4. Цели и Out of Scope</a>
+          <a href="#rls">5. PostgreSQL RLS</a>
+          <a href="#mfa">6. 2FA / MFA / WebAuthn</a>
+          <a href="#sessions">7. Сессии и токены</a>
+          <a href="#audit">8. Audit log + hash chain</a>
+          <a href="#crypto">9. Шифрование PHI</a>
+          <a href="#secrets">10. Управление секретами</a>
+          <a href="#owasp">11. OWASP baseline и headers</a>
+          <a href="#compliance">12. ФЗ-152 / Закон РТ / GDPR</a>
+          <a href="#prisma">13. Изменения в Prisma</a>
+          <a href="#files">14. Структура файлов</a>
+          <a href="#plan">15. Этапы работ</a>
+          <a href="#acceptance">16. Acceptance</a>
+          <a href="#metrics">17. Метрики и риски</a>
+        </nav>
+
+        <section id="purpose">
+          <h2>1. Назначение</h2>
+          <p>
+            MedCRM работает с защищённой медицинской информацией (ПДн пациента, диагноз, рецепт,
+            финансы). Базовая архитектура поддерживает <code>tenantId</code> на каждой таблице и
+            RBAC на уровне приложения, но «hard boundaries» в БД нет — забытый
+            <code>where tenantId</code> в одном запросе означает утечку между клиниками.
+          </p>
+          <p>
+            Кроме того, в Prisma уже есть модель <code>User2faSettings</code> (с полями
+            <code>isEnabled</code>, <code>secretHash</code>, <code>backupCodes</code>,
+            <code>preferredMethod</code>), но flow в коде
+            <code>backend/apps/auth-service/src/auth/</code> не реализован. То же по audit-логу:
+            модель <code>AuditLog</code> существует, hash-chain отсутствует.
+          </p>
+          <p>
+            Цель ТЗ №3 — закрыть фундаментальные дыры безопасности и комплаенса, без которых нельзя
+            продавать MedCRM медицинской организации.
+          </p>
+          <div class="decision">
+            <span class="eyebrow">Принцип</span>
+            <strong>«Defense in depth»</strong>
+            <p class="small">
+              Tenant isolation должна работать на двух уровнях минимум: в коде (Prisma middleware) и
+              в БД (RLS). 2FA — обязательна для админов. PHI шифруется на колонке. Audit-лог нельзя
+              подделать.
+            </p>
+          </div>
+        </section>
+
+        <section id="as-is">
+          <h2>2. Состояние «как есть»</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Область</th>
+                <th>Сейчас</th>
+                <th>Дыра</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Tenant isolation</td>
+                <td>
+                  В каждой Prisma-запрос вручную добавляется <code>tenantId</code>; есть
+                  <code>core/tenancy</code>.
+                </td>
+                <td>Забытый фильтр — утечка. Нет защиты на уровне БД.</td>
+              </tr>
+              <tr>
+                <td>2FA</td>
+                <td>
+                  Модель <code>User2faSettings</code> существует, но эндпоинтов
+                  <code>POST /auth/2fa/setup</code>, <code>POST /auth/2fa/verify</code> нет.
+                </td>
+                <td>Админ заходит по логин+паролю.</td>
+              </tr>
+              <tr>
+                <td>Sessions</td>
+                <td>
+                  JWT access 15m + refresh 30d (см. <code>.env.example</code>), модель
+                  <code>UserSession</code>.
+                </td>
+                <td>Нет revoke по device, нет «sign out everywhere», нет risk-based-policy.</td>
+              </tr>
+              <tr>
+                <td>Audit</td>
+                <td>
+                  Модель <code>AuditLog</code> с oldValues/newValues/requestId; индекс по
+                  <code>(tenantId, action, createdAt)</code>.
+                </td>
+                <td>
+                  Нет hash-chain, нет «append-only» защиты, любой админ БД может изменить лог.
+                </td>
+              </tr>
+              <tr>
+                <td>PHI шифрование</td>
+                <td>Поля пациента (имя, телефон, диагноз) хранятся как plaintext.</td>
+                <td>Любой <code>SELECT *</code> из БД даёт сразу PHI.</td>
+              </tr>
+              <tr>
+                <td>Секреты</td>
+                <td>
+                  <code>JWT_ACCESS_SECRET</code>, <code>JWT_REFRESH_SECRET</code> в
+                  <code>.env</code>; <code>change_me_*</code> в <code>.env.example</code>.
+                </td>
+                <td>Нет ротации, нет KMS, риск утечки через бэкап репо.</td>
+              </tr>
+              <tr>
+                <td>Rate limiting</td>
+                <td>Gateway имеет <code>rate-limit.middleware</code> с in-memory store.</td>
+                <td>
+                  В кластере (≥2 поды gateway) лимиты неконсистентны. Нет защиты на auth-эндпоинтах
+                  в auth-service.
+                </td>
+              </tr>
+              <tr>
+                <td>Headers</td>
+                <td>Helmet установлен.</td>
+                <td>Нет CSP/Permissions-Policy/HSTS preload-конфигурации.</td>
+              </tr>
+              <tr>
+                <td>SAST/DAST</td>
+                <td>Нет.</td>
+                <td>Покрывается ТЗ №1 (CodeQL) и здесь — OWASP ZAP baseline.</td>
+              </tr>
+              <tr>
+                <td>Compliance docs</td>
+                <td>Нет.</td>
+                <td>Нет DPA, нет описания DPIA, нет процедуры response на subject request.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="threats">
+          <h2>3. Threat model (упрощённая STRIDE)</h2>
+          <div class="threat">
+            <div class="card">
+              <span class="sev high">High</span><strong>T1 · Cross-tenant data leak</strong>
+              <p class="small">
+                Забытый <code>where tenantId</code> или баг в join — клиника A видит данные клиники
+                B.
+              </p>
+            </div>
+            <div class="card">
+              <span class="sev high">High</span><strong>T2 · Account takeover админа</strong>
+              <p class="small">Пароль слит через phishing → доступ ко всей клинике.</p>
+            </div>
+            <div class="card">
+              <span class="sev high">High</span><strong>T3 · PHI exfiltration через БД</strong>
+              <p class="small">Доступ к Postgres (read-only replica, бэкап) даёт plaintext PHI.</p>
+            </div>
+            <div class="card">
+              <span class="sev high">High</span><strong>T4 · Audit log tampering</strong>
+              <p class="small">
+                Админ БД редактирует <code>audit_logs</code> чтобы скрыть удаление пациента.
+              </p>
+            </div>
+            <div class="card">
+              <span class="sev med">Med</span><strong>T5 · Session hijacking</strong>
+              <p class="small">XSS / устарелый JWT, нет device fingerprint.</p>
+            </div>
+            <div class="card">
+              <span class="sev med">Med</span><strong>T6 · Brute force на /auth/login</strong>
+              <p class="small">In-memory rate limit не работает на кластере.</p>
+            </div>
+            <div class="card">
+              <span class="sev med">Med</span><strong>T7 · Privilege escalation</strong>
+              <p class="small">
+                Регистратор отправляет <code>role: admin</code> в payload — gateway не валидирует
+                RBAC.
+              </p>
+            </div>
+            <div class="card">
+              <span class="sev med">Med</span><strong>T8 · Insecure file upload</strong>
+              <p class="small">MinIO bucket для медкарт без anti-virus и без подписанных URL.</p>
+            </div>
+            <div class="card">
+              <span class="sev low">Low</span><strong>T9 · Outdated dependency</strong>
+              <p class="small">Покрыто Renovate (ТЗ №1).</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="goals">
+          <h2>4. Цели и Out of Scope</h2>
+          <div class="two">
+            <div class="card">
+              <h3>Цели</h3>
+              <ul>
+                <li>
+                  Включить PostgreSQL Row-Level Security на всех таблицах с <code>tenant_id</code>.
+                </li>
+                <li>
+                  Сделать 2FA TOTP обязательной для админов; backup-codes; опционально WebAuthn для
+                  enterprise.
+                </li>
+                <li>
+                  Сделать sessions revoke-aware: per-device, «sign out everywhere», risk-based MFA
+                  challenge.
+                </li>
+                <li>Превратить <code>audit_logs</code> в append-only с hash-chain.</li>
+                <li>
+                  Column-level шифрование PHI для критичных полей (имя, телефон, паспорт, диагноз).
+                </li>
+                <li>Перенос секретов из <code>.env</code> в Doppler / Vault / SOPS.</li>
+                <li>Унификация rate-limit на Redis (gateway + auth-service).</li>
+                <li>Усилить заголовки безопасности (CSP, HSTS, Permissions-Policy).</li>
+                <li>OWASP ZAP baseline в CI как health-check.</li>
+                <li>Подготовка комплаенс-документации (DPA, DPIA, subject request).</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Out of Scope</h3>
+              <ul>
+                <li>SSO (SAML/OIDC) для enterprise — отдельное мини-ТЗ.</li>
+                <li>Полная сертификация HIPAA/ISO27001 — это юридический процесс.</li>
+                <li>Bug bounty программа — после публичного релиза.</li>
+                <li>FIPS 140-2 cryptography hardware — для нишевых клиентов.</li>
+                <li>Pentest вручную — после реализации baseline.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="rls">
+          <h2>5. PostgreSQL Row-Level Security</h2>
+
+          <h3>5.1. Архитектура</h3>
+          <p>
+            Каждая таблица с колонкой <code>tenant_id</code> получает RLS-политику, проверяющую
+            соответствие сессионной переменной <code>app.current_tenant_id</code>. Соединение с БД
+            через Prisma выполняет <code>SET app.current_tenant_id = '&lt;uuid&gt;'</code> в начале
+            транзакции.
+          </p>
+
+          <h3>5.2. Миграция (пример для двух таблиц)</h3>
+          <pre><code>-- 20260601100000_enable_rls.sql
+
+-- 1) Helper functions
+CREATE OR REPLACE FUNCTION current_tenant_id() RETURNS uuid AS $$
+  SELECT NULLIF(current_setting('app.current_tenant_id', true), '')::uuid;
+$$ LANGUAGE sql STABLE;
+
+CREATE OR REPLACE FUNCTION current_user_id() RETURNS uuid AS $$
+  SELECT NULLIF(current_setting('app.current_user_id', true), '')::uuid;
+$$ LANGUAGE sql STABLE;
+
+-- 2) Application roles
+CREATE ROLE medcrm_app NOINHERIT LOGIN PASSWORD 'configured-out-of-band';
+CREATE ROLE medcrm_migrator NOINHERIT LOGIN PASSWORD 'configured-out-of-band';
+
+-- 3) Enable RLS on tenant-scoped tables
+ALTER TABLE patients      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE patients      FORCE  ROW LEVEL SECURITY;
+
+CREATE POLICY patients_tenant_isolation
+  ON patients
+  USING (tenant_id = current_tenant_id())
+  WITH CHECK (tenant_id = current_tenant_id());
+
+ALTER TABLE appointments  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE appointments  FORCE  ROW LEVEL SECURITY;
+
+CREATE POLICY appointments_tenant_isolation
+  ON appointments
+  USING (tenant_id = current_tenant_id())
+  WITH CHECK (tenant_id = current_tenant_id());
+
+-- ...repeat for all tables with tenant_id
+-- Generated by a script that introspects information_schema</code></pre>
+
+          <h3>5.3. Prisma middleware устанавливает session vars</h3>
+          <pre><code>// backend/core/tenancy/tenant-prisma.middleware.ts
+prisma.$use(async (params, next) =&gt; {
+  const ctx = TenantContext.current();   // AsyncLocalStorage
+  if (!ctx) throw new Error('Tenant context missing');
+
+  // Wrap into a transaction with session vars
+  return prisma.$transaction(async (tx) =&gt; {
+    await tx.$executeRawUnsafe(
+      `SELECT set_config('app.current_tenant_id', $1, true)`,
+      ctx.tenantId,
+    );
+    if (ctx.userId) {
+      await tx.$executeRawUnsafe(
+        `SELECT set_config('app.current_user_id', $1, true)`,
+        ctx.userId,
+      );
+    }
+    return next({ ...params, runInTransaction: true });
+  });
+});</code></pre>
+
+          <h3>5.4. Особые случаи</h3>
+          <ul>
+            <li>
+              <strong>Платформенные таблицы</strong> (<code>tenants</code>,
+              <code>permissions</code>, <code>integration_providers</code>) — RLS-политика «по
+              принципу whitelist роли». Только <code>medcrm_platform_admin</code> может читать.
+            </li>
+            <li>
+              <strong>Cross-tenant операции</strong> (например, billing-агрегация по всем клиникам):
+              отдельный сервис с ролью <code>medcrm_platform_admin</code>; RLS обходить через
+              <code>SECURITY DEFINER</code> функции.
+            </li>
+            <li>
+              <strong>Миграции</strong>: запускаются под ролью
+              <code>medcrm_migrator</code> (BYPASSRLS). У production-runtime роли
+              <code>medcrm_app</code> — <strong>нет</strong> BYPASSRLS.
+            </li>
+            <li>
+              <strong>Read replicas / BI</strong>: отдельная роль <code>medcrm_analytics_ro</code> с
+              RLS включён, либо доступ только к денормализованным <code>dw_fact_*</code>.
+            </li>
+          </ul>
+
+          <h3>5.5. CI-проверка RLS coverage</h3>
+          <p>
+            Тест проходит по <code>information_schema.tables</code> и проверяет, что у каждой
+            таблицы с колонкой <code>tenant_id</code> включена RLS и есть хотя бы одна политика:
+          </p>
+          <pre><code>SELECT t.table_name
+FROM information_schema.tables t
+JOIN information_schema.columns c USING (table_name, table_schema)
+LEFT JOIN pg_class p ON p.relname = t.table_name
+WHERE c.column_name = 'tenant_id'
+  AND t.table_schema = 'public'
+  AND p.relrowsecurity = false;
+-- expect: 0 rows</code></pre>
+
+          <div class="note">
+            <span class="eyebrow">Связь с ТЗ №1</span>
+            <strong>Этот тест добавляется в CI prisma-job как обязательный шаг.</strong>
+          </div>
+        </section>
+
+        <section id="mfa">
+          <h2>6. 2FA / MFA / WebAuthn</h2>
+
+          <h3>6.1. Политика 2FA</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Роль</th>
+                <th>Политика</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Tenant admin</td>
+                <td><strong>Обязательно</strong>; нельзя отключить.</td>
+              </tr>
+              <tr>
+                <td>Главврач / Финансовый</td>
+                <td><strong>Обязательно</strong>.</td>
+              </tr>
+              <tr>
+                <td>Доктор</td>
+                <td>Рекомендуется; tenant-admin может включить обязательность.</td>
+              </tr>
+              <tr>
+                <td>Регистратор / Кассир</td>
+                <td>Опционально; tenant-admin может включить.</td>
+              </tr>
+              <tr>
+                <td>Пациент (portal)</td>
+                <td>Опционально; включается из портала (ТЗ №5).</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>6.2. Эндпоинты auth-service</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Метод</th>
+                <th>Путь</th>
+                <th>Описание</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>POST</td>
+                <td><code>/auth/2fa/setup</code></td>
+                <td>Генерирует TOTP secret, возвращает QR-код (otpauth://) и временный токен.</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/auth/2fa/activate</code></td>
+                <td>
+                  Принимает code; шифрует secret в БД (<code>secretHash</code>); генерирует 10
+                  backup-codes (argon2-hashed).
+                </td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/auth/2fa/verify</code></td>
+                <td>Шаг challenge после login: принимает code, выдаёт final access + refresh.</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/auth/2fa/disable</code></td>
+                <td>
+                  Только при подтверждении паролем + code; запрещено для ролей с обязательным 2FA.
+                </td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/auth/2fa/backup-codes/regenerate</code></td>
+                <td>Инвалидирует старые, генерирует новые.</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/auth/webauthn/register/begin</code></td>
+                <td>(enterprise) Начало WebAuthn-регистрации.</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/auth/webauthn/register/complete</code></td>
+                <td>Завершение, сохранение public key.</td>
+              </tr>
+              <tr>
+                <td>POST</td>
+                <td><code>/auth/webauthn/assert</code></td>
+                <td>Аутентификация через WebAuthn (Touch ID, YubiKey).</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>6.3. Login flow</h3>
+          <pre><code>1. POST /auth/login { tenantCode, email, password }
+   → 200 { status: "mfa_required", mfaToken } if user.2fa.isEnabled
+   → 200 { accessToken, refreshToken } otherwise
+
+2. POST /auth/2fa/verify { mfaToken, code }
+   → 200 { accessToken, refreshToken, mfaSatisfiedAt }
+
+3. /auth/bootstrap returns { user, tenant, modules, mfa: { required: bool, satisfied: bool } }</code></pre>
+
+          <h3>6.4. Frontend</h3>
+          <ul>
+            <li>
+              Экран setup в Settings → Security: показывает QR, поле для кода, backup-codes
+              (одноразовый просмотр + скачать PDF).
+            </li>
+            <li>Step-up MFA challenge при логине — отдельный экран после пароля.</li>
+            <li>
+              Recovery flow: «утерян аутентификатор» → backup code → если не помнит → tenant-admin
+              может сбросить (с audit log).
+            </li>
+            <li>Onboarding-баннер для tenant-admin, пока 2FA не включена.</li>
+          </ul>
+
+          <h3>6.5. Crypto-детали</h3>
+          <ul>
+            <li>TOTP secret: 160 бит, base32, окно ±1 (30s × 3).</li>
+            <li>
+              Secret хранится как <code>argon2id</code>-hash? <strong>Нет</strong> — TOTP secret
+              нужен для верификации, поэтому хранится зашифрованным симметрично (см.
+              <a href="#crypto">шифрование PHI</a>): AES-256-GCM с key из KMS, не argon.
+            </li>
+            <li>Backup-codes: 8-значные numeric, хранятся как argon2id-hash; одноразовые.</li>
+            <li>WebAuthn: <code>@simplewebauthn/server</code>.</li>
+          </ul>
+        </section>
+
+        <section id="sessions">
+          <h2>7. Сессии и токены</h2>
+          <ul>
+            <li>
+              Access token: JWT 15 минут, signed RS256 (асимметричный) — не HS256 — чтобы gateway
+              мог проверять без shared secret.
+            </li>
+            <li>
+              Refresh token: opaque ID в Redis с rotation; срок 30 дней; одноразовый (rotation on
+              use).
+            </li>
+            <li>
+              Каждой <code>UserSession</code> привязана пара <code>deviceFingerprint</code> (UA +
+              IP-net + accept-language hash).
+            </li>
+            <li>Endpoint <code>GET /auth/sessions</code> — список активных сессий пользователя.</li>
+            <li>Endpoint <code>DELETE /auth/sessions/:id</code> — revoke конкретной сессии.</li>
+            <li>
+              Endpoint <code>POST /auth/sessions/revoke-all</code> — sign out everywhere (audit
+              log).
+            </li>
+            <li>
+              Risk-based step-up: смена IP-сети + повышенно-важное действие (например, удаление
+              пациента) → требовать 2FA-challenge даже внутри активной сессии.
+            </li>
+            <li>
+              Cookie strategy для frontend: HttpOnly, Secure, SameSite=Lax (для портала пациента —
+              Strict).
+            </li>
+          </ul>
+        </section>
+
+        <section id="audit">
+          <h2>8. Audit log + hash chain</h2>
+
+          <h3>8.1. Усиление модели</h3>
+          <p>Добавляем поля в <code>AuditLog</code>:</p>
+          <pre><code>model AuditLog {
+  // ...existing
+  prevHash      String?  @map("prev_hash") @db.VarChar(128)
+  hash          String   @map("hash") @db.VarChar(128)
+  signature     String?  @map("signature")    // optional KMS signature
+}</code></pre>
+
+          <p>
+            <code>hash = sha256(prevHash || canonical(record))</code> — каждая запись цепочно
+            ссылается на предыдущую. Любое изменение прошлой записи ломает цепочку для всех
+            последующих.
+          </p>
+
+          <h3>8.2. Append-only защита</h3>
+          <ul>
+            <li>
+              Триггер Postgres <code>BEFORE UPDATE OR DELETE</code> на
+              <code>audit_logs</code> бросает исключение для роли <code>medcrm_app</code>.
+            </li>
+            <li>
+              У роли <code>medcrm_app</code> отзываем UPDATE/DELETE GRANTs на
+              <code>audit_logs</code>.
+            </li>
+            <li>
+              Раз в час BullMQ-задача (см. ТЗ №4) считает hash последних N записей и публикует
+              чекпойнт в external storage (S3 / git) — для forensic.
+            </li>
+          </ul>
+
+          <h3>8.3. Что писать в audit</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Категория</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Auth</td>
+                <td>
+                  login_success, login_failed, logout, 2fa_enabled, 2fa_disabled, password_reset,
+                  session_revoked
+                </td>
+              </tr>
+              <tr>
+                <td>RBAC</td>
+                <td>role_assigned, role_revoked, permission_granted, permission_revoked</td>
+              </tr>
+              <tr>
+                <td>Пациент</td>
+                <td>
+                  patient_created, patient_viewed (PHI access), patient_updated, patient_deleted,
+                  patient_exported
+                </td>
+              </tr>
+              <tr>
+                <td>EMR</td>
+                <td>
+                  encounter_created, encounter_updated, encounter_signed, encounter_unsigned,
+                  prescription_created
+                </td>
+              </tr>
+              <tr>
+                <td>Finance</td>
+                <td>
+                  invoice_paid, invoice_refunded, cashier_shift_opened, cashier_shift_closed,
+                  refund_approved
+                </td>
+              </tr>
+              <tr>
+                <td>System</td>
+                <td>settings_changed, integration_key_rotated, module_enabled, module_disabled</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>8.4. PHI access logging</h3>
+          <p>
+            Просмотр карточки пациента — это событие. Добавляем декоратор
+            <code>@AuditPhiAccess('Patient')</code> в Nest-контроллер, который записывает
+            <code>action: 'patient_viewed'</code> с <code>entityId</code>. Это требование ФЗ-152 и
+            аналогов.
+          </p>
+        </section>
+
+        <section id="crypto">
+          <h2>9. Шифрование PHI (column-level)</h2>
+
+          <h3>9.1. Стратегия</h3>
+          <ul>
+            <li>
+              Симметричный AES-256-GCM, ключи в KMS (AWS KMS / GCP KMS / HashiCorp Vault Transit /
+              SOPS-encrypted с rotation).
+            </li>
+            <li>
+              Per-tenant DEK (Data Encryption Key), зашифрован master-KEK; cache в памяти процесса.
+            </li>
+            <li>
+              Шифруется на уровне приложения (Prisma extension), не на уровне БД. Это даёт изоляцию
+              от Postgres-админа.
+            </li>
+            <li>
+              Поле в БД хранит JSON
+              <code>{ "v": 1, "ct": base64, "iv": base64, "tag": base64 }</code>.
+            </li>
+            <li>
+              Для search по зашифрованным полям — отдельный <code>blind index</code> (HMAC-SHA256 от
+              lower-case значения).
+            </li>
+          </ul>
+
+          <h3>9.2. Поля под шифрование</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Таблица.поле</th>
+                <th>Тип PHI</th>
+                <th>Search</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>patients.first_name</code></td>
+                <td>имя</td>
+                <td>blind index по lower(firstName)</td>
+              </tr>
+              <tr>
+                <td><code>patients.last_name</code></td>
+                <td>имя</td>
+                <td>blind index</td>
+              </tr>
+              <tr>
+                <td><code>patients.phone</code></td>
+                <td>контакт</td>
+                <td>blind index (normalized e164)</td>
+              </tr>
+              <tr>
+                <td><code>patients.passport_number</code></td>
+                <td>документ</td>
+                <td>blind index (full match only)</td>
+              </tr>
+              <tr>
+                <td><code>patients.dob</code></td>
+                <td>дата рождения</td>
+                <td>не шифруем (для возрастных диапазонов)</td>
+              </tr>
+              <tr>
+                <td><code>medical_records.notes</code></td>
+                <td>клинические записи</td>
+                <td>не searchable</td>
+              </tr>
+              <tr>
+                <td><code>encounter_diagnoses.icd_text</code></td>
+                <td>диагноз</td>
+                <td>blind index по icd_code (не шифруем code, только text)</td>
+              </tr>
+              <tr>
+                <td><code>prescriptions.notes</code></td>
+                <td>назначение</td>
+                <td>не searchable</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>9.3. Миграция данных</h3>
+          <p>Двухфазная:</p>
+          <ol>
+            <li>
+              Добавить новые колонки <code>*_enc</code> и <code>*_bi</code> (blind index). Доуложить
+              миграционный воркер, который перекладывает значения batch'ами по 1000 строк.
+            </li>
+            <li>
+              После 100% перекладки — переключить read-path на <code>*_enc</code>; удалить старые
+              колонки в отдельной миграции.
+            </li>
+          </ol>
+
+          <h3>9.4. Ротация ключей</h3>
+          <ul>
+            <li>Master-KEK — ротация раз в 90 дней.</li>
+            <li>Per-tenant DEK — ротация раз в 180 дней или после инцидента.</li>
+            <li>
+              Версионирование: запись содержит <code>v</code> и <code>keyId</code>; декрипт
+              прозрачно поддерживает несколько активных ключей.
+            </li>
+            <li>
+              Скрипт ротации: создать новый DEK → перекодировать batch'ами → пометить старый как
+              «retired».
+            </li>
+          </ul>
+        </section>
+
+        <section id="secrets">
+          <h2>10. Управление секретами</h2>
+          <p>Перенос секретов из <code>.env</code> в централизованное хранилище:</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Среда</th>
+                <th>Хранилище</th>
+                <th>Доступ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Локальная разработка</td>
+                <td>SOPS + age-key (в репо лежит зашифрованный <code>.env.dev.sops</code>)</td>
+                <td>Каждый разработчик имеет личный age-key, добавляется в SOPS recipients.</td>
+              </tr>
+              <tr>
+                <td>CI</td>
+                <td>GitHub Actions Secrets</td>
+                <td>Через <code>secrets.*</code> в workflow.</td>
+              </tr>
+              <tr>
+                <td>Staging / Production</td>
+                <td>Doppler или HashiCorp Vault</td>
+                <td>Каждый pod через service account; короткоживущие токены.</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            В коде запретить чтение <code>process.env</code> напрямую — только через типизированный
+            <code>ConfigService</code> с Zod-валидацией.
+          </p>
+          <ul>
+            <li>Все secrets с TTL: 90 дней; ротация по календарю.</li>
+            <li>
+              <code>change_me_access_secret</code> и <code>change_me_refresh_secret</code> в
+              <code>.env.example</code> сохранить как «обязательно переопределить» — добавить отказ
+              при старте, если значение в проде равно дефолту.
+            </li>
+            <li>
+              Совместно с ТЗ №1 — gitleaks-action блокирует случайный commit реальных секретов.
+            </li>
+          </ul>
+        </section>
+
+        <section id="owasp">
+          <h2>11. OWASP baseline и security headers</h2>
+
+          <h3>11.1. Headers (через Helmet config)</h3>
+          <pre><code>helmet({
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'wasm-unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"], // until shadcn-only
+      imgSrc: ["'self'", "data:", "blob:", "https://cdn.medcrm.app"],
+      connectSrc: ["'self'", "wss:", "https://api.medcrm.app"],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  hsts: { maxAge: 63072000, includeSubDomains: true, preload: true },
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  crossOriginOpenerPolicy: { policy: "same-origin" },
+  crossOriginResourcePolicy: { policy: "same-site" },
+  frameguard: { action: "deny" },
+});</code></pre>
+
+          <h3>11.2. CORS</h3>
+          <ul>
+            <li>
+              Whitelist по tenant (custom domain): <code>https://&lt;tenant&gt;.medcrm.app</code> и
+              <code>https://&lt;custom&gt;</code>.
+            </li>
+            <li>Credentials: true только для frontend-route группы; portal — отдельная policy.</li>
+          </ul>
+
+          <h3>11.3. Rate limiting (Redis-backed)</h3>
+          <p>
+            Текущий in-memory ограничитель в gateway заменяется на Redis-backed token bucket (либо
+            <code>@upstash/ratelimit</code>):
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Endpoint</th>
+                <th>Limit</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>/auth/login</code></td>
+                <td>5 / 1 минута / IP + tenantCode</td>
+              </tr>
+              <tr>
+                <td><code>/auth/2fa/verify</code></td>
+                <td>5 / 1 минута / mfaToken</td>
+              </tr>
+              <tr>
+                <td><code>/auth/password/forgot</code></td>
+                <td>3 / 1 час / email</td>
+              </tr>
+              <tr>
+                <td><code>/auth/webauthn/*</code></td>
+                <td>10 / 1 минута / userId</td>
+              </tr>
+              <tr>
+                <td>Public API (<code>/api/v1/*</code>)</td>
+                <td>300 / минута / user (default)</td>
+              </tr>
+              <tr>
+                <td>Internal (<code>/internal/v1/*</code>)</td>
+                <td>1000 / минута / service</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>11.4. Input validation</h3>
+          <ul>
+            <li>Все DTO через Zod (уже стоит) + <code>class-validator</code> где исторически.</li>
+            <li>Маска полей в логах: phone, password, JWT (regex-redaction).</li>
+            <li>
+              Strict content-type на POST/PUT; reject <code>multipart/form-data</code> на
+              эндпоинтах, где он не ожидается.
+            </li>
+          </ul>
+
+          <h3>11.5. File upload (MinIO)</h3>
+          <ul>
+            <li>Подписанные URL с TTL 15 минут.</li>
+            <li>
+              Whitelist MIME-типов (<code>application/pdf</code>, <code>image/png</code>,
+              <code>image/jpeg</code>, <code>application/dicom</code>).
+            </li>
+            <li>Max size 50 МБ для документов; 200 МБ для DICOM.</li>
+            <li>Анти-вирус через ClamAV-sidecar (опционально) или Cloud Storage AV-API.</li>
+          </ul>
+
+          <h3>11.6. OWASP ZAP baseline</h3>
+          <ul>
+            <li>В CI weekly cron-job: <code>zaproxy/action-baseline@v0.10</code> на staging.</li>
+            <li>Отчёт публикуется как artifact + комментарий в Security tab.</li>
+            <li>Threshold: 0 high, ≤ 5 medium на staging.</li>
+          </ul>
+        </section>
+
+        <section id="compliance">
+          <h2>12. ФЗ-152 / Закон РТ о ПДн / GDPR</h2>
+          <p>
+            MedCRM работает в РФ, Таджикистане, потенциально Узбекистане. Требования у законов
+            схожие, выровним по самому строгому (GDPR).
+          </p>
+
+          <h3>12.1. Subject Rights</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Право</th>
+                <th>Реализация</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Доступ к данным</td>
+                <td>
+                  Пациент в портале (ТЗ №5) запрашивает экспорт; backend генерирует FHIR Bundle +
+                  CSV (см. <code>fhir-export</code>) + PDF выписку.
+                </td>
+              </tr>
+              <tr>
+                <td>Право на исправление</td>
+                <td>Через портал и регистратора; меняется через стандартный flow + audit.</td>
+              </tr>
+              <tr>
+                <td>Право на удаление</td>
+                <td>
+                  Tombstone-pattern: запись помечается <code>deleted_at</code>, PHI зануляется,
+                  audit сохраняется. Полное удаление через 7 лет (минимальный срок медицинской карты
+                  в РФ).
+                </td>
+              </tr>
+              <tr>
+                <td>Право на ограничение</td>
+                <td>
+                  Через tenant-admin → user request → запрет коммуникаций
+                  (<code>CommunicationPreference</code>).
+                </td>
+              </tr>
+              <tr>
+                <td>Согласие</td>
+                <td>
+                  Модель <code>LegalDocumentTemplate</code> + подпись
+                  (<code>DigitalSignature</code>). При first-visit пациент подписывает согласие.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>12.2. Documentation</h3>
+          <p>Создать набор обязательных документов:</p>
+          <ul>
+            <li>
+              DPA (Data Processing Agreement) с клиникой — клиника = controller, MedCRM = processor.
+            </li>
+            <li>DPIA (Data Protection Impact Assessment) — на уровне продукта.</li>
+            <li>Privacy Policy для портала пациента.</li>
+            <li>Cookie Policy.</li>
+            <li>Notice-of-breach procedure (≤ 72 часа).</li>
+            <li>Регламент доступа к продакшен-БД (named users, MFA, session recording).</li>
+            <li>Регламент бэкапов и восстановления.</li>
+            <li>Регламент удаления данных (retention policy).</li>
+          </ul>
+
+          <h3>12.3. Локализация хранения</h3>
+          <ul>
+            <li>
+              Tenant конфигурирует регион хранения: <code>RU</code>, <code>TJ</code>,
+              <code>UZ</code>, <code>EU</code>.
+            </li>
+            <li>Для каждого региона — изолированный кластер БД + S3 bucket.</li>
+            <li>Cross-region access запрещён (RLS + сетевые правила).</li>
+            <li>
+              Этот шаг — <em>preparation</em>: реальное multi-region — отдельное ТЗ enterprise.
+            </li>
+          </ul>
+        </section>
+
+        <section id="prisma">
+          <h2>13. Изменения в Prisma</h2>
+          <p>Краткий список новых/изменённых моделей:</p>
+          <pre><code>model AuditLog {
+  // existing fields
+  prevHash      String?  @map("prev_hash") @db.VarChar(128)
+  hash          String   @map("hash") @db.VarChar(128)
+  signature     String?  @map("signature")
+
+  @@index([tenantId, hash])
+}
+
+model UserSession {
+  // existing fields
+  deviceFingerprint String?  @map("device_fingerprint") @db.VarChar(128)
+  ipAddress         String?  @map("ip_address") @db.Inet
+  userAgent         String?  @map("user_agent")
+  mfaSatisfiedAt    DateTime? @map("mfa_satisfied_at") @db.Timestamptz(6)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedReason     String?  @map("revoked_reason")
+}
+
+model UserCredential {           // NEW: WebAuthn credentials
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  credentialId      String   @unique @map("credential_id")
+  publicKey         Bytes    @map("public_key")
+  counter           Int      @default(0)
+  transports        String[] @map("transports")
+  deviceName        String?  @map("device_name")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastUsedAt        DateTime? @map("last_used_at") @db.Timestamptz(6)
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("user_credentials")
+}
+
+model EncryptionKey {            // NEW: KMS-managed DEKs per tenant
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  version       Int
+  encryptedDek  Bytes    @map("encrypted_dek")
+  state         String   @db.VarChar(20)   // active | retired
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  retiredAt     DateTime? @map("retired_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, version])
+  @@map("encryption_keys")
+}
+
+// Patient: add encrypted + blind index columns (transitional)
+model Patient {
+  // ...
+  firstNameEnc  String?  @map("first_name_enc")
+  firstNameBi   String?  @map("first_name_bi") @db.VarChar(64)
+  // ...same for lastName, phone, passport_number
+  @@index([tenantId, firstNameBi])
+  @@index([tenantId, lastNameBi])
+  @@index([tenantId, phoneBi])
+}</code></pre>
+        </section>
+
+        <section id="files">
+          <h2>14. Структура файлов</h2>
+          <div class="file-tree">
+            backend/ ├─ core/ │ ├─ security/ │ │ ├─ encryption.service.ts ← AES-256-GCM + KMS
+            adapter │ │ ├─ encryption.prisma-extension.ts │ │ ├─ blind-index.ts ← HMAC normalization
+            │ │ ├─ kms/ │ │ │ ├─ aws-kms.adapter.ts │ │ │ ├─ vault.adapter.ts │ │ │ └─
+            sops.adapter.ts │ │ └─ audit-chain.service.ts ← hash-chain producer + verifier │ ├─
+            tenancy/ │ │ ├─ tenant-prisma.middleware.ts ← SET app.current_tenant_id │ │ ├─
+            tenant-context.ts ← AsyncLocalStorage │ │ └─ rls.health-check.ts │ └─ audit/ │ ├─
+            audit.service.ts ← writes hash-chained entries │ ├─ audit.interceptor.ts ← Nest
+            interceptor for controllers │ └─ audit-phi-access.decorator.ts ├─
+            apps/auth-service/src/auth/ │ ├─ mfa/ │ │ ├─ mfa.controller.ts ← /auth/2fa/* │ │ ├─
+            mfa.service.ts │ │ ├─ totp.service.ts │ │ └─ backup-codes.service.ts │ ├─ webauthn/ │ │
+            ├─ webauthn.controller.ts │ │ └─ webauthn.service.ts │ ├─ sessions/ │ │ ├─
+            sessions.controller.ts ← /auth/sessions │ │ ├─ sessions.service.ts │ │ └─
+            device-fingerprint.ts │ └─ guards/ │ └─ require-mfa.guard.ts ← step-up MFA для важных
+            действий ├─ prisma/ │ ├─ migrations/ │ │ ├─ 20260601100000_enable_rls/ │ │ ├─
+            20260601110000_audit_hash_chain/ │ │ ├─ 20260601120000_phi_encryption_columns/ │ │ ├─
+            20260601130000_user_credentials/ │ │ └─ 20260601140000_encryption_keys/ │ └─ scripts/ │
+            └─ generate-rls-migration.ts ← introspects schema -&gt; SQL └─ infrastructure/ ├─ helm/
+            ← (out of scope: enterprise ТЗ) └─ security/ ├─ csp.config.ts ├─ rate-limit.redis.ts ├─
+            ratelimit-policies.yaml └─ zap-baseline.yaml
+          </div>
+        </section>
+
+        <section id="plan">
+          <h2>15. Этапы работ</h2>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 1 · ~1 неделя</span>
+            <h3>Этап 1. Tenancy hardening + RLS</h3>
+            <ul>
+              <li>
+                Реализовать AsyncLocalStorage <code>TenantContext</code>; интегрировать в guard
+                <code>auth.guard</code>.
+              </li>
+              <li>
+                Скрипт <code>generate-rls-migration.ts</code>: пройти по
+                <code>information_schema</code>, сгенерировать SQL.
+              </li>
+              <li>Применить миграцию <code>20260601100000_enable_rls</code> в dev/staging.</li>
+              <li>
+                Prisma middleware <code>tenant-prisma.middleware</code> устанавливает session vars.
+              </li>
+              <li>CI-проверка RLS coverage (часть prisma job из ТЗ №1).</li>
+              <li>PR <code>feat(security): postgresql row-level security</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 2 · ~1 неделя</span>
+            <h3>Этап 2. 2FA TOTP + backup codes</h3>
+            <ul>
+              <li>
+                Создать <code>mfa.service</code> + <code>totp.service</code> (используем
+                <code>otplib</code>).
+              </li>
+              <li>
+                Эндпоинты
+                <code>/auth/2fa/setup|activate|verify|disable|backup-codes/regenerate</code>.
+              </li>
+              <li>Login flow обновить под mfa-challenge.</li>
+              <li>Frontend: Settings → Security UI (после ТЗ №2 design-system).</li>
+              <li>E2E test: enable 2FA → logout → login → mfa-challenge → success.</li>
+              <li>Policy enforcement: tenant-admin не может отключить свою 2FA.</li>
+              <li>PR <code>feat(auth): totp-based 2fa + backup codes</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 3 · ~1 неделя</span>
+            <h3>Этап 3. Sessions, rate-limit Redis, WebAuthn</h3>
+            <ul>
+              <li>Migrate refresh tokens на Redis с rotation.</li>
+              <li>Per-device sessions, list/revoke API + UI в Settings.</li>
+              <li>Rate-limit перенесён на Redis (gateway + auth).</li>
+              <li>WebAuthn регистрация и аутентификация (<code>@simplewebauthn/server</code>).</li>
+              <li>JWT signing на RS256, key rotation через JWKS endpoint.</li>
+              <li>PR <code>feat(auth): redis sessions + webauthn + rate-limit</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 4 · ~1 неделя</span>
+            <h3>Этап 4. Audit hash-chain + PHI logging</h3>
+            <ul>
+              <li>
+                Миграция <code>20260601110000_audit_hash_chain</code>: prevHash + hash columns;
+                trigger BEFORE UPDATE/DELETE.
+              </li>
+              <li><code>audit.service</code> с hash-chain producer; sequence per (tenant, day).</li>
+              <li>Nest-interceptor для авто-аудита всех write-operations.</li>
+              <li><code>@AuditPhiAccess</code> декоратор на patient/EMR view-эндпоинтах.</li>
+              <li>BullMQ-задача публикации checkpoints (см. ТЗ №4).</li>
+              <li>Verifier-команда <code>npm run audit:verify --tenant=xxx</code>.</li>
+              <li>PR <code>feat(security): append-only audit + hash chain</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 5 · ~1.5 недели</span>
+            <h3>Этап 5. PHI шифрование + blind index</h3>
+            <ul>
+              <li>
+                Реализовать <code>EncryptionService</code> с KMS-adapter (AWS-KMS / Vault / SOPS).
+              </li>
+              <li>Prisma-extension для прозрачного encrypt/decrypt на <code>Patient.*</code>.</li>
+              <li>Blind index util (HMAC-SHA256).</li>
+              <li>Миграция: добавить <code>*_enc</code> + <code>*_bi</code> колонки.</li>
+              <li>Backfill-воркер batch'ами; smoke-проверка корректности.</li>
+              <li>Переключить read-path на <code>*_enc</code>; удалить старые колонки.</li>
+              <li>Обновить search-API: поиск пациентов через blind index.</li>
+              <li>PR-серия: <code>feat(security): phi encryption (phase 1..3)</code>.</li>
+            </ul>
+          </div>
+
+          <div class="stage">
+            <span class="stage-meta">Спринт 6 · ~1 неделя</span>
+            <h3>Этап 6. OWASP, headers, secrets, compliance docs</h3>
+            <ul>
+              <li>Helmet CSP/HSTS/Permissions-Policy hardening.</li>
+              <li>OWASP ZAP baseline в CI.</li>
+              <li>SOPS-настройка для local-dev.</li>
+              <li>Doppler / Vault интеграция для staging+prod.</li>
+              <li>Compliance pack: DPA template, DPIA, Privacy Policy, Breach procedure.</li>
+              <li>Регламенты доступа к проду.</li>
+              <li>Subject rights flow: extract / delete / rectify API.</li>
+              <li>PR <code>feat(security): owasp baseline + compliance pack</code>.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="acceptance">
+          <h2>16. Acceptance criteria</h2>
+          <ul class="check">
+            <li>
+              На всех таблицах с <code>tenant_id</code> включена RLS; CI-проверка падает при
+              нарушении.
+            </li>
+            <li>
+              Production app-роль <code>medcrm_app</code> не имеет BYPASSRLS; миграционная роль —
+              имеет.
+            </li>
+            <li>2FA TOTP работает: setup → activate → verify; backup-codes одноразовые.</li>
+            <li>Tenant-admin и главврач не могут отключить свою 2FA.</li>
+            <li>WebAuthn регистрация и аутентификация работают (минимум Touch ID / YubiKey).</li>
+            <li>Refresh tokens в Redis, rotation on use, revoke per session работает.</li>
+            <li>JWT подписаны RS256; gateway проверяет через JWKS.</li>
+            <li>
+              Rate-limit на <code>/auth/login</code>, <code>/auth/2fa/verify</code>,
+              <code>/auth/password/forgot</code> работает консистентно в кластере.
+            </li>
+            <li>
+              <code>audit_logs</code> — append-only; <code>UPDATE</code>/<code>DELETE</code> falls
+              для роли <code>medcrm_app</code>.
+            </li>
+            <li>
+              Hash-chain валидируется командой <code>audit:verify</code>; checkpoints публикуются
+              раз в час.
+            </li>
+            <li>
+              Patient first/last name, phone, passport — зашифрованы; поиск работает через blind
+              index.
+            </li>
+            <li>Encryption keys в KMS; ротация per-tenant DEK выполнена хотя бы один раз.</li>
+            <li>CSP/HSTS/Permissions-Policy: оценка <code>securityheaders.com</code> ≥ A.</li>
+            <li>OWASP ZAP baseline зелёный (0 high, ≤ 5 medium).</li>
+            <li>Compliance docs (DPA template, Privacy Policy, Breach procedure) опубликованы.</li>
+            <li>
+              Subject rights: тест-сценарий «пациент запросил экспорт + удаление» проходит
+              end-to-end.
+            </li>
+          </ul>
+        </section>
+
+        <section id="metrics">
+          <h2>17. Метрики и риски</h2>
+
+          <h3>17.1. Метрики</h3>
+          <div class="four">
+            <div class="kpi">
+              <span class="label">2FA coverage</span><span class="value">100%</span
+              ><span class="hint">tenant-admin, главврач</span>
+            </div>
+            <div class="kpi">
+              <span class="label">RLS coverage</span><span class="value">100%</span
+              ><span class="hint">таблицы с tenant_id</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Audit chain</span><span class="value">verified</span
+              ><span class="hint">ежечасный checkpoint</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Brute-force</span><span class="value">5 / мин</span
+              ><span class="hint">login rate-limit / IP</span>
+            </div>
+            <div class="kpi">
+              <span class="label">PHI plaintext</span><span class="value">0</span
+              ><span class="hint">в зашифрованных таблицах</span>
+            </div>
+            <div class="kpi">
+              <span class="label">Secret leak</span><span class="value">0</span
+              ><span class="hint">gitleaks за квартал</span>
+            </div>
+            <div class="kpi">
+              <span class="label">CSP grade</span><span class="value">A+</span
+              ><span class="hint">securityheaders.com</span>
+            </div>
+            <div class="kpi">
+              <span class="label">ZAP high</span><span class="value">0</span
+              ><span class="hint">baseline scan</span>
+            </div>
+          </div>
+
+          <h3>17.2. Риски</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Риск</th>
+                <th>Митигация</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  RLS включён, но Prisma middleware не выставил session var → запросы возвращают
+                  пусто.
+                </td>
+                <td>
+                  Health-check на старте: запрос-тест, который без session var должен возвращать 0
+                  строк. Логи + alert.
+                </td>
+              </tr>
+              <tr>
+                <td>Падение perf из-за SET в каждой транзакции.</td>
+                <td>
+                  Use <code>set_config(... , true)</code> локально для транзакции; пул соединений
+                  через PgBouncer transaction-mode совместим.
+                </td>
+              </tr>
+              <tr>
+                <td>Backfill PHI на больших таблицах вешает БД.</td>
+                <td>
+                  Batched 1000 / row, throttle через BullMQ. Окно ночное; индексы создавать
+                  <code>CONCURRENTLY</code>.
+                </td>
+              </tr>
+              <tr>
+                <td>Потеря KMS ключа = потеря всех данных.</td>
+                <td>
+                  KMS multi-region replica; ежедневный backup encrypted-DEK в отдельный S3 с
+                  retention 365 дней; periodically run «recovery drill».
+                </td>
+              </tr>
+              <tr>
+                <td>2FA включён → саппорт-нагрузка «забыл аутентификатор».</td>
+                <td>
+                  Backup codes + recovery через tenant-admin (с audit). Документация для
+                  clinic-admin.
+                </td>
+              </tr>
+              <tr>
+                <td>Hash-chain validator показывает разрыв → forensic-инцидент.</td>
+                <td>
+                  Runbook: остановить запись, снять snapshot, исследовать source. Тренировка раз в
+                  квартал.
+                </td>
+              </tr>
+              <tr>
+                <td>Юридическая трактовка «удаления» в РФ — нельзя удалить медкарту 7 лет.</td>
+                <td>
+                  Tombstone-pattern с zero-out PHI и сохранением audit. Чёткое описание в Privacy
+                  Policy.
+                </td>
+              </tr>
+              <tr>
+                <td>Расходы на KMS / Vault.</td>
+                <td>
+                  AWS KMS ~$1/CMK/мес + $0.03 / 10k запросов — дешевле инцидента. На локальной
+                  разработке SOPS бесплатно.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="decision">
+            <span class="eyebrow">Definition of Done</span>
+            <strong
+              >RLS включена, 2FA обязательна для админов и работает, sessions revoke-aware, audit
+              append-only с hash-chain, PHI шифруется на уровне колонок, secrets в KMS,
+              OWASP-baseline зелёный, compliance pack опубликован. MedCRM может пройти аудит
+              безопасности клиники-enterprise.</strong
+            >
+          </div>
+        </section>
+
+        <section>
+          <h2>Приложение А. Bootstrap-зависимости</h2>
+          <pre><code>cd backend
+
+npm install \
+  otplib \
+  @simplewebauthn/server \
+  ioredis \
+  @upstash/ratelimit \
+  jose
+
+npm install -D \
+  @simplewebauthn/types</code></pre>
+        </section>
+
+        <section>
+          <h2>Приложение Б. Связанные документы</h2>
+          <ul>
+            <li><code>docs/architecture/auth-rbac.md</code> — текущее ТЗ по auth и RBAC.</li>
+            <li>
+              <code>docs/architecture/modularity-tenancy-db.md</code> — модель мульти-тенантности.
+            </li>
+            <li>ТЗ №1 DevOps Foundation — CI прогоняет RLS-coverage и ZAP-baseline.</li>
+            <li>ТЗ №4 Async Workflows — даёт BullMQ для checkpoints и backfill PHI.</li>
+          </ul>
+        </section>
+
+        <footer
+          style="
+            margin-top: 56px;
+            padding-top: 22px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 13px;
+          "
+        >
+          Документ подготовлен в рамках roadmap MedCRM. Связанные ТЗ: №1 DevOps Foundation, №2
+          Design System, №4 Async Workflows, №5 Patient Portal MVP.
+        </footer>
+      </main>
+    </article>
+  </body>
+</html>

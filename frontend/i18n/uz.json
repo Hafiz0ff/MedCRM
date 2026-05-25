@@ -1,0 +1,72 @@
+{
+  "Common": {
+    "loading": "Yuklanmoqda...",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "delete": "O'chirish",
+    "edit": "Tahrirlash",
+    "actions": "Harakatlar",
+    "search": "Qidiruv...",
+    "confirm": "Tasdiqlash",
+    "error": "Xato",
+    "success": "Muvaffaqiyatli",
+    "noData": "Ma'lumot yo'q",
+    "theme": "Mavzu",
+    "density": "Zichlik",
+    "language": "Til"
+  },
+  "Auth": {
+    "title": "Tizimga kirish",
+    "subtitle": "MedCRM — Klinikaning yagona raqamli makoni",
+    "tenantCode": "Klinika kodi",
+    "email": "Elektron pochta / Login",
+    "password": "Parol",
+    "rememberMe": "Eslab qolish",
+    "signIn": "Kirish",
+    "signingIn": "Kirilmoqda...",
+    "errors": {
+      "invalid": "Noto'g'ri login yoki parol",
+      "required": "Ushbu maydon to'ldirilishi shart",
+      "emailInvalid": "Elektron pochta manzili noto'g'ri"
+    }
+  },
+  "Dashboard": {
+    "title": "Boshqaruv paneli",
+    "welcome": "MedCRM-ga xush kelibsiz",
+    "stats": {
+      "totalPatients": "Jami bemorlar",
+      "appointments": "Bugungi qabullar",
+      "utilization": "Xonalar yuklanishi",
+      "revenue": "Tushum"
+    }
+  },
+  "Reception": {
+    "title": "Ro'yxatga olish ish joyi",
+    "queue": "Navbat",
+    "vip": "VIP mijoz",
+    "status": {
+      "waiting": "Kutilmoqda",
+      "checkedIn": "Rasmiylashtirildi",
+      "inProgress": "Qabulda",
+      "completed": "Yakunlandi"
+    }
+  },
+  "Patients": {
+    "title": "Bemorlar kartotekasi",
+    "addPatient": "Bemor qo'shish",
+    "fullName": "F.I.SH.",
+    "birthDate": "Tug'ilgan sana",
+    "gender": "Jins",
+    "phone": "Telefon",
+    "status": "Holat",
+    "vip": "VIP"
+  },
+  "Scheduling": {
+    "title": "Aqlli jadval",
+    "newAppointment": "Yangi yozuv",
+    "calendar": "Taqvim",
+    "timeSlot": "Vaqt oralig'i",
+    "doctor": "Shifokor",
+    "service": "Xizmat"
+  }
+}

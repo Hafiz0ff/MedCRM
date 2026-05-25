@@ -1,20 +1,21 @@
 import { randomUUID } from 'node:crypto';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { PrismaService } from '@core/database/prisma.service';
+import { AuthenticatedUser } from '@core/security/jwt-payload';
 import {
   ForbiddenException,
   Injectable,
   NotAcceptableException,
-  NotFoundException
+  NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@core/database/prisma.service';
-import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { FhirExportQueryDto } from '../dto/fhir-export.dto';
 import {
   buildBundle,
   mapCondition,
   mapEncounter,
   mapMedicationRequest,
   mapObservation,
-  mapPatient
+  mapPatient,
 } from './fhir-mappers';
 import {
   FhirBundle,
@@ -24,9 +25,8 @@ import {
   FhirObservation,
   FhirPatient,
   FhirResourceTypeName,
-  FhirSupportedResource
+  FhirSupportedResource,
 } from './fhir.types';
-import { FhirExportQueryDto } from '../dto/fhir-export.dto';
 
 type DateWindow = { gte?: Date; lte?: Date };
 
@@ -39,23 +39,23 @@ type DateWindow = { gte?: Date; lte?: Date };
 export class FhirExportService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly audit: AuditLoggerService
+    private readonly audit: AuditLoggerService,
   ) {}
 
   async exportPatientBundle(
     user: AuthenticatedUser,
     patientId: string,
-    query: FhirExportQueryDto
+    query: FhirExportQueryDto,
   ): Promise<FhirBundle> {
     if (query._format === 'xml') {
       throw new NotAcceptableException(
-        'FHIR XML serialization is not enabled on this deployment. Request _format=json or omit _format.'
+        'FHIR XML serialization is not enabled on this deployment. Request _format=json or omit _format.',
       );
     }
 
     const patient = await this.prisma.patient.findUnique({
       where: { id: patientId },
-      include: { contacts: true, medicalRecord: true }
+      include: { contacts: true, medicalRecord: true },
     });
 
     if (!patient) {
@@ -67,7 +67,7 @@ export class FhirExportService {
 
     const window: DateWindow = {
       gte: query.dateFrom ? new Date(query.dateFrom) : undefined,
-      lte: query.dateTo ? new Date(query.dateTo) : undefined
+      lte: query.dateTo ? new Date(query.dateTo) : undefined,
     };
 
     const requested = query.resourceType;
@@ -94,11 +94,7 @@ export class FhirExportService {
     }
 
     if (wantAll || requested === 'MedicationRequest') {
-      const prescriptions = await this.fetchMedicationRequests(
-        patient.id,
-        user.tenantId,
-        window
-      );
+      const prescriptions = await this.fetchMedicationRequests(patient.id, user.tenantId, window);
       for (const rx of prescriptions) {
         resources.push(mapMedicationRequest(rx) satisfies FhirMedicationRequest);
       }
@@ -114,7 +110,7 @@ export class FhirExportService {
     const bundle = buildBundle({
       id: randomUUID(),
       type: requested ? 'searchset' : 'collection',
-      resources
+      resources,
     });
 
     await this.audit.log({
@@ -130,57 +126,49 @@ export class FhirExportService {
         dateTo: query.dateTo ?? null,
         format: query._format,
         total: bundle.total,
-        countsByType: summarizeResources(resources)
-      }
+        countsByType: summarizeResources(resources),
+      },
     });
 
     return bundle;
   }
 
-  private async fetchEncounters(
-    patientId: string,
-    tenantId: string,
-    window: DateWindow
-  ) {
+  private async fetchEncounters(patientId: string, tenantId: string, window: DateWindow) {
     const startedAtFilter = window.gte || window.lte ? { startedAt: toRange(window) } : {};
     return this.prisma.encounter.findMany({
       where: {
         tenantId,
         patientId,
-        ...startedAtFilter
+        ...startedAtFilter,
       },
       include: {
         doctor: { select: { firstName: true, lastName: true } },
         patient: { select: { fullName: true } },
         diagnoses: { select: { id: true, diagnosisCode: true, isPrimary: true } },
-        compositions: { select: { title: true } }
+        compositions: { select: { title: true } },
       },
-      orderBy: { startedAt: 'asc' }
+      orderBy: { startedAt: 'asc' },
     });
   }
 
-  private async fetchConditions(
-    patientId: string,
-    tenantId: string,
-    window: DateWindow
-  ) {
+  private async fetchConditions(patientId: string, tenantId: string, window: DateWindow) {
     const createdAtFilter = window.gte || window.lte ? { createdAt: toRange(window) } : {};
     const rows = await this.prisma.encounterDiagnosis.findMany({
       where: {
         tenantId,
         encounter: { patientId, tenantId },
-        ...createdAtFilter
+        ...createdAtFilter,
       },
       include: {
-        encounter: { select: { patientId: true } }
+        encounter: { select: { patientId: true } },
       },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: 'asc' },
     });
 
     const codes = Array.from(new Set(rows.map((r) => r.diagnosisCode)));
     const dictionary = codes.length
       ? await this.prisma.diagnosisDictionary.findMany({
-          where: { code: { in: codes } }
+          where: { code: { in: codes } },
         })
       : [];
     const dictByCode = new Map(dictionary.map((d) => [d.code, d]));
@@ -196,28 +184,24 @@ export class FhirExportService {
       createdBy: r.createdBy,
       patientId: r.encounter.patientId,
       codeSystem: dictByCode.get(r.diagnosisCode)?.codeSystem ?? null,
-      display: dictByCode.get(r.diagnosisCode)?.nameRu ?? null
+      display: dictByCode.get(r.diagnosisCode)?.nameRu ?? null,
     }));
   }
 
-  private async fetchMedicationRequests(
-    patientId: string,
-    tenantId: string,
-    window: DateWindow
-  ) {
+  private async fetchMedicationRequests(patientId: string, tenantId: string, window: DateWindow) {
     const createdAtFilter = window.gte || window.lte ? { createdAt: toRange(window) } : {};
     const rows = await this.prisma.prescription.findMany({
       where: {
         tenantId,
         prescriptionType: 'MEDICATION',
         encounter: { patientId, tenantId },
-        ...createdAtFilter
+        ...createdAtFilter,
       },
       include: {
         items: true,
-        encounter: { select: { patientId: true } }
+        encounter: { select: { patientId: true } },
       },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: 'asc' },
     });
 
     return rows.map((rx) => ({
@@ -237,26 +221,20 @@ export class FhirExportService {
         duration: item.duration,
         route: item.route,
         quantity: item.quantity,
-        instructions: item.instructions
-      }))
+        instructions: item.instructions,
+      })),
     }));
   }
 
-  private async fetchObservations(
-    patientId: string,
-    tenantId: string,
-    window: DateWindow
-  ) {
-    const observedAtFilter = window.gte || window.lte
-      ? { observedAt: toRange(window) }
-      : {};
+  private async fetchObservations(patientId: string, tenantId: string, window: DateWindow) {
+    const observedAtFilter = window.gte || window.lte ? { observedAt: toRange(window) } : {};
     return this.prisma.clinicalObservation.findMany({
       where: {
         tenantId,
         patientId,
-        ...observedAtFilter
+        ...observedAtFilter,
       },
-      orderBy: { observedAt: 'asc' }
+      orderBy: { observedAt: 'asc' },
     });
   }
 }
@@ -269,14 +247,14 @@ function toRange(window: DateWindow): { gte?: Date; lte?: Date } {
 }
 
 function summarizeResources(
-  resources: FhirSupportedResource[]
+  resources: FhirSupportedResource[],
 ): Record<FhirResourceTypeName, number> {
   const counts: Record<FhirResourceTypeName, number> = {
     Patient: 0,
     Encounter: 0,
     Condition: 0,
     MedicationRequest: 0,
-    Observation: 0
+    Observation: 0,
   };
   for (const r of resources) {
     counts[r.resourceType as FhirResourceTypeName] =

@@ -1,5 +1,5 @@
-import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { describe, it, before, after } from 'node:test';
 import { setupE2eTest, teardownE2eTest, TestContext } from './e2e-helper';
 
 describe('E2E System Settings & RBAC Subsystem', () => {
@@ -17,7 +17,7 @@ describe('E2E System Settings & RBAC Subsystem', () => {
     it('returns the tenant profile', async () => {
       const res = await fetch(`${context.baseUrl}/system/tenant`, {
         method: 'GET',
-        headers: context.authHeaders
+        headers: context.authHeaders,
       });
       assert.equal(res.status, 200);
       const body = await res.json();
@@ -28,13 +28,13 @@ describe('E2E System Settings & RBAC Subsystem', () => {
 
     it('updates the tenant profile and writes an audit log', async () => {
       const original = await context.prisma.tenant.findUniqueOrThrow({
-        where: { id: context.tenantId }
+        where: { id: context.tenantId },
       });
 
       const res = await fetch(`${context.baseUrl}/system/tenant`, {
         method: 'PATCH',
         headers: context.authHeaders,
-        body: JSON.stringify({ timezone: 'Asia/Dushanbe', defaultLocale: 'en' })
+        body: JSON.stringify({ timezone: 'Asia/Dushanbe', defaultLocale: 'en' }),
       });
       assert.equal(res.status, 200);
       const body = await res.json();
@@ -45,23 +45,23 @@ describe('E2E System Settings & RBAC Subsystem', () => {
         where: {
           tenantId: context.tenantId,
           action: 'system.tenant.profile.updated',
-          entityId: context.tenantId
+          entityId: context.tenantId,
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       });
       assert.ok(audit, 'audit log entry must exist');
 
       // Restore so other tests don't see a different timezone.
       await context.prisma.tenant.update({
         where: { id: context.tenantId },
-        data: { timezone: original.timezone, defaultLocale: original.defaultLocale }
+        data: { timezone: original.timezone, defaultLocale: original.defaultLocale },
       });
     });
 
     it('lists tenant modules', async () => {
       const res = await fetch(`${context.baseUrl}/system/modules`, {
         method: 'GET',
-        headers: context.authHeaders
+        headers: context.authHeaders,
       });
       assert.equal(res.status, 200);
       const body = await res.json();
@@ -77,15 +77,15 @@ describe('E2E System Settings & RBAC Subsystem', () => {
         headers: context.authHeaders,
         body: JSON.stringify({
           enabled: true,
-          configuration: { fhir_integration_enabled: true, online_booking_enabled: false }
-        })
+          configuration: { fhir_integration_enabled: true, online_booking_enabled: false },
+        }),
       });
       assert.equal(res.status, 200);
       const body = await res.json();
       assert.equal(body.enabled, true);
       assert.deepEqual(body.configuration, {
         fhir_integration_enabled: true,
-        online_booking_enabled: false
+        online_booking_enabled: false,
       });
     });
 
@@ -93,7 +93,7 @@ describe('E2E System Settings & RBAC Subsystem', () => {
       const res = await fetch(`${context.baseUrl}/system/modules/auth`, {
         method: 'PATCH',
         headers: context.authHeaders,
-        body: JSON.stringify({ enabled: false })
+        body: JSON.stringify({ enabled: false }),
       });
       assert.equal(res.status, 403);
     });
@@ -105,7 +105,7 @@ describe('E2E System Settings & RBAC Subsystem', () => {
     it('lists permissions catalog', async () => {
       const res = await fetch(`${context.baseUrl}/system/permissions`, {
         method: 'GET',
-        headers: context.authHeaders
+        headers: context.authHeaders,
       });
       assert.equal(res.status, 200);
       const body = await res.json();
@@ -120,8 +120,8 @@ describe('E2E System Settings & RBAC Subsystem', () => {
         body: JSON.stringify({
           code: `TEST_AUDITOR_${Date.now()}`,
           name: 'Test Auditor',
-          description: 'Read-only auditor role created from E2E tests'
-        })
+          description: 'Read-only auditor role created from E2E tests',
+        }),
       });
       assert.equal(createRes.status, 201);
       const created = await createRes.json();
@@ -129,45 +129,36 @@ describe('E2E System Settings & RBAC Subsystem', () => {
       assert.equal(created.isSystem, false);
       createdRoleId = created.id;
 
-      const permRes = await fetch(
-        `${context.baseUrl}/system/roles/${createdRoleId}/permissions`,
-        {
-          method: 'PUT',
-          headers: context.authHeaders,
-          body: JSON.stringify({ permissionCodes: ['emr.fhir.read', 'system.audit.read'] })
-        }
-      );
+      const permRes = await fetch(`${context.baseUrl}/system/roles/${createdRoleId}/permissions`, {
+        method: 'PUT',
+        headers: context.authHeaders,
+        body: JSON.stringify({ permissionCodes: ['emr.fhir.read', 'system.audit.read'] }),
+      });
       assert.equal(permRes.status, 200);
       const permBody = await permRes.json();
       assert.equal(permBody.roleId, createdRoleId);
-      assert.deepEqual(permBody.permissions.slice().sort(), [
-        'emr.fhir.read',
-        'system.audit.read'
-      ]);
+      assert.deepEqual(permBody.permissions.slice().sort(), ['emr.fhir.read', 'system.audit.read']);
       assert.equal(typeof permBody.affectedUserCount, 'number');
     });
 
     it('rejects setting an unknown permission code', async () => {
       if (!createdRoleId) throw new Error('role not created');
-      const res = await fetch(
-        `${context.baseUrl}/system/roles/${createdRoleId}/permissions`,
-        {
-          method: 'PUT',
-          headers: context.authHeaders,
-          body: JSON.stringify({ permissionCodes: ['this.does.not.exist'] })
-        }
-      );
+      const res = await fetch(`${context.baseUrl}/system/roles/${createdRoleId}/permissions`, {
+        method: 'PUT',
+        headers: context.authHeaders,
+        body: JSON.stringify({ permissionCodes: ['this.does.not.exist'] }),
+      });
       assert.equal(res.status, 400);
     });
 
     it('rejects modifying a system role', async () => {
       const systemRole = await context.prisma.role.findFirstOrThrow({
-        where: { tenantId: context.tenantId, isSystem: true }
+        where: { tenantId: context.tenantId, isSystem: true },
       });
       const res = await fetch(`${context.baseUrl}/system/roles/${systemRole.id}`, {
         method: 'PATCH',
         headers: context.authHeaders,
-        body: JSON.stringify({ name: 'Renamed Owner' })
+        body: JSON.stringify({ name: 'Renamed Owner' }),
       });
       assert.equal(res.status, 403);
     });
@@ -176,7 +167,7 @@ describe('E2E System Settings & RBAC Subsystem', () => {
       if (!createdRoleId) throw new Error('role not created');
       const res = await fetch(`${context.baseUrl}/system/roles/${createdRoleId}`, {
         method: 'DELETE',
-        headers: context.authHeaders
+        headers: context.authHeaders,
       });
       assert.equal(res.status, 200);
     });
@@ -192,13 +183,13 @@ describe('E2E System Settings & RBAC Subsystem', () => {
           firstName: 'E2E',
           lastName: 'RbacTarget',
           language: 'ru',
-          status: 'active'
-        }
+          status: 'active',
+        },
       });
 
       // Existing branch role to start with (so revoke has something to do).
       const ownerRole = await context.prisma.role.findFirstOrThrow({
-        where: { tenantId: context.tenantId, code: 'CLINIC_OWNER' }
+        where: { tenantId: context.tenantId, code: 'CLINIC_OWNER' },
       });
       await context.prisma.userBranchRole.create({
         data: {
@@ -206,8 +197,8 @@ describe('E2E System Settings & RBAC Subsystem', () => {
           tenantId: context.tenantId,
           branchId: context.branchId,
           roleId: ownerRole.id,
-          isPrimary: true
-        }
+          isPrimary: true,
+        },
       });
       // Open a session manually so we can verify it gets revoked.
       const session = await context.prisma.userSession.create({
@@ -216,25 +207,23 @@ describe('E2E System Settings & RBAC Subsystem', () => {
           tenantId: context.tenantId,
           refreshTokenHash: 'placeholder',
           tokenFingerprint: 'placeholder',
-          expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
-        }
+          expiresAt: new Date(Date.now() + 24 * 3600 * 1000),
+        },
       });
 
       const res = await fetch(`${context.baseUrl}/system/users/${target.id}/roles`, {
         method: 'PUT',
         headers: context.authHeaders,
         body: JSON.stringify({
-          assignments: [
-            { branchId: context.branchId, roleId: ownerRole.id, isPrimary: true }
-          ]
-        })
+          assignments: [{ branchId: context.branchId, roleId: ownerRole.id, isPrimary: true }],
+        }),
       });
       assert.equal(res.status, 200);
       const body = await res.json();
       assert.ok(body.revokedSessionCount >= 1);
 
       const refreshed = await context.prisma.userSession.findUniqueOrThrow({
-        where: { id: session.id }
+        where: { id: session.id },
       });
       assert.ok(refreshed.revokedAt !== null, 'session must be marked revoked');
 
@@ -258,8 +247,8 @@ describe('E2E System Settings & RBAC Subsystem', () => {
           providerCode: `fhir-e2e-${Date.now()}`,
           providerName: 'E2E FHIR Integration',
           authenticationType: 'API_KEY',
-          rateLimitPerMinute: 30
-        })
+          rateLimitPerMinute: 30,
+        }),
       });
       assert.equal(res.status, 201);
       const body = await res.json();
@@ -272,7 +261,7 @@ describe('E2E System Settings & RBAC Subsystem', () => {
     it('does NOT expose the API key hash in listings', async () => {
       const res = await fetch(`${context.baseUrl}/system/integrations`, {
         method: 'GET',
-        headers: context.authHeaders
+        headers: context.authHeaders,
       });
       assert.equal(res.status, 200);
       const body = await res.json();
@@ -284,10 +273,10 @@ describe('E2E System Settings & RBAC Subsystem', () => {
 
     it('rotates the API key and invalidates the previous one', async () => {
       if (!providerId) throw new Error('provider not created');
-      const res = await fetch(
-        `${context.baseUrl}/system/integrations/${providerId}/rotate-key`,
-        { method: 'POST', headers: context.authHeaders }
-      );
+      const res = await fetch(`${context.baseUrl}/system/integrations/${providerId}/rotate-key`, {
+        method: 'POST',
+        headers: context.authHeaders,
+      });
       assert.equal(res.status, 201);
       const body = await res.json();
       assert.ok(body.apiKey?.startsWith('mck_live_'));
@@ -298,7 +287,7 @@ describe('E2E System Settings & RBAC Subsystem', () => {
       if (!providerId) throw new Error('provider not created');
       const res = await fetch(`${context.baseUrl}/system/integrations/${providerId}`, {
         method: 'DELETE',
-        headers: context.authHeaders
+        headers: context.authHeaders,
       });
       assert.equal(res.status, 200);
     });
@@ -308,7 +297,7 @@ describe('E2E System Settings & RBAC Subsystem', () => {
     it('returns paginated audit log entries scoped to the tenant', async () => {
       const res = await fetch(`${context.baseUrl}/system/audit-logs?pageSize=5`, {
         method: 'GET',
-        headers: context.authHeaders
+        headers: context.authHeaders,
       });
       assert.equal(res.status, 200);
       const body = await res.json();
@@ -324,7 +313,7 @@ describe('E2E System Settings & RBAC Subsystem', () => {
     it('filters audit logs by action', async () => {
       const res = await fetch(
         `${context.baseUrl}/system/audit-logs?action=system.tenant.profile.updated&pageSize=10`,
-        { method: 'GET', headers: context.authHeaders }
+        { method: 'GET', headers: context.authHeaders },
       );
       assert.equal(res.status, 200);
       const body = await res.json();
@@ -334,10 +323,10 @@ describe('E2E System Settings & RBAC Subsystem', () => {
     });
 
     it('rejects malformed date parameters', async () => {
-      const res = await fetch(
-        `${context.baseUrl}/system/audit-logs?dateFrom=not-a-date`,
-        { method: 'GET', headers: context.authHeaders }
-      );
+      const res = await fetch(`${context.baseUrl}/system/audit-logs?dateFrom=not-a-date`, {
+        method: 'GET',
+        headers: context.authHeaders,
+      });
       assert.equal(res.status, 400);
     });
   });

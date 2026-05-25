@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, createContext, useContext, ReactNode } from 'react';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { useEffect, useState, useCallback, createContext, useContext, ReactNode } from 'react';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 interface Toast {
@@ -22,7 +22,7 @@ const ICONS: Record<ToastType, typeof CheckCircle2> = {
   success: CheckCircle2,
   error: XCircle,
   warning: AlertTriangle,
-  info: Info
+  info: Info,
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -30,18 +30,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const addToast = useCallback((type: ToastType, title: string, message?: string) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    setToasts(prev => [...prev, { id, type, title, message }]);
+    setToasts((prev) => [...prev, { id, type, title, message }]);
   }, []);
 
   const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   return (
     <ToastContext.Provider value={{ toast: addToast }}>
       {children}
       <div className="toast-container" aria-live="polite">
-        {toasts.map(t => (
+        {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} onDismiss={removeToast} />
         ))}
       </div>

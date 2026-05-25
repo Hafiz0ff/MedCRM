@@ -1,20 +1,31 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { RequirePermissions } from '@core/security/permissions.decorator';
 import { RequireModule } from '@core/security/modules.decorator';
+import { RequirePermissions } from '@core/security/permissions.decorator';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { ModuleEnabledGuard } from '../../auth/guards/module-enabled.guard';
 import { RbacGuard } from '../../auth/guards/rbac.guard';
-import { SchedulesService } from '../services/schedules.service';
 import {
   WorkingScheduleDto,
   WorkingScheduleSchema,
   ScheduleExceptionDto,
-  ScheduleExceptionSchema
+  ScheduleExceptionSchema,
 } from '../dto/organization-structure.schemas';
+import { SchedulesService } from '../services/schedules.service';
 
 @ApiTags('schedules')
 @ApiBearerAuth()
@@ -30,7 +41,7 @@ export class SchedulesController {
   listWorkingSchedules(
     @CurrentUser() user: AuthenticatedUser,
     @Query('entityType') entityType: string,
-    @Query('entityId') entityId: string
+    @Query('entityId') entityId: string,
   ) {
     return this.schedules.listWorkingSchedules(user, entityType, entityId);
   }
@@ -48,7 +59,7 @@ export class SchedulesController {
   updateWorkingSchedule(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() dto: WorkingScheduleDto
+    @Body() dto: WorkingScheduleDto,
   ) {
     return this.schedules.updateWorkingSchedule(user, id, dto);
   }
@@ -65,7 +76,7 @@ export class SchedulesController {
   listExceptions(
     @CurrentUser() user: AuthenticatedUser,
     @Query('entityType') entityType: string,
-    @Query('entityId') entityId: string
+    @Query('entityId') entityId: string,
   ) {
     return this.schedules.listExceptions(user, entityType, entityId);
   }
@@ -83,7 +94,7 @@ export class SchedulesController {
   updateException(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() dto: ScheduleExceptionDto
+    @Body() dto: ScheduleExceptionDto,
   ) {
     return this.schedules.updateException(user, id, dto);
   }

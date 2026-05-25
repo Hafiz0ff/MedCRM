@@ -1,14 +1,13 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { RequirePermissions } from '@core/security/permissions.decorator';
 import { RequireModule } from '@core/security/modules.decorator';
+import { RequirePermissions } from '@core/security/permissions.decorator';
+import { Body, Controller, Get, Param, Post, Query, UseGuards, UsePipes } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ModuleEnabledGuard } from '../auth/guards/module-enabled.guard';
 import { RbacGuard } from '../auth/guards/rbac.guard';
-import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
-import { FinanceService } from './finance.service';
 import {
   OpenShiftSchema,
   OpenShiftDto,
@@ -23,8 +22,9 @@ import {
   CreatePayrollRuleSchema,
   CreatePayrollRuleDto,
   CalculatePayrollSchema,
-  CalculatePayrollDto
+  CalculatePayrollDto,
 } from './dto/finance.dto';
+import { FinanceService } from './finance.service';
 
 @ApiTags('finance')
 @ApiBearerAuth()
@@ -46,7 +46,7 @@ export class FinanceController {
     @CurrentUser() user: AuthenticatedUser,
     @Query('patientId') patientId?: string,
     @Query('status') status?: string,
-    @Query('paymentMethod') paymentMethod?: string
+    @Query('paymentMethod') paymentMethod?: string,
   ) {
     return this.finance.listInvoices(user, { patientId, status, paymentMethod });
   }
@@ -70,7 +70,7 @@ export class FinanceController {
   closeShift(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() dto: CloseShiftDto
+    @Body() dto: CloseShiftDto,
   ) {
     return this.finance.closeShift(user, id, dto);
   }
@@ -87,7 +87,7 @@ export class FinanceController {
   addPayment(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') invoiceId: string,
-    @Body() dto: CreatePaymentDto
+    @Body() dto: CreatePaymentDto,
   ) {
     return this.finance.addPayment(user, invoiceId, dto);
   }
@@ -98,7 +98,7 @@ export class FinanceController {
   refundPayment(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') invoiceId: string,
-    @Body() dto: CreateRefundDto
+    @Body() dto: CreateRefundDto,
   ) {
     return this.finance.refundPayment(user, invoiceId, dto);
   }

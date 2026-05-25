@@ -1,3 +1,4 @@
+import { RedisIoAdapter } from '@core/realtime/redis-io.adapter';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
@@ -5,7 +6,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { RedisIoAdapter } from '@core/realtime/redis-io.adapter';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -17,7 +17,14 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: origins,
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id', 'X-Tenant-Code', 'X-Branch-Id', 'X-Request-Id']
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Tenant-Id',
+      'X-Tenant-Code',
+      'X-Branch-Id',
+      'X-Request-Id',
+    ],
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 

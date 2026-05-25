@@ -1,9 +1,9 @@
 'use client';
 
-import { useWeekAppointments } from '../hooks/use-scheduling';
-import { formatVisitTime, statusLabel, statusTone } from '@/shared/ui/status';
-import type { BootstrapPayload } from '@/shared/types/bootstrap';
 import { Clock3 } from 'lucide-react';
+import { useWeekAppointments } from '../hooks/use-scheduling';
+import type { BootstrapPayload } from '@/shared/types/bootstrap';
+import { formatVisitTime, statusLabel, statusTone } from '@/shared/ui/status';
 
 interface WeekViewProps {
   bootstrap: BootstrapPayload;
@@ -38,10 +38,12 @@ export function WeekView({ bootstrap, selectedDate, branchId }: WeekViewProps) {
     const end = new Date(start);
     end.setDate(end.getDate() + 1);
 
-    return weekAppointments.data?.items.filter(app => {
-      const appDate = new Date(app.startAt);
-      return appDate >= start && appDate < end;
-    }) ?? [];
+    return (
+      weekAppointments.data?.items.filter((app) => {
+        const appDate = new Date(app.startAt);
+        return appDate >= start && appDate < end;
+      }) ?? []
+    );
   };
 
   const getDayName = (date: Date) => {
@@ -68,7 +70,9 @@ export function WeekView({ bootstrap, selectedDate, branchId }: WeekViewProps) {
                   {dayApps.length ? (
                     dayApps.map((app) => {
                       const emp = app.employee;
-                      const docName = emp ? `${emp.lastName} ${emp.firstName.slice(0, 1)}.` : 'Врач';
+                      const docName = emp
+                        ? `${emp.lastName} ${emp.firstName.slice(0, 1)}.`
+                        : 'Врач';
 
                       return (
                         <div key={app.id} className="week-app-card">
@@ -77,7 +81,9 @@ export function WeekView({ bootstrap, selectedDate, branchId }: WeekViewProps) {
                             <span>{formatVisitTime(app.startAt)}</span>
                           </div>
                           <strong className="week-app-patient">{app.patient.fullName}</strong>
-                          <span className="week-app-service">{app.service?.name ?? 'Без услуги'}</span>
+                          <span className="week-app-service">
+                            {app.service?.name ?? 'Без услуги'}
+                          </span>
                           <span className="week-app-doc">{docName}</span>
                           <span className={`status-badge status-${statusTone(app.status)}`}>
                             {statusLabel(app.status)}

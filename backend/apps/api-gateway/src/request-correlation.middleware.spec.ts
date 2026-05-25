@@ -1,5 +1,5 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import { requestCorrelationMiddleware } from './request-correlation.middleware';
 
 function runMiddleware(inputHeader?: string) {
@@ -7,12 +7,12 @@ function runMiddleware(inputHeader?: string) {
   const req = {
     headers: inputHeader ? { 'x-request-id': inputHeader } : {},
     url: '/api/v1/patients',
-    method: 'GET'
+    method: 'GET',
   } as any;
   const res = {
     setHeader(name: string, value: string) {
       headers[name.toLowerCase()] = value;
-    }
+    },
   } as any;
   let nextCalled = false;
 

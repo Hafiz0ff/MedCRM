@@ -1,7 +1,7 @@
+import { REDIS_CLIENT } from '@core/cache/redis.module';
+import { PrismaService } from '@core/database/prisma.service';
 import { Injectable, NestMiddleware, Inject } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { PrismaService } from '@core/database/prisma.service';
-import { REDIS_CLIENT } from '@core/cache/redis.module';
 import Redis from 'ioredis';
 
 @Injectable()
@@ -13,7 +13,9 @@ export class TenantAwareMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
     const tenantId = req.headers['x-tenant-id'] ? String(req.headers['x-tenant-id']) : undefined;
-    const tenantCode = req.headers['x-tenant-code'] ? String(req.headers['x-tenant-code']) : undefined;
+    const tenantCode = req.headers['x-tenant-code']
+      ? String(req.headers['x-tenant-code'])
+      : undefined;
 
     if (!tenantId && !tenantCode) {
       return next();
@@ -45,7 +47,7 @@ export class TenantAwareMiddleware implements NestMiddleware {
 
       if (!status) {
         const tenant = await this.prisma.tenant.findFirst({
-          where: tenantId ? { id: tenantId } : { code: tenantCode }
+          where: tenantId ? { id: tenantId } : { code: tenantCode },
         });
 
         if (tenant) {
@@ -78,11 +80,11 @@ export class TenantAwareMiddleware implements NestMiddleware {
               details: {
                 status: upperStatus,
                 tenantId: resolvedId,
-                tenantCode: resolvedCode
+                tenantCode: resolvedCode,
               },
               requestId: req.headers['x-request-id'] || 'unknown',
-              timestamp: new Date().toISOString()
-            }
+              timestamp: new Date().toISOString(),
+            },
           });
           return;
         }

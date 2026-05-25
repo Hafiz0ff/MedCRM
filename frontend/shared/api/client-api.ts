@@ -16,15 +16,18 @@ export function getAccessToken(): string | undefined {
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getAccessToken();
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init.headers
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}${path}`,
+    {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...init.headers,
+      },
+      credentials: 'include',
     },
-    credentials: 'include'
-  });
+  );
 
   if (!response.ok) {
     const body = await response.text();
@@ -33,4 +36,3 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 
   return (await response.json()) as T;
 }
-

@@ -3,12 +3,16 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { publicRoutes, compatibilityRoutes, websocketRoutes, internalRoutes } from './gateway-route.config';
+import { CentralizedExceptionFilter } from './centralized-exception.filter';
+import {
+  publicRoutes,
+  compatibilityRoutes,
+  websocketRoutes,
+  internalRoutes,
+} from './gateway-route.config';
 import { createGatewayProxy } from './proxy.factory';
 import { createRateLimitMiddleware } from './rate-limit.middleware';
 import { requestCorrelationMiddleware } from './request-correlation.middleware';
-import { CentralizedExceptionFilter } from './centralized-exception.filter';
-
 
 async function bootstrap(): Promise<void> {
   const publicApp = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -24,15 +28,22 @@ async function bootstrap(): Promise<void> {
         auth: Number(config.get<string>('GATEWAY_RATE_LIMIT_AUTH_MAX', '20')),
         public: Number(config.get<string>('GATEWAY_RATE_LIMIT_PUBLIC_MAX', '300')),
         internal: Number(config.get<string>('GATEWAY_RATE_LIMIT_INTERNAL_MAX', '1000')),
-        websocket: Number(config.get<string>('GATEWAY_RATE_LIMIT_WEBSOCKET_MAX', '120'))
-      }
-    })
+        websocket: Number(config.get<string>('GATEWAY_RATE_LIMIT_WEBSOCKET_MAX', '120')),
+      },
+    }),
   );
   publicApp.use(helmet());
   publicApp.enableCors({
     origin: origins,
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id', 'X-Tenant-Code', 'X-Branch-Id', 'X-Request-Id']
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Tenant-Id',
+      'X-Tenant-Code',
+      'X-Branch-Id',
+      'X-Request-Id',
+    ],
   });
   publicApp.useGlobalFilters(new CentralizedExceptionFilter());
 
@@ -55,15 +66,22 @@ async function bootstrap(): Promise<void> {
         auth: Number(config.get<string>('GATEWAY_RATE_LIMIT_AUTH_MAX', '20')),
         public: Number(config.get<string>('GATEWAY_RATE_LIMIT_PUBLIC_MAX', '300')),
         internal: Number(config.get<string>('GATEWAY_RATE_LIMIT_INTERNAL_MAX', '1000')),
-        websocket: Number(config.get<string>('GATEWAY_RATE_LIMIT_WEBSOCKET_MAX', '120'))
-      }
-    })
+        websocket: Number(config.get<string>('GATEWAY_RATE_LIMIT_WEBSOCKET_MAX', '120')),
+      },
+    }),
   );
   privateApp.use(helmet());
   privateApp.enableCors({
     origin: origins,
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id', 'X-Tenant-Code', 'X-Branch-Id', 'X-Request-Id']
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Tenant-Id',
+      'X-Tenant-Code',
+      'X-Branch-Id',
+      'X-Request-Id',
+    ],
   });
   privateApp.useGlobalFilters(new CentralizedExceptionFilter());
 
@@ -79,7 +97,7 @@ async function bootstrap(): Promise<void> {
     .setVersion('1.0.0')
     .addBearerAuth()
     .build();
-  
+
   const document = SwaggerModule.createDocument(privateApp, swaggerConfig);
   SwaggerModule.setup('docs', privateApp, document, {
     jsonDocumentUrl: 'docs-json',
@@ -87,14 +105,14 @@ async function bootstrap(): Promise<void> {
       urls: [
         {
           url: '/gateway/openapi/aggregated',
-          name: 'Aggregated MedCRM APIs'
+          name: 'Aggregated MedCRM APIs',
         },
         {
           url: '/docs-json',
-          name: 'Gateway Management APIs'
-        }
-      ]
-    }
+          name: 'Gateway Management APIs',
+        },
+      ],
+    },
   });
 
   const privatePort = config.get<number>('API_GATEWAY_INTERNAL_PORT', 3010);
@@ -103,4 +121,3 @@ async function bootstrap(): Promise<void> {
 }
 
 void bootstrap();
-

@@ -1,16 +1,25 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
+import { createHash } from 'crypto';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { RealtimeGateway } from '../smart-scheduling/realtime.gateway';
-import { createHash } from 'crypto';
 import {
   SendMessageDto,
   CreateTemplateDto,
   UpdateTemplateDto,
   CreateNotificationRuleDto,
   CreateCampaignDto,
-  UpdatePreferencesDto
+  UpdatePreferencesDto,
+  UpdateNotificationRuleDto,
+  ConfigureChannelDto,
+  ConfigureSmsProviderDto,
 } from './dto/communications.dto';
 
 @Injectable()
@@ -20,7 +29,7 @@ export class CommunicationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditLoggerService,
-    private readonly realtime: RealtimeGateway
+    private readonly realtime: RealtimeGateway,
   ) {}
 
   // 1. Omnichannel Inbox & Contact Resolver
@@ -30,16 +39,16 @@ export class CommunicationsService {
       include: {
         patient: true,
         assignedOperator: {
-          select: { id: true, email: true, firstName: true, lastName: true }
-        }
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
       },
-      orderBy: { lastMessageAt: 'desc' }
+      orderBy: { lastMessageAt: 'desc' },
     });
   }
 
   async getMessages(user: AuthenticatedUser, conversationId: string) {
     const conv = await this.prisma.conversation.findUnique({
-      where: { id: conversationId }
+      where: { id: conversationId },
     });
     if (!conv) throw new NotFoundException('Диалог не найден');
     if (conv.tenantId !== user.tenantId) throw new ForbiddenException();
@@ -47,7 +56,7 @@ export class CommunicationsService {
     return this.prisma.message.findMany({
       where: { tenantId: user.tenantId, conversationId },
       include: { attachments: true },
-      orderBy: { sentAt: 'asc' }
+      orderBy: { sentAt: 'asc' },
     });
   }
 
@@ -56,17 +65,22 @@ export class CommunicationsService {
     phoneOrSocialId: string,
     channelType: 'TELEGRAM' | 'WHATSAPP' | 'SMS' | 'EMAIL' | 'INTERNAL' | 'WEBCHAT',
     text: string,
-    externalMsgId?: string
+    externalMsgId?: string,
   ) {
     const phoneHash = createHash('sha256')
       .update(phoneOrSocialId.toLowerCase().replace(/[\s()+-]/g, ''))
       .digest('hex');
 
     // 1. Contact Matching Resolver
-    let contact = await this.prisma.patientContact.findFirst({
+    const contact = await this.prisma.patientContact.findFirst({
       where: { tenantId, normalizedValueHash: phoneHash },
-      include: { patient: true }
+      include: { patient: true },
     });
+
+    console.log('[DEBUG-CHATBOT] phoneOrSocialId:', phoneOrSocialId);
+    console.log('[DEBUG-CHATBOT] calculated hash:', phoneHash);
+    console.log('[DEBUG-CHATBOT] contact found:', contact ? 'YES' : 'NO');
+    if (contact) console.log('[DEBUG-CHATBOT] contact patientId:', contact.patientId);
 
     let patientId: string;
     let isNewLead = false;
@@ -91,10 +105,10 @@ export class CommunicationsService {
               type: channelType === 'EMAIL' ? 'EMAIL' : 'PHONE',
               value: phoneOrSocialId,
               normalizedValueHash: phoneHash,
-              isPrimary: true
-            }
-          }
-        }
+              isPrimary: true,
+            },
+          },
+        },
       });
       patientId = tempPatient.id;
     }
@@ -104,8 +118,8 @@ export class CommunicationsService {
       where: {
         tenantId,
         patientId,
-        conversationStatus: { in: ['OPEN', 'PENDING', 'WAITING_PATIENT'] }
-      }
+        conversationStatus: { in: ['OPEN', 'PENDING', 'WAITING_PATIENT'] },
+      },
     });
 
     if (!conv) {
@@ -115,24 +129,34 @@ export class CommunicationsService {
           patientId,
           primaryChannel: channelType,
           conversationStatus: 'OPEN',
-          unreadCount: 1
-        }
+          unreadCount: 1,
+        },
       });
 
       // Join participants
       await this.prisma.conversationParticipant.createMany({
         data: [
-          { tenantId, conversationId: conv.id, participantType: 'PATIENT', participantId: patientId },
-          { tenantId, conversationId: conv.id, participantType: 'BOT', participantId: '00000000-0000-0000-0000-000000000000' } // Seed bot id
-        ]
+          {
+            tenantId,
+            conversationId: conv.id,
+            participantType: 'PATIENT',
+            participantId: patientId,
+          },
+          {
+            tenantId,
+            conversationId: conv.id,
+            participantType: 'BOT',
+            participantId: '00000000-0000-0000-0000-000000000000',
+          }, // Seed bot id
+        ],
       });
     } else {
       await this.prisma.conversation.update({
         where: { id: conv.id },
         data: {
           unreadCount: { increment: 1 },
-          lastMessageAt: new Date()
-        }
+          lastMessageAt: new Date(),
+        },
       });
     }
 
@@ -150,8 +174,8 @@ export class CommunicationsService {
         messageType: 'TEXT',
         messageText: text,
         deliveryStatus: 'DELIVERED',
-        deliveredAt: new Date()
-      }
+        deliveredAt: new Date(),
+      },
     });
 
     // 4. Emit real-time events to operators
@@ -159,17 +183,16 @@ export class CommunicationsService {
       conversationId: conv.id,
       patientId,
       message,
-      isNewLead
+      isNewLead,
     });
 
     // 5. Audit Log Inbound message
     await this.audit.log({
       tenantId,
-      userId: patientId, // Sender context
       action: 'message.received',
       entityType: 'message',
       entityId: message.id,
-      newValuesJson: message
+      newValuesJson: message as any,
     });
 
     // 6. Push to Chatbot Engine for automated event-driven processing
@@ -180,7 +203,7 @@ export class CommunicationsService {
 
   async sendMessage(user: AuthenticatedUser, conversationId: string, dto: SendMessageDto) {
     const conv = await this.prisma.conversation.findUnique({
-      where: { id: conversationId }
+      where: { id: conversationId },
     });
     if (!conv) throw new NotFoundException('Диалог не найден');
     if (conv.tenantId !== user.tenantId) throw new ForbiddenException();
@@ -192,9 +215,9 @@ export class CommunicationsService {
           tenantId_patientId_channelType: {
             tenantId: user.tenantId,
             patientId: conv.patientId,
-            channelType: dto.channelType
-          }
-        }
+            channelType: dto.channelType,
+          },
+        },
       });
       if (pref && pref.isBlocked) {
         throw new BadRequestException('Пациент заблокировал данный канал связи');
@@ -205,7 +228,7 @@ export class CommunicationsService {
       // Update unread count reset (since operator is replying)
       await tx.conversation.update({
         where: { id: conversationId },
-        data: { unreadCount: 0, lastMessageAt: new Date(), conversationStatus: 'WAITING_PATIENT' }
+        data: { unreadCount: 0, lastMessageAt: new Date(), conversationStatus: 'WAITING_PATIENT' },
       });
 
       return tx.message.create({
@@ -220,30 +243,35 @@ export class CommunicationsService {
           messageType: dto.mediaFileId ? 'MEDIA' : 'TEXT',
           messageText: dto.messageText || null,
           mediaFileId: dto.mediaFileId || null,
-          deliveryStatus: 'PENDING'
-        }
+          deliveryStatus: 'PENDING',
+        },
       });
     });
 
     // Dispatch message asynchronously via gateways (mock adapters)
     if (dto.channelType === 'SMS' && conv.patientId) {
       const contact = await this.prisma.patientContact.findFirst({
-        where: { tenantId: user.tenantId, patientId: conv.patientId, type: 'PHONE' }
+        where: { tenantId: user.tenantId, patientId: conv.patientId, type: 'PHONE' },
       });
       if (contact) {
-        await this.dispatchSmsViaGateway(user.tenantId, contact.value, dto.messageText || '', message.id);
+        await this.dispatchSmsViaGateway(
+          user.tenantId,
+          contact.value,
+          dto.messageText || '',
+          message.id,
+        );
       }
     } else {
       // Mock other channels -> set auto-delivered
       await this.prisma.message.update({
         where: { id: message.id },
-        data: { deliveryStatus: 'DELIVERED', deliveredAt: new Date() }
+        data: { deliveryStatus: 'DELIVERED', deliveredAt: new Date() },
       });
     }
 
     const updatedMsg = await this.prisma.message.findUnique({
       where: { id: message.id },
-      include: { attachments: true }
+      include: { attachments: true },
     });
 
     this.realtime.emitCommunicationEvent('notification.sent', user.tenantId, updatedMsg);
@@ -254,7 +282,7 @@ export class CommunicationsService {
       action: 'message.sent',
       entityType: 'message',
       entityId: message.id,
-      newValuesJson: updatedMsg as any
+      newValuesJson: updatedMsg as any,
     });
 
     return updatedMsg;
@@ -262,13 +290,13 @@ export class CommunicationsService {
 
   async assignConversation(user: AuthenticatedUser, conversationId: string, operatorId: string) {
     const conv = await this.prisma.conversation.findUnique({
-      where: { id: conversationId }
+      where: { id: conversationId },
     });
     if (!conv) throw new NotFoundException('Диалог не найден');
     if (conv.tenantId !== user.tenantId) throw new ForbiddenException();
 
     const operator = await this.prisma.user.findUnique({
-      where: { id: operatorId }
+      where: { id: operatorId },
     });
     if (!operator || operator.tenantId !== user.tenantId) {
       throw new BadRequestException('Оператор не найден');
@@ -277,7 +305,7 @@ export class CommunicationsService {
     await this.prisma.$transaction(async (tx) => {
       await tx.conversation.update({
         where: { id: conversationId },
-        data: { assignedOperatorId: operatorId }
+        data: { assignedOperatorId: operatorId },
       });
 
       await tx.conversationAssignment.create({
@@ -285,8 +313,8 @@ export class CommunicationsService {
           tenantId: user.tenantId,
           conversationId,
           assignedToUserId: operatorId,
-          assignedBy: user.userId
-        }
+          assignedBy: user.userId,
+        },
       });
     });
 
@@ -302,27 +330,32 @@ export class CommunicationsService {
         messageType: 'SYSTEM',
         messageText: logMessage,
         deliveryStatus: 'DELIVERED',
-        deliveredAt: new Date()
-      }
+        deliveredAt: new Date(),
+      },
     });
 
     this.realtime.emitCommunicationEvent('message.received', user.tenantId, {
       conversationId,
-      message
+      message,
     });
 
     return { ok: true };
   }
 
   // 2. SMS Gateway Adapter Pattern (Tajikistan local providers)
-  private async dispatchSmsViaGateway(tenantId: string, phone: string, text: string, messageId: string) {
+  private async dispatchSmsViaGateway(
+    tenantId: string,
+    phone: string,
+    text: string,
+    messageId: string,
+  ) {
     const activeProvider = await this.prisma.smsProvider.findFirst({
-      where: { tenantId, isActive: true }
+      where: { tenantId, isActive: true },
     });
     if (!activeProvider) {
       await this.prisma.message.update({
         where: { id: messageId },
-        data: { deliveryStatus: 'FAILED', metadataJson: { error: 'No active SMS provider' } }
+        data: { deliveryStatus: 'FAILED', metadataJson: { error: 'No active SMS provider' } },
       });
       return;
     }
@@ -330,7 +363,7 @@ export class CommunicationsService {
     if (activeProvider.dailyLimit <= 0) {
       await this.prisma.message.update({
         where: { id: messageId },
-        data: { deliveryStatus: 'FAILED', metadataJson: { error: 'Daily limit exceeded' } }
+        data: { deliveryStatus: 'FAILED', metadataJson: { error: 'Daily limit exceeded' } },
       });
       return;
     }
@@ -357,7 +390,7 @@ export class CommunicationsService {
         // Deduct Limit
         await this.prisma.smsProvider.update({
           where: { id: activeProvider.id },
-          data: { dailyLimit: { decrement: 1 } }
+          data: { dailyLimit: { decrement: 1 } },
         });
 
         await this.prisma.message.update({
@@ -365,8 +398,8 @@ export class CommunicationsService {
           data: {
             deliveryStatus: 'DELIVERED',
             externalMessageId: `SMS-${provider}-${Date.now()}`,
-            deliveredAt: new Date()
-          }
+            deliveredAt: new Date(),
+          },
         });
       } else {
         throw new Error('Adapter failed to process payload');
@@ -374,7 +407,7 @@ export class CommunicationsService {
     } catch (e: any) {
       await this.prisma.message.update({
         where: { id: messageId },
-        data: { deliveryStatus: 'FAILED', metadataJson: { error: e.message } }
+        data: { deliveryStatus: 'FAILED', metadataJson: { error: e.message } },
       });
     }
   }
@@ -383,7 +416,7 @@ export class CommunicationsService {
   async handleTriggerEvent(tenantId: string, event: string, payload: any) {
     const rules = await this.prisma.notificationRule.findMany({
       where: { tenantId, triggerEvent: event, isActive: true },
-      include: { template: true }
+      include: { template: true },
     });
 
     for (const rule of rules) {
@@ -405,9 +438,9 @@ export class CommunicationsService {
           tenantId_patientId_channelType: {
             tenantId,
             patientId,
-            channelType: rule.channelType
-          }
-        }
+            channelType: rule.channelType,
+          },
+        },
       });
 
       const isMarketing = rule.triggerEvent === 'marketing.campaign';
@@ -427,7 +460,7 @@ export class CommunicationsService {
         patient_name: patient ? patient.fullName : 'Уважаемый клиент',
         doctor_name: doctor ? `${doctor.firstName} ${doctor.lastName}` : 'Врач',
         appointment_time: payload.startAt ? new Date(payload.startAt).toLocaleString('ru') : '',
-        payment_amount: payload.totalAmount ? payload.totalAmount.toString() : ''
+        payment_amount: payload.totalAmount ? payload.totalAmount.toString() : '',
       };
 
       let renderedBody = rule.template.templateBody;
@@ -448,8 +481,8 @@ export class CommunicationsService {
           templateId: rule.templateId,
           scheduledAt,
           payloadJson: { text: renderedBody },
-          deliveryStatus: 'PENDING'
-        }
+          deliveryStatus: 'PENDING',
+        },
       });
     }
 
@@ -464,15 +497,19 @@ export class CommunicationsService {
         tenantId,
         deliveryStatus: 'PENDING',
         scheduledAt: { lte: now },
-        retryCount: { lt: 3 }
-      }
+        retryCount: { lt: 3 },
+      },
     });
 
     for (const job of pending) {
       try {
         const payload = job.payloadJson as Record<string, string>;
         let conversation = await this.prisma.conversation.findFirst({
-          where: { tenantId, patientId: job.patientId, conversationStatus: { in: ['OPEN', 'PENDING', 'WAITING_PATIENT'] } }
+          where: {
+            tenantId,
+            patientId: job.patientId,
+            conversationStatus: { in: ['OPEN', 'PENDING', 'WAITING_PATIENT'] },
+          },
         });
 
         if (!conversation && job.patientId) {
@@ -481,8 +518,8 @@ export class CommunicationsService {
               tenantId,
               patientId: job.patientId,
               primaryChannel: job.channelType,
-              conversationStatus: 'OPEN'
-            }
+              conversationStatus: 'OPEN',
+            },
           });
         }
 
@@ -498,13 +535,13 @@ export class CommunicationsService {
               channelType: job.channelType,
               direction: 'OUTBOUND',
               messageText: payload.text,
-              deliveryStatus: 'PENDING'
-            }
+              deliveryStatus: 'PENDING',
+            },
           });
 
           if (job.channelType === 'SMS' && job.patientId) {
             const contact = await this.prisma.patientContact.findFirst({
-              where: { tenantId, patientId: job.patientId, type: 'PHONE' }
+              where: { tenantId, patientId: job.patientId, type: 'PHONE' },
             });
             if (contact) {
               await this.dispatchSmsViaGateway(tenantId, contact.value, payload.text, msg.id);
@@ -512,22 +549,22 @@ export class CommunicationsService {
           } else {
             await this.prisma.message.update({
               where: { id: msg.id },
-              data: { deliveryStatus: 'DELIVERED', deliveredAt: new Date() }
+              data: { deliveryStatus: 'DELIVERED', deliveredAt: new Date() },
             });
           }
         }
 
         await this.prisma.notificationsQueue.update({
           where: { id: job.id },
-          data: { deliveryStatus: 'DELIVERED', processedAt: new Date() }
+          data: { deliveryStatus: 'DELIVERED', processedAt: new Date() },
         });
       } catch (err: any) {
         await this.prisma.notificationsQueue.update({
           where: { id: job.id },
           data: {
             retryCount: { increment: 1 },
-            deliveryStatus: job.retryCount >= 2 ? 'FAILED' : 'PENDING'
-          }
+            deliveryStatus: job.retryCount >= 2 ? 'FAILED' : 'PENDING',
+          },
         });
       }
     }
@@ -539,7 +576,7 @@ export class CommunicationsService {
     conversationId: string,
     patientId: string,
     text: string,
-    messageId: string
+    messageId: string,
   ) {
     const normalizedInput = text.trim();
     if (normalizedInput !== '1' && normalizedInput !== '2') {
@@ -548,9 +585,20 @@ export class CommunicationsService {
 
     // Find the latest pending appointment to confirm or cancel
     const app = await this.prisma.appointment.findFirst({
-      where: { tenantId, patientId, status: { in: ['SCHEDULED', 'CHECKED_IN'] } },
-      orderBy: { startAt: 'desc' }
+      where: { tenantId, patientId, status: { in: ['SCHEDULED', 'CHECKED_IN', 'CONFIRMED'] } },
+      orderBy: { startAt: 'desc' },
     });
+
+    console.log(
+      '[DEBUG-CHATBOT] processChatbotFlow trigger input:',
+      normalizedInput,
+      'patientId:',
+      patientId,
+    );
+    console.log(
+      '[DEBUG-CHATBOT] latest pending appointment:',
+      app ? `${app.id} status ${app.status}` : 'NONE',
+    );
 
     if (!app) return;
 
@@ -559,7 +607,7 @@ export class CommunicationsService {
       await this.prisma.$transaction(async (tx) => {
         await tx.appointment.update({
           where: { id: app.id },
-          data: { status: 'CONFIRMED', confirmedAt: new Date() }
+          data: { status: 'CONFIRMED', confirmedAt: new Date() },
         });
 
         await tx.appointmentStatusHistory.create({
@@ -569,8 +617,8 @@ export class CommunicationsService {
             oldStatus: app.status,
             newStatus: 'CONFIRMED',
             changedBy: '00000000-0000-0000-0000-000000000000', // System Bot
-            reason: 'Подтверждено через чат-бота'
-          }
+            reason: 'Подтверждено через чат-бота',
+          },
         });
 
         await tx.chatbotActionLog.create({
@@ -580,19 +628,28 @@ export class CommunicationsService {
             conversationId,
             actionType: 'CONFIRM_APPOINTMENT',
             sourceMessageId: messageId,
-            actionResult: `Подтвержден визит ${app.appointmentNumber}`
-          }
+            actionResult: `Подтвержден визит ${app.appointmentNumber}`,
+          },
         });
       });
 
       // Reply confirmation success
-      await this.sendSystemBotReply(tenantId, conversationId, patientId, 'Запись успешно подтверждена. Ждем Вас!');
+      await this.sendSystemBotReply(
+        tenantId,
+        conversationId,
+        patientId,
+        'Запись успешно подтверждена. Ждем Вас!',
+      );
     } else if (normalizedInput === '2') {
       // 2. CANCELLATION
       await this.prisma.$transaction(async (tx) => {
         await tx.appointment.update({
           where: { id: app.id },
-          data: { status: 'CANCELLED', cancelledAt: new Date(), cancellationReason: 'Отменено пациентом через чат-бота' }
+          data: {
+            status: 'CANCELLED',
+            cancelledAt: new Date(),
+            cancellationReason: 'Отменено пациентом через чат-бота',
+          },
         });
 
         await tx.appointmentStatusHistory.create({
@@ -602,8 +659,8 @@ export class CommunicationsService {
             oldStatus: app.status,
             newStatus: 'CANCELLED',
             changedBy: '00000000-0000-0000-0000-000000000000',
-            reason: 'Отменено через чат-бота'
-          }
+            reason: 'Отменено через чат-бота',
+          },
         });
 
         await tx.chatbotActionLog.create({
@@ -613,20 +670,30 @@ export class CommunicationsService {
             conversationId,
             actionType: 'CANCEL_APPOINTMENT',
             sourceMessageId: messageId,
-            actionResult: `Отменен визит ${app.appointmentNumber}`
-          }
+            actionResult: `Отменен визит ${app.appointmentNumber}`,
+          },
         });
       });
 
       // Reply cancellation success
-      await this.sendSystemBotReply(tenantId, conversationId, patientId, 'Запись отменена. Всего доброго.');
+      await this.sendSystemBotReply(
+        tenantId,
+        conversationId,
+        patientId,
+        'Запись отменена. Всего доброго.',
+      );
 
       // Waiting List release trigger
       await this.triggerWaitingListFailover(tenantId, app);
     }
   }
 
-  private async sendSystemBotReply(tenantId: string, conversationId: string, patientId: string, text: string) {
+  private async sendSystemBotReply(
+    tenantId: string,
+    conversationId: string,
+    patientId: string,
+    text: string,
+  ) {
     const msg = await this.prisma.message.create({
       data: {
         tenantId,
@@ -638,13 +705,13 @@ export class CommunicationsService {
         direction: 'OUTBOUND',
         messageText: text,
         deliveryStatus: 'DELIVERED',
-        deliveredAt: new Date()
-      }
+        deliveredAt: new Date(),
+      },
     });
 
     this.realtime.emitCommunicationEvent('message.received', tenantId, {
       conversationId,
-      message: msg
+      message: msg,
     });
   }
 
@@ -654,9 +721,9 @@ export class CommunicationsService {
       where: {
         tenantId,
         branchId: cancelledApp.branchId,
-        OR: [{ employeeId: cancelledApp.employeeId }, { serviceId: cancelledApp.serviceId }]
+        OR: [{ employeeId: cancelledApp.employeeId }, { serviceId: cancelledApp.serviceId }],
       },
-      orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }]
+      orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
     });
 
     if (!waiting) return;
@@ -664,14 +731,14 @@ export class CommunicationsService {
     // Trigger Notification rule to offer this newly released slot!
     const rule = await this.prisma.notificationRule.findFirst({
       where: { tenantId, triggerEvent: 'waiting_list.slot_available', isActive: true },
-      include: { template: true }
+      include: { template: true },
     });
 
     if (rule) {
       await this.handleTriggerEvent(tenantId, 'waiting_list.slot_available', {
         patientId: waiting.patientId,
         employeeId: cancelledApp.employeeId,
-        startAt: cancelledApp.startAt
+        startAt: cancelledApp.startAt,
       });
       this.logger.debug(`Waiting list slot offer triggered for patientId=${waiting.patientId}`);
     }
@@ -681,7 +748,7 @@ export class CommunicationsService {
   async executeCampaign(user: AuthenticatedUser, campaignId: string) {
     const campaign = await this.prisma.communicationCampaign.findUnique({
       where: { id: campaignId },
-      include: { template: true }
+      include: { template: true },
     });
     if (!campaign) throw new NotFoundException('Кампания не найдена');
     if (campaign.tenantId !== user.tenantId) throw new ForbiddenException();
@@ -692,7 +759,7 @@ export class CommunicationsService {
     // Update status to ACTIVE
     await this.prisma.communicationCampaign.update({
       where: { id: campaignId },
-      data: { campaignStatus: 'ACTIVE' }
+      data: { campaignStatus: 'ACTIVE' },
     });
 
     // Segment querying (simulation matches tags or CRM segments)
@@ -702,8 +769,8 @@ export class CommunicationsService {
     const patients = await this.prisma.patient.findMany({
       where: {
         tenantId: user.tenantId,
-        tags: tagCode ? { some: { tag: { code: tagCode } } } : undefined
-      }
+        tags: tagCode ? { some: { tag: { code: tagCode } } } : undefined,
+      },
     });
 
     let sentCount = 0;
@@ -714,9 +781,9 @@ export class CommunicationsService {
           tenantId_patientId_channelType: {
             tenantId: user.tenantId,
             patientId: patient.id,
-            channelType: campaign.channelType
-          }
-        }
+            channelType: campaign.channelType,
+          },
+        },
       });
       if (pref && !pref.marketingAllowed) continue; // Patient opted out of marketing!
       if (pref && pref.isBlocked) continue; // Patient blocked channel!
@@ -730,8 +797,8 @@ export class CommunicationsService {
           templateId: campaign.templateId,
           scheduledAt: new Date(),
           priority: 'LOW',
-          payloadJson: { text: campaign.template.templateBody }
-        }
+          payloadJson: { text: campaign.template.templateBody },
+        },
       });
       sentCount++;
     }
@@ -742,7 +809,7 @@ export class CommunicationsService {
     // Update status to COMPLETED
     await this.prisma.communicationCampaign.update({
       where: { id: campaignId },
-      data: { campaignStatus: 'COMPLETED' }
+      data: { campaignStatus: 'COMPLETED' },
     });
 
     await this.audit.log({
@@ -751,7 +818,7 @@ export class CommunicationsService {
       action: 'campaign.executed',
       entityType: 'communication_campaign',
       entityId: campaignId,
-      newValuesJson: { campaignId, sentCount }
+      newValuesJson: { campaignId, sentCount },
     });
 
     return { success: true, sentCount };
@@ -768,8 +835,8 @@ export class CommunicationsService {
         languageCode: dto.languageCode,
         subject: dto.subject || null,
         templateBody: dto.templateBody,
-        variablesJson: dto.variablesJson || {}
-      }
+        variablesJson: dto.variablesJson || {},
+      },
     });
 
     await this.audit.log({
@@ -778,7 +845,7 @@ export class CommunicationsService {
       action: 'template.created',
       entityType: 'message_template',
       entityId: template.id,
-      newValuesJson: template
+      newValuesJson: template,
     });
 
     return template;
@@ -795,8 +862,8 @@ export class CommunicationsService {
         templateName: dto.templateName,
         templateBody: dto.templateBody,
         variablesJson: dto.variablesJson,
-        isActive: dto.isActive
-      }
+        isActive: dto.isActive,
+      },
     });
 
     await this.audit.log({
@@ -806,7 +873,7 @@ export class CommunicationsService {
       entityType: 'message_template',
       entityId: id,
       oldValuesJson: template,
-      newValuesJson: updated
+      newValuesJson: updated,
     });
 
     return updated;
@@ -814,7 +881,7 @@ export class CommunicationsService {
 
   async getTemplates(user: AuthenticatedUser) {
     return this.prisma.messageTemplate.findMany({
-      where: { tenantId: user.tenantId }
+      where: { tenantId: user.tenantId },
     });
   }
 
@@ -827,8 +894,8 @@ export class CommunicationsService {
         channelType: dto.channelType,
         templateId: dto.templateId,
         delayMinutes: dto.delayMinutes,
-        conditionsJson: dto.conditionsJson || {}
-      }
+        conditionsJson: dto.conditionsJson || {},
+      },
     });
 
     await this.audit.log({
@@ -837,7 +904,7 @@ export class CommunicationsService {
       action: 'rule.created',
       entityType: 'notification_rule',
       entityId: rule.id,
-      newValuesJson: rule
+      newValuesJson: rule,
     });
 
     return rule;
@@ -852,8 +919,8 @@ export class CommunicationsService {
         channelType: dto.channelType,
         templateId: dto.templateId,
         scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null,
-        createdBy: user.userId
-      }
+        createdBy: user.userId,
+      },
     });
 
     await this.audit.log({
@@ -862,7 +929,7 @@ export class CommunicationsService {
       action: 'campaign.created',
       entityType: 'communication_campaign',
       entityId: campaign.id,
-      newValuesJson: campaign
+      newValuesJson: campaign,
     });
 
     return campaign;
@@ -874,8 +941,8 @@ export class CommunicationsService {
         tenantId_patientId_channelType: {
           tenantId: user.tenantId,
           patientId: dto.patientId,
-          channelType: dto.channelType
-        }
+          channelType: dto.channelType,
+        },
       },
       create: {
         tenantId: user.tenantId,
@@ -883,13 +950,13 @@ export class CommunicationsService {
         channelType: dto.channelType,
         marketingAllowed: dto.marketingAllowed !== undefined ? dto.marketingAllowed : true,
         remindersAllowed: dto.remindersAllowed !== undefined ? dto.remindersAllowed : true,
-        isBlocked: dto.isBlocked !== undefined ? dto.isBlocked : false
+        isBlocked: dto.isBlocked !== undefined ? dto.isBlocked : false,
       },
       update: {
         marketingAllowed: dto.marketingAllowed,
         remindersAllowed: dto.remindersAllowed,
-        isBlocked: dto.isBlocked
-      }
+        isBlocked: dto.isBlocked,
+      },
     });
 
     await this.audit.log({
@@ -898,9 +965,162 @@ export class CommunicationsService {
       action: 'preferences.updated',
       entityType: 'communication_preference',
       entityId: pref.id,
-      newValuesJson: pref
+      newValuesJson: pref,
     });
 
     return pref;
+  }
+
+  async getNotificationRules(user: AuthenticatedUser) {
+    return this.prisma.notificationRule.findMany({
+      where: { tenantId: user.tenantId },
+      include: { template: true },
+    });
+  }
+
+  async updateNotificationRule(
+    user: AuthenticatedUser,
+    id: string,
+    dto: UpdateNotificationRuleDto,
+  ) {
+    const rule = await this.prisma.notificationRule.findUnique({ where: { id } });
+    if (!rule) throw new NotFoundException('Правило не найдено');
+    if (rule.tenantId !== user.tenantId) throw new ForbiddenException();
+
+    const updated = await this.prisma.notificationRule.update({
+      where: { id },
+      data: {
+        ruleName: dto.ruleName,
+        templateId: dto.templateId,
+        delayMinutes: dto.delayMinutes,
+        isActive: dto.isActive,
+        conditionsJson: dto.conditionsJson !== undefined ? dto.conditionsJson : undefined,
+      },
+    });
+
+    await this.audit.log({
+      tenantId: user.tenantId,
+      userId: user.userId,
+      action: 'rule.updated',
+      entityType: 'notification_rule',
+      entityId: id,
+      oldValuesJson: rule,
+      newValuesJson: updated,
+    });
+
+    return updated;
+  }
+
+  async deleteNotificationRule(user: AuthenticatedUser, id: string) {
+    const rule = await this.prisma.notificationRule.findUnique({ where: { id } });
+    if (!rule) throw new NotFoundException('Правило не найдено');
+    if (rule.tenantId !== user.tenantId) throw new ForbiddenException();
+
+    await this.prisma.notificationRule.delete({ where: { id } });
+
+    await this.audit.log({
+      tenantId: user.tenantId,
+      userId: user.userId,
+      action: 'rule.deleted',
+      entityType: 'notification_rule',
+      entityId: id,
+      oldValuesJson: rule,
+    });
+
+    return { ok: true };
+  }
+
+  async getChannels(user: AuthenticatedUser) {
+    return this.prisma.communicationChannel.findMany({
+      where: { tenantId: user.tenantId },
+    });
+  }
+
+  async configureChannel(user: AuthenticatedUser, dto: ConfigureChannelDto) {
+    const existing = await this.prisma.communicationChannel.findFirst({
+      where: { tenantId: user.tenantId, channelType: dto.channelType },
+    });
+
+    let channel;
+    if (existing) {
+      channel = await this.prisma.communicationChannel.update({
+        where: { id: existing.id },
+        data: {
+          providerCode: dto.providerCode,
+          configurationJson: dto.configurationJson || {},
+          isActive: dto.isActive,
+        },
+      });
+    } else {
+      channel = await this.prisma.communicationChannel.create({
+        data: {
+          tenantId: user.tenantId,
+          channelType: dto.channelType,
+          providerCode: dto.providerCode,
+          configurationJson: dto.configurationJson || {},
+          isActive: dto.isActive ?? true,
+        },
+      });
+    }
+
+    await this.audit.log({
+      tenantId: user.tenantId,
+      userId: user.userId,
+      action: 'channel.configured',
+      entityType: 'communication_channel',
+      entityId: channel.id,
+      newValuesJson: channel,
+    });
+
+    return channel;
+  }
+
+  async getSmsProviders(user: AuthenticatedUser) {
+    return this.prisma.smsProvider.findMany({
+      where: { tenantId: user.tenantId },
+    });
+  }
+
+  async configureSmsProvider(user: AuthenticatedUser, dto: ConfigureSmsProviderDto) {
+    const existing = await this.prisma.smsProvider.findFirst({
+      where: { tenantId: user.tenantId, providerCode: dto.providerCode },
+    });
+
+    let provider;
+    if (existing) {
+      provider = await this.prisma.smsProvider.update({
+        where: { id: existing.id },
+        data: {
+          providerName: dto.providerName,
+          apiCredentialsJson: dto.apiCredentialsJson || {},
+          senderName: dto.senderName,
+          dailyLimit: dto.dailyLimit,
+          isActive: dto.isActive,
+        },
+      });
+    } else {
+      provider = await this.prisma.smsProvider.create({
+        data: {
+          tenantId: user.tenantId,
+          providerCode: dto.providerCode,
+          providerName: dto.providerName,
+          apiCredentialsJson: dto.apiCredentialsJson || {},
+          senderName: dto.senderName,
+          dailyLimit: dto.dailyLimit ?? 1000,
+          isActive: dto.isActive ?? true,
+        },
+      });
+    }
+
+    await this.audit.log({
+      tenantId: user.tenantId,
+      userId: user.userId,
+      action: 'sms_provider.configured',
+      entityType: 'sms_provider',
+      entityId: provider.id,
+      newValuesJson: provider,
+    });
+
+    return provider;
   }
 }

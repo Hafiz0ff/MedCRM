@@ -1,21 +1,81 @@
+import { createHash } from 'crypto';
 import { PrismaClient, Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
-import { createHash } from 'crypto';
 
 const prisma = new PrismaClient();
 
 const modules = [
   { code: 'auth', name: 'Auth/RBAC', version: '1.0.0', isCore: true, dependencies: [] },
-  { code: 'organization-structure', name: 'Organization Structure', version: '1.0.0', isCore: false, dependencies: ['auth'] },
-  { code: 'patient-crm', name: 'Patient CRM', version: '1.0.0', isCore: false, dependencies: ['auth', 'organization-structure'] },
-  { code: 'smart-scheduling', name: 'Smart Scheduling', version: '1.0.0', isCore: false, dependencies: ['auth', 'organization-structure', 'patient-crm'] },
-  { code: 'receptionist-workplace', name: 'Receptionist Workplace', version: '1.0.0', isCore: false, dependencies: ['auth', 'patient-crm', 'smart-scheduling'] },
-  { code: 'communications', name: 'Communications', version: '1.0.0', isCore: false, dependencies: ['auth', 'patient-crm'] },
-  { code: 'emr-ehr', name: 'EMR/EHR Clinical Module', version: '1.0.0', isCore: false, dependencies: ['auth', 'patient-crm', 'smart-scheduling'] },
-  { code: 'finance-billing', name: 'Finance and SaaS Billing Module', version: '1.0.0', isCore: false, dependencies: ['auth', 'patient-crm', 'smart-scheduling', 'receptionist-workplace'] },
-  { code: 'integration-gateway', name: 'Laboratories, Files & Integration Gateway', version: '1.0.0', isCore: false, dependencies: ['auth'] },
-  { code: 'business-intelligence', name: 'Business Intelligence & Executive Dashboards', version: '1.0.0', isCore: false, dependencies: ['auth'] },
-  { code: 'inventory-warehouse', name: 'Inventory & Warehouse', version: '1.0.0', isCore: false, dependencies: ['auth', 'organization-structure', 'finance-billing'] }
+  {
+    code: 'organization-structure',
+    name: 'Organization Structure',
+    version: '1.0.0',
+    isCore: false,
+    dependencies: ['auth'],
+  },
+  {
+    code: 'patient-crm',
+    name: 'Patient CRM',
+    version: '1.0.0',
+    isCore: false,
+    dependencies: ['auth', 'organization-structure'],
+  },
+  {
+    code: 'smart-scheduling',
+    name: 'Smart Scheduling',
+    version: '1.0.0',
+    isCore: false,
+    dependencies: ['auth', 'organization-structure', 'patient-crm'],
+  },
+  {
+    code: 'receptionist-workplace',
+    name: 'Receptionist Workplace',
+    version: '1.0.0',
+    isCore: false,
+    dependencies: ['auth', 'patient-crm', 'smart-scheduling'],
+  },
+  {
+    code: 'communications',
+    name: 'Communications',
+    version: '1.0.0',
+    isCore: false,
+    dependencies: ['auth', 'patient-crm'],
+  },
+  {
+    code: 'emr-ehr',
+    name: 'EMR/EHR Clinical Module',
+    version: '1.0.0',
+    isCore: false,
+    dependencies: ['auth', 'patient-crm', 'smart-scheduling'],
+  },
+  {
+    code: 'finance-billing',
+    name: 'Finance and SaaS Billing Module',
+    version: '1.0.0',
+    isCore: false,
+    dependencies: ['auth', 'patient-crm', 'smart-scheduling', 'receptionist-workplace'],
+  },
+  {
+    code: 'integration-gateway',
+    name: 'Laboratories, Files & Integration Gateway',
+    version: '1.0.0',
+    isCore: false,
+    dependencies: ['auth'],
+  },
+  {
+    code: 'business-intelligence',
+    name: 'Business Intelligence & Executive Dashboards',
+    version: '1.0.0',
+    isCore: false,
+    dependencies: ['auth'],
+  },
+  {
+    code: 'inventory-warehouse',
+    name: 'Inventory & Warehouse',
+    version: '1.0.0',
+    isCore: false,
+    dependencies: ['auth', 'organization-structure', 'finance-billing'],
+  },
 ];
 
 const permissions = [
@@ -83,16 +143,24 @@ const permissions = [
   ['integration-gateway', 'integration.gateway.manage', 'Manage integration gateway'],
   ['integration-gateway', 'integration.lab.manage', 'Manage lab orders and integrations'],
   ['integration-gateway', 'integration.storage.manage', 'Manage cloud file storage registry'],
-  ['integration-gateway', 'integration.telephony.manage', 'Manage IP telephony events and callbacks'],
+  [
+    'integration-gateway',
+    'integration.telephony.manage',
+    'Manage IP telephony events and callbacks',
+  ],
   ['business-intelligence', 'analytics.financial.view', 'View financial dashboard'],
   ['business-intelligence', 'analytics.marketing.view', 'View marketing ROI dashboard'],
   ['business-intelligence', 'analytics.operations.view', 'View operational efficiency dashboard'],
   ['business-intelligence', 'analytics.reports.manage', 'Manage BI scheduled reporting'],
   ['inventory-warehouse', 'inventory.warehouse.manage', 'Manage warehouses and inventory items'],
   ['inventory-warehouse', 'inventory.procure.manage', 'Record and manage supplier procurements'],
-  ['inventory-warehouse', 'inventory.transfer.manage', 'Request and approve warehouse stock transfers'],
+  [
+    'inventory-warehouse',
+    'inventory.transfer.manage',
+    'Request and approve warehouse stock transfers',
+  ],
   ['inventory-warehouse', 'inventory.bom.manage', 'Configure service BOM технологические карты'],
-  ['inventory-warehouse', 'inventory.audit.manage', 'Conduct and log stock discrepancy audits']
+  ['inventory-warehouse', 'inventory.audit.manage', 'Conduct and log stock discrepancy audits'],
 ] as const;
 
 async function main(): Promise<void> {
@@ -105,8 +173,8 @@ async function main(): Promise<void> {
       subscriptionPlan: 'enterprise',
       defaultLocale: 'ru',
       timezone: 'Europe/Moscow',
-      status: 'active'
-    }
+      status: 'active',
+    },
   });
 
   const branch = await prisma.branch.upsert({
@@ -117,8 +185,8 @@ async function main(): Promise<void> {
       code: 'main',
       name: 'Main Branch',
       timezone: 'Europe/Moscow',
-      status: 'active'
-    }
+      status: 'active',
+    },
   });
 
   const moduleByCode = new Map<string, string>();
@@ -129,7 +197,7 @@ async function main(): Promise<void> {
         name: item.name,
         version: item.version,
         isCore: item.isCore,
-        dependencies: item.dependencies
+        dependencies: item.dependencies,
       },
       create: {
         code: item.code,
@@ -137,8 +205,8 @@ async function main(): Promise<void> {
         version: item.version,
         isCore: item.isCore,
         dependencies: item.dependencies,
-        status: 'active'
-      }
+        status: 'active',
+      },
     });
     moduleByCode.set(item.code, module.id);
     await prisma.tenantModule.upsert({
@@ -149,8 +217,8 @@ async function main(): Promise<void> {
         moduleId: module.id,
         enabled: true,
         activatedAt: new Date(),
-        configurationJson: {}
-      }
+        configurationJson: {},
+      },
     });
   }
 
@@ -163,8 +231,8 @@ async function main(): Promise<void> {
         code,
         name,
         moduleCode,
-        moduleId: moduleByCode.get(moduleCode)
-      }
+        moduleId: moduleByCode.get(moduleCode),
+      },
     });
     permissionIds.push(permission.id);
   }
@@ -177,15 +245,15 @@ async function main(): Promise<void> {
       code: 'CLINIC_OWNER',
       name: 'Clinic Owner',
       description: 'Full tenant administrator',
-      isSystem: true
-    }
+      isSystem: true,
+    },
   });
 
   for (const permissionId of permissionIds) {
     await prisma.rolePermission.upsert({
       where: { roleId_permissionId: { roleId: ownerRole.id, permissionId } },
       update: {},
-      create: { roleId: ownerRole.id, permissionId }
+      create: { roleId: ownerRole.id, permissionId },
     });
   }
 
@@ -201,8 +269,8 @@ async function main(): Promise<void> {
       lastName: 'Admin',
       language: 'ru',
       status: 'active',
-      isSuperAdmin: false
-    }
+      isSuperAdmin: false,
+    },
   });
 
   await prisma.userBranchRole.upsert({
@@ -214,14 +282,14 @@ async function main(): Promise<void> {
       tenantId: tenant.id,
       branchId: branch.id,
       roleId: ownerRole.id,
-      isPrimary: true
-    }
+      isPrimary: true,
+    },
   });
 
   const serviceConsultation = await prisma.service.upsert({
     where: { tenantId_code: { tenantId: tenant.id, code: 'consultation' } },
     update: {
-      basePrice: new Prisma.Decimal(1500)
+      basePrice: new Prisma.Decimal(1500),
     },
     create: {
       tenantId: tenant.id,
@@ -230,14 +298,14 @@ async function main(): Promise<void> {
       durationMinutes: 30,
       color: '#0f766e',
       isOnlineBookable: true,
-      basePrice: new Prisma.Decimal(1500)
-    }
+      basePrice: new Prisma.Decimal(1500),
+    },
   });
 
   const serviceProcedure = await prisma.service.upsert({
     where: { tenantId_code: { tenantId: tenant.id, code: 'procedure' } },
     update: {
-      basePrice: new Prisma.Decimal(3000)
+      basePrice: new Prisma.Decimal(3000),
     },
     create: {
       tenantId: tenant.id,
@@ -246,8 +314,8 @@ async function main(): Promise<void> {
       durationMinutes: 45,
       color: '#7c3aed',
       isOnlineBookable: true,
-      basePrice: new Prisma.Decimal(3000)
-    }
+      basePrice: new Prisma.Decimal(3000),
+    },
   });
 
   const serviceDentalTherapy = await prisma.service.upsert({
@@ -255,7 +323,7 @@ async function main(): Promise<void> {
     update: {
       basePrice: new Prisma.Decimal(4200),
       durationMinutes: 45,
-      color: '#0ea5e9'
+      color: '#0ea5e9',
     },
     create: {
       tenantId: tenant.id,
@@ -264,8 +332,8 @@ async function main(): Promise<void> {
       durationMinutes: 45,
       color: '#0ea5e9',
       isOnlineBookable: true,
-      basePrice: new Prisma.Decimal(4200)
-    }
+      basePrice: new Prisma.Decimal(4200),
+    },
   });
 
   const serviceCardioDiagnostics = await prisma.service.upsert({
@@ -273,7 +341,7 @@ async function main(): Promise<void> {
     update: {
       basePrice: new Prisma.Decimal(2600),
       durationMinutes: 30,
-      color: '#ef4444'
+      color: '#ef4444',
     },
     create: {
       tenantId: tenant.id,
@@ -282,8 +350,8 @@ async function main(): Promise<void> {
       durationMinutes: 30,
       color: '#ef4444',
       isOnlineBookable: true,
-      basePrice: new Prisma.Decimal(2600)
-    }
+      basePrice: new Prisma.Decimal(2600),
+    },
   });
 
   // 1. Specialties
@@ -292,7 +360,7 @@ async function main(): Promise<void> {
     { code: 'gynecologist', name: 'Гинеколог', internationalCode: 'GYN' },
     { code: 'cardiologist', name: 'Кардиолог', internationalCode: 'CARD' },
     { code: 'pediatrician', name: 'Педиатр', internationalCode: 'PED' },
-    { code: 'radiologist', name: 'Радиолог/Врач УЗИ', internationalCode: 'RAD' }
+    { code: 'radiologist', name: 'Радиолог/Врач УЗИ', internationalCode: 'RAD' },
   ];
 
   const specialtyMap = new Map<string, string>();
@@ -300,7 +368,7 @@ async function main(): Promise<void> {
     const s = await prisma.specialty.upsert({
       where: { code: spec.code },
       update: {},
-      create: { ...spec, isSystem: true }
+      create: { ...spec, isSystem: true },
     });
     specialtyMap.set(spec.code, s.id);
   }
@@ -311,7 +379,7 @@ async function main(): Promise<void> {
     { code: 'DOCTOR_USI', name: 'Врач УЗИ', isMedicalStaff: true },
     { code: 'NURSE', name: 'Медсестра', isMedicalStaff: true },
     { code: 'REGISTRAR', name: 'Регистратор/Администратор', isMedicalStaff: false },
-    { code: 'CASHIER', name: 'Кассир', isMedicalStaff: false }
+    { code: 'CASHIER', name: 'Кассир', isMedicalStaff: false },
   ];
 
   const positionMap = new Map<string, string>();
@@ -319,7 +387,7 @@ async function main(): Promise<void> {
     const p = await prisma.position.upsert({
       where: { tenantId_code: { tenantId: tenant.id, code: pos.code } },
       update: {},
-      create: { ...pos, tenantId: tenant.id, isSystem: true }
+      create: { ...pos, tenantId: tenant.id, isSystem: true },
     });
     positionMap.set(pos.code, p.id);
   }
@@ -330,7 +398,7 @@ async function main(): Promise<void> {
     { code: 'OPERATING_ROOM', name: 'Операционная', color: '#dc2626' },
     { code: 'USI_ROOM', name: 'Кабинет УЗИ', color: '#2563eb' },
     { code: 'TREATMENT_ROOM', name: 'Процедурный кабинет', color: '#16a34a' },
-    { code: 'LABORATORY', name: 'Лаборатория', color: '#7c3aed' }
+    { code: 'LABORATORY', name: 'Лаборатория', color: '#7c3aed' },
   ];
 
   const roomTypeMap = new Map<string, string>();
@@ -338,7 +406,7 @@ async function main(): Promise<void> {
     const r = await prisma.roomType.upsert({
       where: { tenantId_code: { tenantId: tenant.id, code: rt.code } },
       update: {},
-      create: { ...rt, tenantId: tenant.id, isSystem: true }
+      create: { ...rt, tenantId: tenant.id, isSystem: true },
     });
     roomTypeMap.set(rt.code, r.id);
   }
@@ -348,7 +416,7 @@ async function main(): Promise<void> {
     { code: 'USI_SCANNER', name: 'УЗИ сканер' },
     { code: 'DENTAL_CHAIR', name: 'Стоматологическая установка' },
     { code: 'AUTOCLAVE', name: 'Автоклав стерилизационный' },
-    { code: 'ECG_MACHINE', name: 'ЭКГ аппарат' }
+    { code: 'ECG_MACHINE', name: 'ЭКГ аппарат' },
   ];
 
   const categoryMap = new Map<string, string>();
@@ -356,14 +424,16 @@ async function main(): Promise<void> {
     const c = await prisma.equipmentCategory.upsert({
       where: { tenantId_code: { tenantId: tenant.id, code: cat.code } },
       update: {},
-      create: { ...cat, tenantId: tenant.id, isSystem: true }
+      create: { ...cat, tenantId: tenant.id, isSystem: true },
     });
     categoryMap.set(cat.code, c.id);
   }
 
   // 5. Departments
   const dentistryDept = await prisma.department.upsert({
-    where: { tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'dentistry' } },
+    where: {
+      tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'dentistry' },
+    },
     update: {},
     create: {
       tenantId: tenant.id,
@@ -371,12 +441,14 @@ async function main(): Promise<void> {
       code: 'dentistry',
       name: 'Стоматология',
       description: 'Отделение терапевтической и хирургической стоматологии',
-      color: '#0f766e'
-    }
+      color: '#0f766e',
+    },
   });
 
   const cardiologyDept = await prisma.department.upsert({
-    where: { tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'cardiology' } },
+    where: {
+      tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'cardiology' },
+    },
     update: {},
     create: {
       tenantId: tenant.id,
@@ -384,13 +456,15 @@ async function main(): Promise<void> {
       code: 'cardiology',
       name: 'Кардиология',
       description: 'Кардиологическое отделение',
-      color: '#2563eb'
-    }
+      color: '#2563eb',
+    },
   });
 
   // 6. Rooms
   const docOffice = await prisma.room.upsert({
-    where: { tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'room-101' } },
+    where: {
+      tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'room-101' },
+    },
     update: {},
     create: {
       tenantId: tenant.id,
@@ -400,12 +474,14 @@ async function main(): Promise<void> {
       code: 'room-101',
       name: 'Кабинет стоматолога 101',
       floor: 1,
-      capacity: 1
-    }
+      capacity: 1,
+    },
   });
 
   const usiOffice = await prisma.room.upsert({
-    where: { tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'room-102' } },
+    where: {
+      tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'room-102' },
+    },
     update: {},
     create: {
       tenantId: tenant.id,
@@ -415,12 +491,14 @@ async function main(): Promise<void> {
       code: 'room-102',
       name: 'Кабинет УЗИ 102',
       floor: 1,
-      capacity: 1
-    }
+      capacity: 1,
+    },
   });
 
   const cardioOffice = await prisma.room.upsert({
-    where: { tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'room-103' } },
+    where: {
+      tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'room-103' },
+    },
     update: {},
     create: {
       tenantId: tenant.id,
@@ -430,12 +508,14 @@ async function main(): Promise<void> {
       code: 'room-103',
       name: 'Кабинет кардиолога 103',
       floor: 1,
-      capacity: 1
-    }
+      capacity: 1,
+    },
   });
 
   const treatmentRoom = await prisma.room.upsert({
-    where: { tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'room-104' } },
+    where: {
+      tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'room-104' },
+    },
     update: {},
     create: {
       tenantId: tenant.id,
@@ -445,27 +525,36 @@ async function main(): Promise<void> {
       code: 'room-104',
       name: 'Процедурный кабинет 104',
       floor: 1,
-      capacity: 2
-    }
+      capacity: 2,
+    },
   });
 
   // Allowed specialties in room-102
   await prisma.roomSpecialty.upsert({
-    where: { roomId_specialtyId: { roomId: usiOffice.id, specialtyId: specialtyMap.get('radiologist')! } },
+    where: {
+      roomId_specialtyId: { roomId: usiOffice.id, specialtyId: specialtyMap.get('radiologist')! },
+    },
     update: {},
-    create: { roomId: usiOffice.id, specialtyId: specialtyMap.get('radiologist')! }
+    create: { roomId: usiOffice.id, specialtyId: specialtyMap.get('radiologist')! },
   });
 
   await prisma.roomSpecialty.upsert({
-    where: { roomId_specialtyId: { roomId: docOffice.id, specialtyId: specialtyMap.get('dentist')! } },
+    where: {
+      roomId_specialtyId: { roomId: docOffice.id, specialtyId: specialtyMap.get('dentist')! },
+    },
     update: {},
-    create: { roomId: docOffice.id, specialtyId: specialtyMap.get('dentist')! }
+    create: { roomId: docOffice.id, specialtyId: specialtyMap.get('dentist')! },
   });
 
   await prisma.roomSpecialty.upsert({
-    where: { roomId_specialtyId: { roomId: cardioOffice.id, specialtyId: specialtyMap.get('cardiologist')! } },
+    where: {
+      roomId_specialtyId: {
+        roomId: cardioOffice.id,
+        specialtyId: specialtyMap.get('cardiologist')!,
+      },
+    },
     update: {},
-    create: { roomId: cardioOffice.id, specialtyId: specialtyMap.get('cardiologist')! }
+    create: { roomId: cardioOffice.id, specialtyId: specialtyMap.get('cardiologist')! },
   });
 
   // 7. Equipment
@@ -483,8 +572,8 @@ async function main(): Promise<void> {
       manufacturer: 'Mindray',
       model: 'M9',
       status: 'ACTIVE',
-      isSharedResource: true
-    }
+      isSharedResource: true,
+    },
   });
 
   // 8. Employee
@@ -498,8 +587,8 @@ async function main(): Promise<void> {
       firstName: 'Demo',
       lastName: 'Admin',
       hireDate: new Date(),
-      status: 'ACTIVE'
-    }
+      status: 'ACTIVE',
+    },
   });
 
   const seedEmployeeWithUser = async (input: {
@@ -519,7 +608,7 @@ async function main(): Promise<void> {
         firstName: input.firstName,
         lastName: input.lastName,
         passwordHash,
-        status: 'active'
+        status: 'active',
       },
       create: {
         tenantId: tenant.id,
@@ -529,19 +618,21 @@ async function main(): Promise<void> {
         lastName: input.lastName,
         language: 'ru',
         status: 'active',
-        isSuperAdmin: false
-      }
+        isSuperAdmin: false,
+      },
     });
 
     const seededEmployee = await prisma.employee.upsert({
-      where: { tenantId_employeeNumber: { tenantId: tenant.id, employeeNumber: input.employeeNumber } },
+      where: {
+        tenantId_employeeNumber: { tenantId: tenant.id, employeeNumber: input.employeeNumber },
+      },
       update: {
         userId: user.id,
         firstName: input.firstName,
         lastName: input.lastName,
         phone: input.phone,
         email: input.email,
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       },
       create: {
         tenantId: tenant.id,
@@ -552,12 +643,12 @@ async function main(): Promise<void> {
         phone: input.phone,
         email: input.email,
         hireDate: new Date('2024-02-01'),
-        status: 'ACTIVE'
-      }
+        status: 'ACTIVE',
+      },
     });
 
     await prisma.userBranchRole.deleteMany({
-      where: { tenantId: tenant.id, userId: user.id, branchId: branch.id }
+      where: { tenantId: tenant.id, userId: user.id, branchId: branch.id },
     });
     await prisma.userBranchRole.create({
       data: {
@@ -565,11 +656,13 @@ async function main(): Promise<void> {
         tenantId: tenant.id,
         branchId: branch.id,
         roleId: ownerRole.id,
-        isPrimary: true
-      }
+        isPrimary: true,
+      },
     });
 
-    await prisma.employeePosition.deleteMany({ where: { tenantId: tenant.id, employeeId: seededEmployee.id } });
+    await prisma.employeePosition.deleteMany({
+      where: { tenantId: tenant.id, employeeId: seededEmployee.id },
+    });
     await prisma.employeePosition.create({
       data: {
         tenantId: tenant.id,
@@ -579,11 +672,13 @@ async function main(): Promise<void> {
         positionId: positionMap.get(input.positionCode)!,
         specialtyId: specialtyMap.get(input.specialtyCode)!,
         rate: 1.0,
-        isPrimary: true
-      }
+        isPrimary: true,
+      },
     });
 
-    await prisma.employeeRoomAssignment.deleteMany({ where: { tenantId: tenant.id, employeeId: seededEmployee.id } });
+    await prisma.employeeRoomAssignment.deleteMany({
+      where: { tenantId: tenant.id, employeeId: seededEmployee.id },
+    });
     await prisma.employeeRoomAssignment.create({
       data: {
         tenantId: tenant.id,
@@ -591,8 +686,8 @@ async function main(): Promise<void> {
         branchId: branch.id,
         departmentId: input.departmentId,
         roomId: input.roomId,
-        specialtyId: specialtyMap.get(input.specialtyCode)!
-      }
+        specialtyId: specialtyMap.get(input.specialtyCode)!,
+      },
     });
 
     return seededEmployee;
@@ -607,7 +702,7 @@ async function main(): Promise<void> {
     departmentId: dentistryDept.id,
     positionCode: 'CHIEF_DOCTOR',
     specialtyCode: 'dentist',
-    roomId: docOffice.id
+    roomId: docOffice.id,
   });
 
   const cardiologistEmployee = await seedEmployeeWithUser({
@@ -619,11 +714,13 @@ async function main(): Promise<void> {
     departmentId: cardiologyDept.id,
     positionCode: 'CHIEF_DOCTOR',
     specialtyCode: 'cardiologist',
-    roomId: cardioOffice.id
+    roomId: cardioOffice.id,
   });
 
   // Assign position
-  await prisma.employeePosition.deleteMany({ where: { tenantId: tenant.id, employeeId: employee.id } });
+  await prisma.employeePosition.deleteMany({
+    where: { tenantId: tenant.id, employeeId: employee.id },
+  });
   await prisma.employeePosition.create({
     data: {
       tenantId: tenant.id,
@@ -633,12 +730,14 @@ async function main(): Promise<void> {
       positionId: positionMap.get('CHIEF_DOCTOR')!,
       specialtyId: specialtyMap.get('radiologist')!,
       rate: 1.0,
-      isPrimary: true
-    }
+      isPrimary: true,
+    },
   });
 
   // Assign room
-  await prisma.employeeRoomAssignment.deleteMany({ where: { tenantId: tenant.id, employeeId: employee.id } });
+  await prisma.employeeRoomAssignment.deleteMany({
+    where: { tenantId: tenant.id, employeeId: employee.id },
+  });
   await prisma.employeeRoomAssignment.create({
     data: {
       tenantId: tenant.id,
@@ -646,8 +745,8 @@ async function main(): Promise<void> {
       branchId: branch.id,
       departmentId: cardiologyDept.id,
       roomId: usiOffice.id,
-      specialtyId: specialtyMap.get('radiologist')!
-    }
+      specialtyId: specialtyMap.get('radiologist')!,
+    },
   });
 
   // 9. Working Schedules
@@ -661,8 +760,8 @@ async function main(): Promise<void> {
         weekday: i,
         startTime: '08:00',
         endTime: '18:00',
-        timezone: 'Europe/Moscow'
-      }
+        timezone: 'Europe/Moscow',
+      },
     });
   }
 
@@ -670,8 +769,18 @@ async function main(): Promise<void> {
     where: {
       tenantId: tenant.id,
       entityType: { in: ['employee', 'room'] },
-      entityId: { in: [employee.id, dentistEmployee.id, cardiologistEmployee.id, docOffice.id, usiOffice.id, cardioOffice.id, treatmentRoom.id] }
-    }
+      entityId: {
+        in: [
+          employee.id,
+          dentistEmployee.id,
+          cardiologistEmployee.id,
+          docOffice.id,
+          usiOffice.id,
+          cardioOffice.id,
+          treatmentRoom.id,
+        ],
+      },
+    },
   });
 
   for (let weekday = 1; weekday <= 5; weekday++) {
@@ -684,8 +793,8 @@ async function main(): Promise<void> {
           weekday,
           startTime: '08:00',
           endTime: '18:00',
-          timezone: 'Europe/Moscow'
-        }
+          timezone: 'Europe/Moscow',
+        },
       });
     }
     for (const entityId of [docOffice.id, usiOffice.id, cardioOffice.id, treatmentRoom.id]) {
@@ -697,8 +806,8 @@ async function main(): Promise<void> {
           weekday,
           startTime: '08:00',
           endTime: '18:00',
-          timezone: 'Europe/Moscow'
-        }
+          timezone: 'Europe/Moscow',
+        },
       });
     }
   }
@@ -713,8 +822,8 @@ async function main(): Promise<void> {
       code: 'vip',
       name: 'VIP',
       color: '#e11d48',
-      isSystem: false
-    }
+      isSystem: false,
+    },
   });
 
   const tagChild = await prisma.crmTag.upsert({
@@ -725,8 +834,8 @@ async function main(): Promise<void> {
       code: 'child',
       name: 'Ребенок',
       color: '#2563eb',
-      isSystem: false
-    }
+      isSystem: false,
+    },
   });
 
   const tagPregnancy = await prisma.crmTag.upsert({
@@ -737,8 +846,8 @@ async function main(): Promise<void> {
       code: 'pregnancy',
       name: 'Беременность',
       color: '#db2777',
-      isSystem: false
-    }
+      isSystem: false,
+    },
   });
 
   // Legal Document Types
@@ -751,8 +860,8 @@ async function main(): Promise<void> {
       name: 'Согласие на обработку ПДн',
       validityPeriodDays: 365,
       requiresSignature: true,
-      isRequired: true
-    }
+      isRequired: true,
+    },
   });
 
   const docTypeContract = await prisma.legalDocumentType.upsert({
@@ -764,13 +873,13 @@ async function main(): Promise<void> {
       name: 'Договор об оказании платных мед. услуг',
       validityPeriodDays: null,
       requiresSignature: true,
-      isRequired: true
-    }
+      isRequired: true,
+    },
   });
 
   // Templates
   await prisma.legalDocumentTemplate.deleteMany({
-    where: { tenantId: tenant.id }
+    where: { tenantId: tenant.id },
   });
 
   await prisma.legalDocumentTemplate.create({
@@ -780,8 +889,8 @@ async function main(): Promise<void> {
       version: '1.0',
       language: 'ru',
       templateFileId: '00000000-0000-0000-0000-000000000101',
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   await prisma.legalDocumentTemplate.create({
@@ -791,8 +900,8 @@ async function main(): Promise<void> {
       version: '1.0',
       language: 'ru',
       templateFileId: '00000000-0000-0000-0000-000000000102',
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   // Helper function for phone hashing
@@ -803,11 +912,13 @@ async function main(): Promise<void> {
 
   const deleteAppointmentByNumber = async (appointmentNumber: string) => {
     const appointment = await prisma.appointment.findFirst({
-      where: { tenantId: tenant.id, appointmentNumber }
+      where: { tenantId: tenant.id, appointmentNumber },
     });
     if (!appointment) return;
 
-    await prisma.paymentAllocation.deleteMany({ where: { invoiceItem: { invoice: { appointmentId: appointment.id } } } });
+    await prisma.paymentAllocation.deleteMany({
+      where: { invoiceItem: { invoice: { appointmentId: appointment.id } } },
+    });
     await prisma.patientDebt.deleteMany({ where: { invoice: { appointmentId: appointment.id } } });
     await prisma.invoiceItem.deleteMany({ where: { invoice: { appointmentId: appointment.id } } });
     await prisma.invoice.deleteMany({ where: { appointmentId: appointment.id } });
@@ -816,18 +927,26 @@ async function main(): Promise<void> {
     await prisma.appointmentVisitState.deleteMany({ where: { appointmentId: appointment.id } });
     await prisma.visitQueue.deleteMany({ where: { appointmentId: appointment.id } });
 
-    const encounters = await prisma.encounter.findMany({ where: { appointmentId: appointment.id } });
+    const encounters = await prisma.encounter.findMany({
+      where: { appointmentId: appointment.id },
+    });
     const encounterIds = encounters.map((encounter) => encounter.id);
-    const compositions = await prisma.clinicalComposition.findMany({ where: { encounterId: { in: encounterIds } } });
+    const compositions = await prisma.clinicalComposition.findMany({
+      where: { encounterId: { in: encounterIds } },
+    });
     const compositionIds = compositions.map((composition) => composition.id);
-    const sections = await prisma.clinicalSection.findMany({ where: { compositionId: { in: compositionIds } } });
+    const sections = await prisma.clinicalSection.findMany({
+      where: { compositionId: { in: compositionIds } },
+    });
     const sectionIds = sections.map((section) => section.id);
 
     await prisma.clinicalElement.deleteMany({ where: { sectionId: { in: sectionIds } } });
     await prisma.clinicalSection.deleteMany({ where: { compositionId: { in: compositionIds } } });
     await prisma.clinicalComposition.deleteMany({ where: { encounterId: { in: encounterIds } } });
     await prisma.encounterDiagnosis.deleteMany({ where: { encounterId: { in: encounterIds } } });
-    await prisma.prescriptionItem.deleteMany({ where: { prescription: { encounterId: { in: encounterIds } } } });
+    await prisma.prescriptionItem.deleteMany({
+      where: { prescription: { encounterId: { in: encounterIds } } },
+    });
     await prisma.prescription.deleteMany({ where: { encounterId: { in: encounterIds } } });
     await prisma.encounter.deleteMany({ where: { appointmentId: appointment.id } });
 
@@ -844,7 +963,7 @@ async function main(): Promise<void> {
       fullName: 'Иванов Иван Иванович',
       birthDate: new Date('1990-01-01'),
       gender: 'MALE',
-      status: 'ACTIVE'
+      status: 'ACTIVE',
     },
     create: {
       tenantId: tenant.id,
@@ -856,8 +975,8 @@ async function main(): Promise<void> {
       birthDate: new Date('1990-01-01'),
       gender: 'MALE',
       status: 'ACTIVE',
-      registrationBranchId: branch.id
-    }
+      registrationBranchId: branch.id,
+    },
   });
 
   await prisma.patientContact.deleteMany({ where: { patientId: p1.id } });
@@ -868,8 +987,8 @@ async function main(): Promise<void> {
       type: 'PHONE',
       value: '+79991112233',
       normalizedValueHash: getPhoneHash('+79991112233'),
-      isPrimary: true
-    }
+      isPrimary: true,
+    },
   });
 
   await prisma.patientAddress.deleteMany({ where: { patientId: p1.id } });
@@ -880,8 +999,8 @@ async function main(): Promise<void> {
       country: 'Россия',
       city: 'Москва',
       addressLine: 'ул. Ленина, д. 10, кв. 25',
-      isPrimary: true
-    }
+      isPrimary: true,
+    },
   });
 
   const p2 = await prisma.patient.upsert({
@@ -893,7 +1012,7 @@ async function main(): Promise<void> {
       fullName: 'Иванова Мария Ивановна',
       birthDate: new Date('1992-05-15'),
       gender: 'FEMALE',
-      status: 'ACTIVE'
+      status: 'ACTIVE',
     },
     create: {
       tenantId: tenant.id,
@@ -905,8 +1024,8 @@ async function main(): Promise<void> {
       birthDate: new Date('1992-05-15'),
       gender: 'FEMALE',
       status: 'ACTIVE',
-      registrationBranchId: branch.id
-    }
+      registrationBranchId: branch.id,
+    },
   });
 
   await prisma.patientContact.deleteMany({ where: { patientId: p2.id } });
@@ -917,8 +1036,8 @@ async function main(): Promise<void> {
       type: 'PHONE',
       value: '+79992223344',
       normalizedValueHash: getPhoneHash('+79992223344'),
-      isPrimary: true
-    }
+      isPrimary: true,
+    },
   });
 
   const p3 = await prisma.patient.upsert({
@@ -930,7 +1049,7 @@ async function main(): Promise<void> {
       fullName: 'Иванов Петр Иванович',
       birthDate: new Date('2018-09-20'),
       gender: 'MALE',
-      status: 'NEW'
+      status: 'NEW',
     },
     create: {
       tenantId: tenant.id,
@@ -942,8 +1061,8 @@ async function main(): Promise<void> {
       birthDate: new Date('2018-09-20'),
       gender: 'MALE',
       status: 'NEW',
-      registrationBranchId: branch.id
-    }
+      registrationBranchId: branch.id,
+    },
   });
 
   await prisma.patientContact.deleteMany({ where: { patientId: p3.id } });
@@ -954,8 +1073,8 @@ async function main(): Promise<void> {
       type: 'PHONE',
       value: '+79991112233',
       normalizedValueHash: getPhoneHash('+79991112233'),
-      isPrimary: true
-    }
+      isPrimary: true,
+    },
   });
 
   const seedPatient = async (input: {
@@ -980,7 +1099,7 @@ async function main(): Promise<void> {
         fullName,
         birthDate: new Date(input.birthDate),
         gender: input.gender,
-        status: input.status
+        status: input.status,
       },
       create: {
         tenantId: tenant.id,
@@ -992,8 +1111,8 @@ async function main(): Promise<void> {
         birthDate: new Date(input.birthDate),
         gender: input.gender,
         status: input.status,
-        registrationBranchId: branch.id
-      }
+        registrationBranchId: branch.id,
+      },
     });
 
     await prisma.patientContact.deleteMany({ where: { patientId: patient.id } });
@@ -1004,8 +1123,8 @@ async function main(): Promise<void> {
         type: 'PHONE',
         value: input.phone,
         normalizedValueHash: getPhoneHash(input.phone),
-        isPrimary: true
-      }
+        isPrimary: true,
+      },
     });
 
     if (input.city || input.addressLine) {
@@ -1017,8 +1136,8 @@ async function main(): Promise<void> {
           country: 'Таджикистан',
           city: input.city ?? 'Душанбе',
           addressLine: input.addressLine ?? 'район Сино',
-          isPrimary: true
-        }
+          isPrimary: true,
+        },
       });
     }
 
@@ -1035,7 +1154,7 @@ async function main(): Promise<void> {
     status: 'VIP',
     phone: '+992900445566',
     city: 'Душанбе',
-    addressLine: 'проспект Рудаки, 87'
+    addressLine: 'проспект Рудаки, 87',
   });
 
   const p5 = await seedPatient({
@@ -1048,7 +1167,7 @@ async function main(): Promise<void> {
     status: 'ACTIVE',
     phone: '+992918001122',
     city: 'Душанбе',
-    addressLine: 'ул. Шотемур, 14'
+    addressLine: 'ул. Шотемур, 14',
   });
 
   const p6 = await seedPatient({
@@ -1061,7 +1180,7 @@ async function main(): Promise<void> {
     status: 'NEW',
     phone: '+992935551010',
     city: 'Вахдат',
-    addressLine: 'ул. Сино, 7'
+    addressLine: 'ул. Сино, 7',
   });
 
   const p7 = await seedPatient({
@@ -1074,15 +1193,15 @@ async function main(): Promise<void> {
     status: 'ACTIVE',
     phone: '+992907770099',
     city: 'Душанбе',
-    addressLine: 'мкр. 82, д. 9'
+    addressLine: 'мкр. 82, д. 9',
   });
 
   // Family Group and Ties
   await prisma.familyMember.deleteMany({
-    where: { patientId: { in: [p1.id, p2.id, p3.id] } }
+    where: { patientId: { in: [p1.id, p2.id, p3.id] } },
   });
   await prisma.familyGroup.deleteMany({
-    where: { primaryContactPatientId: p1.id }
+    where: { primaryContactPatientId: p1.id },
   });
 
   const familyGroup = await prisma.familyGroup.create({
@@ -1091,8 +1210,8 @@ async function main(): Promise<void> {
       familyName: 'Ивановы',
       primaryContactPatientId: p1.id,
       sharedBalanceEnabled: true,
-      sharedDiscountEnabled: true
-    }
+      sharedDiscountEnabled: true,
+    },
   });
 
   await prisma.familyMember.createMany({
@@ -1103,7 +1222,7 @@ async function main(): Promise<void> {
         patientId: p1.id,
         relationType: 'FATHER',
         isPrimaryContact: true,
-        canReceiveNotifications: true
+        canReceiveNotifications: true,
       },
       {
         tenantId: tenant.id,
@@ -1111,7 +1230,7 @@ async function main(): Promise<void> {
         patientId: p2.id,
         relationType: 'SPOUSE',
         isPrimaryContact: false,
-        canReceiveNotifications: true
+        canReceiveNotifications: true,
       },
       {
         tenantId: tenant.id,
@@ -1119,9 +1238,9 @@ async function main(): Promise<void> {
         patientId: p3.id,
         relationType: 'SON',
         isPrimaryContact: false,
-        canReceiveNotifications: false
-      }
-    ]
+        canReceiveNotifications: false,
+      },
+    ],
   });
 
   // Metrics & Leads
@@ -1133,7 +1252,7 @@ async function main(): Promise<void> {
       ltv: 15000.0,
       averageCheck: 3000.0,
       loyaltyPoints: 150,
-      lastVisitAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
+      lastVisitAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
     },
     create: {
       tenantId: tenant.id,
@@ -1143,23 +1262,55 @@ async function main(): Promise<void> {
       ltv: 15000.0,
       averageCheck: 3000.0,
       loyaltyPoints: 150,
-      lastVisitAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
-    }
+      lastVisitAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+    },
   });
 
   for (const metric of [
-    { patientId: p4.id, totalVisits: 8, totalRevenue: 32800, ltv: 32800, averageCheck: 4100, loyaltyPoints: 420, lastVisitAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
-    { patientId: p5.id, totalVisits: 3, totalRevenue: 7800, ltv: 7800, averageCheck: 2600, loyaltyPoints: 80, lastVisitAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) },
-    { patientId: p6.id, totalVisits: 1, totalRevenue: 1500, ltv: 1500, averageCheck: 1500, loyaltyPoints: 10, lastVisitAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
-    { patientId: p7.id, totalVisits: 4, totalRevenue: 11600, ltv: 11600, averageCheck: 2900, loyaltyPoints: 110, lastVisitAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000) }
+    {
+      patientId: p4.id,
+      totalVisits: 8,
+      totalRevenue: 32800,
+      ltv: 32800,
+      averageCheck: 4100,
+      loyaltyPoints: 420,
+      lastVisitAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    },
+    {
+      patientId: p5.id,
+      totalVisits: 3,
+      totalRevenue: 7800,
+      ltv: 7800,
+      averageCheck: 2600,
+      loyaltyPoints: 80,
+      lastVisitAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+    },
+    {
+      patientId: p6.id,
+      totalVisits: 1,
+      totalRevenue: 1500,
+      ltv: 1500,
+      averageCheck: 1500,
+      loyaltyPoints: 10,
+      lastVisitAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    },
+    {
+      patientId: p7.id,
+      totalVisits: 4,
+      totalRevenue: 11600,
+      ltv: 11600,
+      averageCheck: 2900,
+      loyaltyPoints: 110,
+      lastVisitAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
+    },
   ]) {
     await prisma.patientCrmMetric.upsert({
       where: { patientId: metric.patientId },
       update: metric,
       create: {
         tenantId: tenant.id,
-        ...metric
-      }
+        ...metric,
+      },
     });
   }
 
@@ -1172,51 +1323,53 @@ async function main(): Promise<void> {
       sourceName: 'Yandex Direct',
       utmSource: 'yandex',
       utmMedium: 'cpc',
-      utmCampaign: 'search_clinic'
-    }
+      utmCampaign: 'search_clinic',
+    },
   });
 
   // Tag Assignments
-  await prisma.patientTag.deleteMany({ where: { patientId: { in: [p1.id, p2.id, p3.id, p4.id, p5.id, p6.id, p7.id] } } });
+  await prisma.patientTag.deleteMany({
+    where: { patientId: { in: [p1.id, p2.id, p3.id, p4.id, p5.id, p6.id, p7.id] } },
+  });
   await prisma.patientTag.create({
     data: {
       tenantId: tenant.id,
       patientId: p1.id,
       tagId: tagVip.id,
-      assignedBy: admin.id
-    }
+      assignedBy: admin.id,
+    },
   });
   await prisma.patientTag.create({
     data: {
       tenantId: tenant.id,
       patientId: p4.id,
       tagId: tagVip.id,
-      assignedBy: admin.id
-    }
+      assignedBy: admin.id,
+    },
   });
   await prisma.patientTag.create({
     data: {
       tenantId: tenant.id,
       patientId: p6.id,
       tagId: tagPregnancy.id,
-      assignedBy: admin.id
-    }
+      assignedBy: admin.id,
+    },
   });
   await prisma.patientTag.create({
     data: {
       tenantId: tenant.id,
       patientId: p7.id,
       tagId: tagChild.id,
-      assignedBy: admin.id
-    }
+      assignedBy: admin.id,
+    },
   });
   await prisma.patientTag.create({
     data: {
       tenantId: tenant.id,
       patientId: p3.id,
       tagId: tagChild.id,
-      assignedBy: admin.id
-    }
+      assignedBy: admin.id,
+    },
   });
 
   // Signed Document
@@ -1230,8 +1383,8 @@ async function main(): Promise<void> {
       signedAt: new Date(),
       status: 'ACTIVE',
       signedByUserId: admin.id,
-      branchId: branch.id
-    }
+      branchId: branch.id,
+    },
   });
 
   // Notes & Timeline
@@ -1242,8 +1395,8 @@ async function main(): Promise<void> {
       patientId: p1.id,
       note: 'Пациент просил звонить только после 14:00',
       visibility: 'PRIVATE',
-      createdBy: admin.id
-    }
+      createdBy: admin.id,
+    },
   });
 
   await prisma.patientTimelineEvent.deleteMany({ where: { patientId: p1.id } });
@@ -1256,7 +1409,7 @@ async function main(): Promise<void> {
         eventSource: 'SYSTEM',
         title: 'Присвоен тег: VIP',
         createdBy: admin.id,
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
       },
       {
         tenantId: tenant.id,
@@ -1266,7 +1419,7 @@ async function main(): Promise<void> {
         title: 'Подписан документ: Договор об оказании платных мед. услуг',
         description: 'Номер документа: D-2026-0001',
         createdBy: admin.id,
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
       },
       {
         tenantId: tenant.id,
@@ -1276,9 +1429,9 @@ async function main(): Promise<void> {
         title: 'Добавлена заметка',
         description: 'Пациент просил звонить только после 14:00',
         createdBy: admin.id,
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
-      }
-    ]
+        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      },
+    ],
   });
 
   // 11. Service Required Resources
@@ -1292,16 +1445,16 @@ async function main(): Promise<void> {
         serviceId_resourceType_resourceCategoryId: {
           serviceId: serviceProcedure.id,
           resourceType: 'ROOM_TYPE',
-          resourceCategoryId: roomTypeUsiId
-        }
+          resourceCategoryId: roomTypeUsiId,
+        },
       },
       update: {},
       create: {
         tenantId: tenant.id,
         serviceId: serviceProcedure.id,
         resourceType: 'ROOM_TYPE',
-        resourceCategoryId: roomTypeUsiId
-      }
+        resourceCategoryId: roomTypeUsiId,
+      },
     });
   }
 
@@ -1311,16 +1464,16 @@ async function main(): Promise<void> {
         serviceId_resourceType_resourceCategoryId: {
           serviceId: serviceProcedure.id,
           resourceType: 'EQUIPMENT_CATEGORY',
-          resourceCategoryId: catUsiScannerId
-        }
+          resourceCategoryId: catUsiScannerId,
+        },
       },
       update: {},
       create: {
         tenantId: tenant.id,
         serviceId: serviceProcedure.id,
         resourceType: 'EQUIPMENT_CATEGORY',
-        resourceCategoryId: catUsiScannerId
-      }
+        resourceCategoryId: catUsiScannerId,
+      },
     });
   }
 
@@ -1331,20 +1484,20 @@ async function main(): Promise<void> {
       tenantId_resourceType_resourceId: {
         tenantId: tenant.id,
         resourceType: 'EQUIPMENT',
-        resourceId: usiScanner.id
-      }
+        resourceId: usiScanner.id,
+      },
     },
     update: {
       beforeMinutes: 10,
-      afterMinutes: 10
+      afterMinutes: 10,
     },
     create: {
       tenantId: tenant.id,
       resourceType: 'EQUIPMENT',
       resourceId: usiScanner.id,
       beforeMinutes: 10,
-      afterMinutes: 10
-    }
+      afterMinutes: 10,
+    },
   });
 
   // Set 5-minute buffer for Doctor (Demo Admin)
@@ -1353,20 +1506,20 @@ async function main(): Promise<void> {
       tenantId_resourceType_resourceId: {
         tenantId: tenant.id,
         resourceType: 'EMPLOYEE',
-        resourceId: employee.id
-      }
+        resourceId: employee.id,
+      },
     },
     update: {
       beforeMinutes: 0,
-      afterMinutes: 5
+      afterMinutes: 5,
     },
     create: {
       tenantId: tenant.id,
       resourceType: 'EMPLOYEE',
       resourceId: employee.id,
       beforeMinutes: 0,
-      afterMinutes: 5
-    }
+      afterMinutes: 5,
+    },
   });
 
   // 13. Waiting List
@@ -1377,7 +1530,7 @@ async function main(): Promise<void> {
   dateNextWeek.setDate(dateNextWeek.getDate() + 7);
 
   await prisma.waitingList.deleteMany({
-    where: { patientId: p2.id, tenantId: tenant.id }
+    where: { patientId: p2.id, tenantId: tenant.id },
   });
 
   await prisma.waitingList.create({
@@ -1392,13 +1545,13 @@ async function main(): Promise<void> {
       preferredTimeTo: '18:00',
       serviceId: serviceProcedure.id,
       priority: 'HIGH',
-      notes: 'Пациент просит самое раннее свободное окно'
-    }
+      notes: 'Пациент просит самое раннее свободное окно',
+    },
   });
 
   // 14. Receptionist workplace dummy data (today's board cards, queue, call, invoice)
   await prisma.receptionistDashboardCache.deleteMany({
-    where: { tenantId: tenant.id, branchId: branch.id }
+    where: { tenantId: tenant.id, branchId: branch.id },
   });
 
   const todayStart = new Date();
@@ -1406,7 +1559,15 @@ async function main(): Promise<void> {
   const todayEnd = new Date();
   todayEnd.setHours(10, 30, 0, 0);
 
-  for (const appointmentNumber of ['A-SEED-001', 'A-DEMO-002', 'A-DEMO-003', 'A-DEMO-004', 'A-DEMO-005', 'A-DEMO-006', 'A-DEMO-007']) {
+  for (const appointmentNumber of [
+    'A-SEED-001',
+    'A-DEMO-002',
+    'A-DEMO-003',
+    'A-DEMO-004',
+    'A-DEMO-005',
+    'A-DEMO-006',
+    'A-DEMO-007',
+  ]) {
     await deleteAppointmentByNumber(appointmentNumber);
   }
 
@@ -1429,27 +1590,45 @@ async function main(): Promise<void> {
       createdBy: admin.id,
       resources: {
         create: [
-          { tenantId: tenant.id, resourceType: 'EMPLOYEE', resourceId: employee.id, reservedFrom: todayStart, reservedTo: todayEnd },
-          { tenantId: tenant.id, resourceType: 'ROOM', resourceId: usiOffice.id, reservedFrom: todayStart, reservedTo: todayEnd }
-        ]
+          {
+            tenantId: tenant.id,
+            resourceType: 'EMPLOYEE',
+            resourceId: employee.id,
+            reservedFrom: todayStart,
+            reservedTo: todayEnd,
+          },
+          {
+            tenantId: tenant.id,
+            resourceType: 'ROOM',
+            resourceId: usiOffice.id,
+            reservedFrom: todayStart,
+            reservedTo: todayEnd,
+          },
+        ],
       },
       statusHistory: {
         create: [
           { tenantId: tenant.id, newStatus: 'SCHEDULED', changedBy: admin.id, reason: 'Seeded' },
-          { tenantId: tenant.id, newStatus: 'CHECKED_IN', changedBy: admin.id, reason: 'Seeded' }
-        ]
+          { tenantId: tenant.id, newStatus: 'CHECKED_IN', changedBy: admin.id, reason: 'Seeded' },
+        ],
       },
       visitStates: {
         create: [
-          { tenantId: tenant.id, oldState: 'SCHEDULED', newState: 'CHECKED_IN', changedBy: admin.id, workstationType: 'RECEPTIONIST' }
-        ]
-      }
-    }
+          {
+            tenantId: tenant.id,
+            oldState: 'SCHEDULED',
+            newState: 'CHECKED_IN',
+            changedBy: admin.id,
+            workstationType: 'RECEPTIONIST',
+          },
+        ],
+      },
+    },
   });
 
   // Create corresponding queue ticket
   await prisma.visitQueue.deleteMany({
-    where: { tenantId: tenant.id, appointmentId: demoApp.id }
+    where: { tenantId: tenant.id, appointmentId: demoApp.id },
   });
   await prisma.visitQueue.create({
     data: {
@@ -1459,13 +1638,13 @@ async function main(): Promise<void> {
       queueNumber: 'Q-999',
       queueStatus: 'WAITING',
       priority: 'VIP',
-      estimatedWaitTime: 10
-    }
+      estimatedWaitTime: 10,
+    },
   });
 
   // Create dummy incoming call for p1
   await prisma.incomingCall.deleteMany({
-    where: { tenantId: tenant.id, phoneNumber: '+79991112233' }
+    where: { tenantId: tenant.id, phoneNumber: '+79991112233' },
   });
   await prisma.incomingCall.create({
     data: {
@@ -1477,13 +1656,13 @@ async function main(): Promise<void> {
       callStartedAt: new Date(Date.now() - 30000),
       callEndedAt: new Date(),
       durationSeconds: 30,
-      callResult: 'ANSWERED'
-    }
+      callResult: 'ANSWERED',
+    },
   });
 
   // Create a pending invoice for p1
   await prisma.invoice.deleteMany({
-    where: { tenantId: tenant.id, appointmentId: demoApp.id }
+    where: { tenantId: tenant.id, appointmentId: demoApp.id },
   });
   await prisma.invoice.create({
     data: {
@@ -1512,11 +1691,11 @@ async function main(): Promise<void> {
             materialCost: 200,
             taxAmount: 0,
             totalAmount: 1500,
-            performerEmployeeId: employee.id
-          }
-        ]
-      }
-    }
+            performerEmployeeId: employee.id,
+          },
+        ],
+      },
+    },
   });
 
   const atToday = (hour: number, minute = 0) => {
@@ -1556,26 +1735,60 @@ async function main(): Promise<void> {
         startAt,
         endAt,
         durationMinutes: input.durationMinutes,
-        checkedInAt: ['CHECKED_IN', 'IN_PROGRESS', 'COMPLETED_PENDING_PAYMENT', 'COMPLETED'].includes(input.status) ? startAt : null,
-        completedAt: ['COMPLETED_PENDING_PAYMENT', 'COMPLETED'].includes(input.status) ? endAt : null,
+        checkedInAt: [
+          'CHECKED_IN',
+          'IN_PROGRESS',
+          'COMPLETED_PENDING_PAYMENT',
+          'COMPLETED',
+        ].includes(input.status)
+          ? startAt
+          : null,
+        completedAt: ['COMPLETED_PENDING_PAYMENT', 'COMPLETED'].includes(input.status)
+          ? endAt
+          : null,
         cancelledAt: ['CANCELLED', 'NO_SHOW'].includes(input.status) ? startAt : null,
         notes: input.notes,
         createdBy: admin.id,
         resources: {
           create: [
-            { tenantId: tenant.id, resourceType: 'EMPLOYEE', resourceId: input.employeeId, reservedFrom: startAt, reservedTo: endAt },
-            { tenantId: tenant.id, resourceType: 'ROOM', resourceId: input.roomId, reservedFrom: startAt, reservedTo: endAt }
-          ]
+            {
+              tenantId: tenant.id,
+              resourceType: 'EMPLOYEE',
+              resourceId: input.employeeId,
+              reservedFrom: startAt,
+              reservedTo: endAt,
+            },
+            {
+              tenantId: tenant.id,
+              resourceType: 'ROOM',
+              resourceId: input.roomId,
+              reservedFrom: startAt,
+              reservedTo: endAt,
+            },
+          ],
         },
         statusHistory: {
           create: [
-            { tenantId: tenant.id, newStatus: 'SCHEDULED', changedBy: admin.id, reason: 'Demo seed' },
+            {
+              tenantId: tenant.id,
+              newStatus: 'SCHEDULED',
+              changedBy: admin.id,
+              reason: 'Demo seed',
+            },
             ...(input.status !== 'SCHEDULED'
-              ? [{ tenantId: tenant.id, oldStatus: 'SCHEDULED', newStatus: input.status, changedBy: admin.id, reason: 'Demo seed' }]
-              : [])
-          ]
-        }
-      }
+              ? [
+                  {
+                    tenantId: tenant.id,
+                    oldStatus: 'SCHEDULED',
+                    newStatus: input.status,
+                    changedBy: admin.id,
+                    reason: 'Demo seed',
+                  },
+                ]
+              : []),
+          ],
+        },
+      },
     });
 
     if (input.status === 'CHECKED_IN') {
@@ -1587,8 +1800,8 @@ async function main(): Promise<void> {
           queueNumber: `Q-${input.appointmentNumber.slice(-3)}`,
           queueStatus: 'WAITING',
           priority: input.priority ?? 'NORMAL',
-          estimatedWaitTime: input.priority === 'VIP' ? 5 : 15
-        }
+          estimatedWaitTime: input.priority === 'VIP' ? 5 : 15,
+        },
       });
     }
 
@@ -1622,11 +1835,11 @@ async function main(): Promise<void> {
                 materialCost: 120,
                 taxAmount: 0,
                 totalAmount: service.basePrice,
-                performerEmployeeId: input.employeeId
-              }
-            ]
-          }
-        }
+                performerEmployeeId: input.employeeId,
+              },
+            ],
+          },
+        },
       });
     }
 
@@ -1643,7 +1856,7 @@ async function main(): Promise<void> {
     durationMinutes: 45,
     status: 'CONFIRMED',
     priority: 'VIP',
-    notes: 'VIP пациент, просит отдельный расчет после приема'
+    notes: 'VIP пациент, просит отдельный расчет после приема',
   });
 
   await createDemoAppointment({
@@ -1656,7 +1869,7 @@ async function main(): Promise<void> {
     startMinute: 30,
     durationMinutes: 30,
     status: 'SCHEDULED',
-    notes: 'Первичная кардиологическая диагностика'
+    notes: 'Первичная кардиологическая диагностика',
   });
 
   await createDemoAppointment({
@@ -1669,7 +1882,7 @@ async function main(): Promise<void> {
     startMinute: 30,
     durationMinutes: 30,
     status: 'IN_PROGRESS',
-    notes: 'Пациент уже в кабинете, идет прием'
+    notes: 'Пациент уже в кабинете, идет прием',
   });
 
   await createDemoAppointment({
@@ -1683,7 +1896,7 @@ async function main(): Promise<void> {
     durationMinutes: 30,
     status: 'COMPLETED_PENDING_PAYMENT',
     notes: 'Прием завершен, ожидается оплата в кассе',
-    invoiceStatus: 'PENDING_PAYMENT'
+    invoiceStatus: 'PENDING_PAYMENT',
   });
 
   await createDemoAppointment({
@@ -1697,7 +1910,7 @@ async function main(): Promise<void> {
     durationMinutes: 45,
     status: 'COMPLETED',
     notes: 'УЗИ выполнено, прием закрыт',
-    invoiceStatus: 'PAID'
+    invoiceStatus: 'PAID',
   });
 
   await createDemoAppointment({
@@ -1709,15 +1922,25 @@ async function main(): Promise<void> {
     startHour: 14,
     durationMinutes: 30,
     status: 'CANCELLED',
-    notes: 'Отмена по просьбе родителя'
+    notes: 'Отмена по просьбе родителя',
   });
 
   // 15. EMR Clinical Subsystem Seeding
   // ICD-10 Dictionary codes
   const commonIcdCodes = [
-    { code: 'I10', codeSystem: 'ICD-10', nameRu: 'Эссенциальная [первичная] гипертензия', nameEn: 'Essential (primary) hypertension' },
-    { code: 'J00', codeSystem: 'ICD-10', nameRu: 'Острый назофарингит [насморк]', nameEn: 'Acute nasopharyngitis (common cold)' },
-    { code: 'K02', codeSystem: 'ICD-10', nameRu: 'Кариес зубов', nameEn: 'Dental caries' }
+    {
+      code: 'I10',
+      codeSystem: 'ICD-10',
+      nameRu: 'Эссенциальная [первичная] гипертензия',
+      nameEn: 'Essential (primary) hypertension',
+    },
+    {
+      code: 'J00',
+      codeSystem: 'ICD-10',
+      nameRu: 'Острый назофарингит [насморк]',
+      nameEn: 'Acute nasopharyngitis (common cold)',
+    },
+    { code: 'K02', codeSystem: 'ICD-10', nameRu: 'Кариес зубов', nameEn: 'Dental caries' },
   ];
 
   for (const diag of commonIcdCodes) {
@@ -1729,15 +1952,15 @@ async function main(): Promise<void> {
         codeSystem: diag.codeSystem,
         nameRu: diag.nameRu,
         nameEn: diag.nameEn,
-        isActive: true
-      }
+        isActive: true,
+      },
     });
   }
 
   // Cardiology Template
   const cardiologyTemplateCode = 'cardio-exam';
   await prisma.clinicalTemplate.deleteMany({
-    where: { tenantId: tenant.id, code: cardiologyTemplateCode }
+    where: { tenantId: tenant.id, code: cardiologyTemplateCode },
   });
   const cardioTemplate = await prisma.clinicalTemplate.create({
     data: {
@@ -1752,16 +1975,16 @@ async function main(): Promise<void> {
         properties: {
           bloodPressure: { type: 'string', title: 'Артериальное давление (мм рт.ст.)' },
           heartRate: { type: 'number', title: 'ЧСС (уд/мин)' },
-          complaints: { type: 'string', title: 'Жалобы пациента' }
-        }
+          complaints: { type: 'string', title: 'Жалобы пациента' },
+        },
       },
-      uiSchemaJson: {}
-    }
+      uiSchemaJson: {},
+    },
   });
 
   // Medical Record
   await prisma.medicalRecord.deleteMany({
-    where: { tenantId: tenant.id, patientId: p1.id }
+    where: { tenantId: tenant.id, patientId: p1.id },
   });
   const medRec = await prisma.medicalRecord.create({
     data: {
@@ -1771,13 +1994,15 @@ async function main(): Promise<void> {
       bloodType: 'O_PLUS',
       allergiesJson: ['Пенициллин', 'Пыльца берёзы'],
       chronicConditionsJson: ['Гипертоническая болезнь II стадии'],
-      emergencyContactsJson: [{ name: 'Иванова Мария', relationship: 'Жена', phone: '+79992223344' }]
-    }
+      emergencyContactsJson: [
+        { name: 'Иванова Мария', relationship: 'Жена', phone: '+79992223344' },
+      ],
+    },
   });
 
   // Episode Of Care
   await prisma.episodeOfCare.deleteMany({
-    where: { tenantId: tenant.id, patientId: p1.id }
+    where: { tenantId: tenant.id, patientId: p1.id },
   });
   const episode = await prisma.episodeOfCare.create({
     data: {
@@ -1789,13 +2014,13 @@ async function main(): Promise<void> {
       title: 'Лечение гипертонической болезни',
       startDate: new Date(),
       status: 'ACTIVE',
-      clinicalSummary: 'Первичное выявление стойкого повышения АД. Подбор гипотензивной терапии.'
-    }
+      clinicalSummary: 'Первичное выявление стойкого повышения АД. Подбор гипотензивной терапии.',
+    },
   });
 
   // Encounter Note draft
   await prisma.encounter.deleteMany({
-    where: { tenantId: tenant.id, patientId: p1.id }
+    where: { tenantId: tenant.id, patientId: p1.id },
   });
   await prisma.encounter.create({
     data: {
@@ -1824,9 +2049,15 @@ async function main(): Promise<void> {
                   sortOrder: 1,
                   elements: {
                     create: [
-                      { tenantId: tenant.id, fieldCode: 'complaints', fieldType: 'text', fieldValueJson: 'Головные боли в затылочной области, мелькание мушек перед глазами при повышении АД до 150/90.' }
-                    ]
-                  }
+                      {
+                        tenantId: tenant.id,
+                        fieldCode: 'complaints',
+                        fieldType: 'text',
+                        fieldValueJson:
+                          'Головные боли в затылочной области, мелькание мушек перед глазами при повышении АД до 150/90.',
+                      },
+                    ],
+                  },
                 },
                 {
                   tenantId: tenant.id,
@@ -1835,21 +2066,49 @@ async function main(): Promise<void> {
                   sortOrder: 2,
                   elements: {
                     create: [
-                      { tenantId: tenant.id, fieldCode: 'bp_systolic', fieldType: 'number', fieldValueJson: 145, unit: 'mmHg', terminologyCode: '8480-6' },
-                      { tenantId: tenant.id, fieldCode: 'bp_diastolic', fieldType: 'number', fieldValueJson: 95, unit: 'mmHg', terminologyCode: '8462-4' },
-                      { tenantId: tenant.id, fieldCode: 'heart_rate', fieldType: 'number', fieldValueJson: 78, unit: 'bpm', terminologyCode: '8867-4' }
-                    ]
-                  }
-                }
-              ]
-            }
-          }
-        ]
+                      {
+                        tenantId: tenant.id,
+                        fieldCode: 'bp_systolic',
+                        fieldType: 'number',
+                        fieldValueJson: 145,
+                        unit: 'mmHg',
+                        terminologyCode: '8480-6',
+                      },
+                      {
+                        tenantId: tenant.id,
+                        fieldCode: 'bp_diastolic',
+                        fieldType: 'number',
+                        fieldValueJson: 95,
+                        unit: 'mmHg',
+                        terminologyCode: '8462-4',
+                      },
+                      {
+                        tenantId: tenant.id,
+                        fieldCode: 'heart_rate',
+                        fieldType: 'number',
+                        fieldValueJson: 78,
+                        unit: 'bpm',
+                        terminologyCode: '8867-4',
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
       },
       diagnoses: {
         create: [
-          { tenantId: tenant.id, diagnosisCode: 'I10', diagnosisType: 'CLINICAL', isPrimary: true, notes: 'Первичная артериальная гипертензия 1 ст., риск 2.', createdBy: admin.id }
-        ]
+          {
+            tenantId: tenant.id,
+            diagnosisCode: 'I10',
+            diagnosisType: 'CLINICAL',
+            isPrimary: true,
+            notes: 'Первичная артериальная гипертензия 1 ст., риск 2.',
+            createdBy: admin.id,
+          },
+        ],
       },
       prescriptions: {
         create: [
@@ -1860,27 +2119,60 @@ async function main(): Promise<void> {
             createdBy: admin.id,
             items: {
               create: [
-                { tenantId: tenant.id, itemCode: 'perindopril', itemName: 'Периндоприл 5 мг', dosage: '5 мг', frequency: '1 раз в сутки', duration: '3 месяца', route: 'oral', quantity: 90, instructions: 'Таблетки принимать натощак за 15 минут до завтрака' }
-              ]
-            }
-          }
-        ]
-      }
-    }
+                {
+                  tenantId: tenant.id,
+                  itemCode: 'perindopril',
+                  itemName: 'Периндоприл 5 мг',
+                  dosage: '5 мг',
+                  frequency: '1 раз в сутки',
+                  duration: '3 месяца',
+                  route: 'oral',
+                  quantity: 90,
+                  instructions: 'Таблетки принимать натощак за 15 минут до завтрака',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
   });
 
   // 16. Finance, Cashier and SaaS Billing Seeding
   // Seed Tariff Plans
   const plans = [
-    { code: 'basic', name: 'Basic Plan', monthlyPrice: 100, yearlyPrice: 1000, limits: { users: 5, branches: 1, sms: 100 } },
-    { code: 'pro', name: 'Pro Plan', monthlyPrice: 250, yearlyPrice: 2500, limits: { users: 20, branches: 3, sms: 1000 } },
-    { code: 'enterprise', name: 'Enterprise Plan', monthlyPrice: 500, yearlyPrice: 5000, limits: { users: 100, branches: 10, sms: 10000 } }
+    {
+      code: 'basic',
+      name: 'Basic Plan',
+      monthlyPrice: 100,
+      yearlyPrice: 1000,
+      limits: { users: 5, branches: 1, sms: 100 },
+    },
+    {
+      code: 'pro',
+      name: 'Pro Plan',
+      monthlyPrice: 250,
+      yearlyPrice: 2500,
+      limits: { users: 20, branches: 3, sms: 1000 },
+    },
+    {
+      code: 'enterprise',
+      name: 'Enterprise Plan',
+      monthlyPrice: 500,
+      yearlyPrice: 5000,
+      limits: { users: 100, branches: 10, sms: 10000 },
+    },
   ];
 
   for (const plan of plans) {
     await prisma.subscriptionPlan.upsert({
       where: { code: plan.code },
-      update: { name: plan.name, monthlyPrice: plan.monthlyPrice, yearlyPrice: plan.yearlyPrice, limitsJson: plan.limits as any },
+      update: {
+        name: plan.name,
+        monthlyPrice: plan.monthlyPrice,
+        yearlyPrice: plan.yearlyPrice,
+        limitsJson: plan.limits as any,
+      },
       create: {
         code: plan.code,
         name: plan.name,
@@ -1888,13 +2180,13 @@ async function main(): Promise<void> {
         yearlyPrice: plan.yearlyPrice,
         featuresJson: {},
         limitsJson: plan.limits as any,
-        isActive: true
-      }
+        isActive: true,
+      },
     });
   }
 
   const proPlan = await prisma.subscriptionPlan.findUnique({ where: { code: 'pro' } });
-  
+
   // Seed active Pro subscription for tenant
   await prisma.tenantSubscription.deleteMany({ where: { tenantId: tenant.id } });
   await prisma.tenantSubscription.create({
@@ -1903,23 +2195,25 @@ async function main(): Promise<void> {
       subscriptionPlanId: proPlan!.id,
       subscriptionStatus: 'ACTIVE',
       startedAt: new Date(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    }
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    },
   });
 
   // Seed default usage metrics limits
-  for (const [metricCode, limitValue] of Object.entries(proPlan!.limitsJson as Record<string, number>)) {
+  for (const [metricCode, limitValue] of Object.entries(
+    proPlan!.limitsJson as Record<string, number>,
+  )) {
     await prisma.tenantUsageMetric.upsert({
       where: { tenantId_metricCode: { tenantId: tenant.id, metricCode } },
       create: {
         tenantId: tenant.id,
         metricCode,
         currentUsage: 1,
-        limitValue
+        limitValue,
       },
       update: {
-        limitValue
-      }
+        limitValue,
+      },
     });
   }
 
@@ -1930,12 +2224,12 @@ async function main(): Promise<void> {
       tenantId: tenant.id,
       employeeId: employee.id,
       payrollType: 'REVENUE_SHARE',
-      percentageRate: 30.00,
-      fixedAmount: 0.00,
+      percentageRate: 30.0,
+      fixedAmount: 0.0,
       deductMaterialCost: true,
       appliesFrom: new Date(),
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   // Seed Opened Cashier Shift
@@ -1945,8 +2239,8 @@ async function main(): Promise<void> {
       tenantId: tenant.id,
       cashierUserId: admin.id,
       branchId: branch.id,
-      openingBalance: 1000.00
-    }
+      openingBalance: 1000.0,
+    },
   });
 
   // Seed Payment Gateway (Alif acquiring)
@@ -1958,8 +2252,8 @@ async function main(): Promise<void> {
       name: 'Алиф Эквайринг',
       gatewayType: 'QR_ACQUIRING',
       configurationJson: { token: 'alif-seed-token-123', endpoint: 'https://api.alif.tj/v1' },
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   // 17. Omnichannel CRM-Communications Seeding
@@ -1973,13 +2267,13 @@ async function main(): Promise<void> {
       apiCredentialsJson: { token: 'osonsms-seed-secret-token-123', sender: 'MedCRM' },
       senderName: 'MedCRM',
       dailyLimit: 5000,
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   // Seed Multi-lingual (RU/TJ) system templates
   await prisma.messageTemplate.deleteMany({ where: { tenantId: tenant.id } });
-  
+
   const templateRu = await prisma.messageTemplate.create({
     data: {
       tenantId: tenant.id,
@@ -1988,11 +2282,16 @@ async function main(): Promise<void> {
       channelType: 'SMS',
       languageCode: 'ru',
       subject: 'Подтверждение записи',
-      templateBody: 'Здравствуйте, {{patient_name}}! Вы записаны к врачу {{doctor_name}} на {{appointment_time}}. Подтвердите запись ответом: 1 - Подтвердить, 2 - Отменить.',
-      variablesJson: { patient_name: 'Иван', doctor_name: 'Алиев А.', appointment_time: '24.05.2026 10:00' },
+      templateBody:
+        'Здравствуйте, {{patient_name}}! Вы записаны к врачу {{doctor_name}} на {{appointment_time}}. Подтвердите запись ответом: 1 - Подтвердить, 2 - Отменить.',
+      variablesJson: {
+        patient_name: 'Иван',
+        doctor_name: 'Алиев А.',
+        appointment_time: '24.05.2026 10:00',
+      },
       isSystem: true,
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   await prisma.messageTemplate.create({
@@ -2003,11 +2302,16 @@ async function main(): Promise<void> {
       channelType: 'SMS',
       languageCode: 'tg',
       subject: 'Тасдиқи қабул',
-      templateBody: 'Салом, {{patient_name}}! Шумо ба духтур {{doctor_name}} дар вақти {{appointment_time}} сабт шудаед. Барои тасдиқ фиристед: 1, барои бекор кардан: 2.',
-      variablesJson: { patient_name: 'Иван', doctor_name: 'Алиев А.', appointment_time: '24.05.2026 10:00' },
+      templateBody:
+        'Салом, {{patient_name}}! Шумо ба духтур {{doctor_name}} дар вақти {{appointment_time}} сабт шудаед. Барои тасдиқ фиристед: 1, барои бекор кардан: 2.',
+      variablesJson: {
+        patient_name: 'Иван',
+        doctor_name: 'Алиев А.',
+        appointment_time: '24.05.2026 10:00',
+      },
       isSystem: true,
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   // Seed automated Trigger Alert notification rule
@@ -2020,8 +2324,8 @@ async function main(): Promise<void> {
       channelType: 'SMS',
       templateId: templateRu.id,
       delayMinutes: 0,
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   // Seed Event-Driven Chatbot Action Flows
@@ -2031,9 +2335,12 @@ async function main(): Promise<void> {
       tenantId: tenant.id,
       flowName: 'Бот авто-подтверждения / отмены записи',
       triggerType: 'KEYWORD',
-      flowSchemaJson: { keywords: ['1', '2'], actions: ['CONFIRM_APPOINTMENT', 'CANCEL_APPOINTMENT'] },
-      isActive: true
-    }
+      flowSchemaJson: {
+        keywords: ['1', '2'],
+        actions: ['CONFIRM_APPOINTMENT', 'CANCEL_APPOINTMENT'],
+      },
+      isActive: true,
+    },
   });
 
   // Seed Patient CRM marketing preferences
@@ -2045,8 +2352,8 @@ async function main(): Promise<void> {
       channelType: 'SMS',
       marketingAllowed: true,
       remindersAllowed: true,
-      isBlocked: false
-    }
+      isBlocked: false,
+    },
   });
 
   // 18. Integration Gateway Seeding
@@ -2068,7 +2375,7 @@ async function main(): Promise<void> {
   await prisma.integrationProvider.deleteMany({ where: { tenantId: tenant.id } });
 
   const enc = await prisma.encounter.findFirst({
-    where: { tenantId: tenant.id, patientId: p1.id }
+    where: { tenantId: tenant.id, patientId: p1.id },
   });
   const encounterId = enc ? enc.id : demoApp.id;
 
@@ -2081,8 +2388,8 @@ async function main(): Promise<void> {
       authenticationType: 'HMAC',
       configurationJson: { secret: 'super-secret-hmac-key' },
       rateLimitPerMinute: 120,
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   const labProvider = await prisma.laboratoryProvider.create({
@@ -2094,8 +2401,8 @@ async function main(): Promise<void> {
       endpointUrl: 'https://api.dialab.tj/v2/hl7',
       authenticationJson: { apiKey: 'dialab-seed-key-xyz-789' },
       mappingSchemaJson: { format: 'HL7_V2', segment: 'OBX' },
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   const storageProvider = await prisma.storageProvider.create({
@@ -2108,8 +2415,8 @@ async function main(): Promise<void> {
       endpointUrl: 'https://storage.yandexcloud.net',
       credentialsJson: { accessKeyId: 'YCAJE...seedKey', secretAccessKey: 'YCP...seedSecret' },
       isDefault: true,
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   const telephonyProvider = await prisma.telephonyProvider.create({
@@ -2120,8 +2427,8 @@ async function main(): Promise<void> {
       apiEndpoint: 'https://ats.megafon.tj/api/v1',
       webhookSecret: 'megafon-secret-key-456',
       configurationJson: { sipId: 'sip-user-123', region: 'dushanbe' },
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   const medicalDevice = await prisma.medicalDevice.create({
@@ -2135,8 +2442,8 @@ async function main(): Promise<void> {
       serialNumber: 'MR-N15-99882211',
       protocolType: 'REST',
       connectionType: 'LAN',
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   const activeOrder = await prisma.labOrder.create({
@@ -2156,18 +2463,18 @@ async function main(): Promise<void> {
             testName: 'Глюкоза в плазме крови',
             loincCode: '15074-8',
             sampleType: 'PLASMA',
-            status: 'SENT'
+            status: 'SENT',
           },
           {
             testCode: 'CHO',
             testName: 'Общий холестерин',
             loincCode: '2093-3',
             sampleType: 'SERUM',
-            status: 'SENT'
-          }
-        ]
-      }
-    }
+            status: 'SENT',
+          },
+        ],
+      },
+    },
   });
 
   const completedOrder = await prisma.labOrder.create({
@@ -2188,11 +2495,11 @@ async function main(): Promise<void> {
             testName: 'Гемоглобин',
             loincCode: '718-7',
             sampleType: 'BLOOD',
-            status: 'COMPLETED'
-          }
-        ]
-      }
-    }
+            status: 'COMPLETED',
+          },
+        ],
+      },
+    },
   });
 
   const labResult = await prisma.labResult.create({
@@ -2204,10 +2511,17 @@ async function main(): Promise<void> {
       externalResultId: 'RES-DIALAB-883392',
       resultStatus: 'FINAL',
       resultJson: [
-        { testCode: 'HEM', testName: 'Гемоглобин', value: '135', unit: 'g/L', referenceRange: '120-160', abnormalFlag: 'N' }
+        {
+          testCode: 'HEM',
+          testName: 'Гемоглобин',
+          value: '135',
+          unit: 'g/L',
+          referenceRange: '120-160',
+          abnormalFlag: 'N',
+        },
       ],
-      abnormalFlagsJson: { HEM: 'N' }
-    }
+      abnormalFlagsJson: { HEM: 'N' },
+    },
   });
 
   await prisma.clinicalObservation.create({
@@ -2222,8 +2536,8 @@ async function main(): Promise<void> {
       referenceRange: '120-160',
       abnormalFlag: 'N',
       sourceProviderId: labProvider.id,
-      labResultId: labResult.id
-    }
+      labResultId: labResult.id,
+    },
   });
 
   const callAudioFile = await prisma.file.create({
@@ -2238,8 +2552,8 @@ async function main(): Promise<void> {
       mimeType: 'audio/mpeg',
       extension: 'mp3',
       fileSize: 320000,
-      objectKey: `${tenant.id}/${p1.id}/audio_call/record-782299.mp3`
-    }
+      objectKey: `${tenant.id}/${p1.id}/audio_call/record-782299.mp3`,
+    },
   });
 
   await prisma.callEvent.create({
@@ -2252,8 +2566,8 @@ async function main(): Promise<void> {
       phoneNumber: '+79991112233',
       direction: 'INBOUND',
       durationSeconds: 145,
-      recordingFileId: callAudioFile.id
-    }
+      recordingFileId: callAudioFile.id,
+    },
   });
 
   // 19. Business Intelligence & DWH Seeding
@@ -2284,8 +2598,8 @@ async function main(): Promise<void> {
       noShowFlag: false,
       completedFlag: true,
       createdDate: new Date(Date.now() - 5 * 24 * 3600 * 1000),
-      appointmentDate: new Date(Date.now() - 5 * 24 * 3600 * 1000)
-    }
+      appointmentDate: new Date(Date.now() - 5 * 24 * 3600 * 1000),
+    },
   });
 
   await prisma.dwFactPayment.create({
@@ -2295,11 +2609,11 @@ async function main(): Promise<void> {
       invoiceId: crypto.randomUUID(),
       patientId: p1.id,
       paymentMethod: 'CASH',
-      amount: new Prisma.Decimal(250.00),
-      discountAmount: new Prisma.Decimal(20.00),
-      materialCost: new Prisma.Decimal(50.00),
-      paymentDate: new Date(Date.now() - 5 * 24 * 3600 * 1000)
-    }
+      amount: new Prisma.Decimal(250.0),
+      discountAmount: new Prisma.Decimal(20.0),
+      materialCost: new Prisma.Decimal(50.0),
+      paymentDate: new Date(Date.now() - 5 * 24 * 3600 * 1000),
+    },
   });
 
   await prisma.dwFactMarketing.create({
@@ -2309,11 +2623,11 @@ async function main(): Promise<void> {
       leadSource: 'MARKETING',
       utmSource: 'seed_instagram',
       utmCampaign: 'promo_may',
-      acquisitionCost: new Prisma.Decimal(45.00),
+      acquisitionCost: new Prisma.Decimal(45.0),
       firstVisitDate: new Date(Date.now() - 5 * 24 * 3600 * 1000),
       firstPaymentDate: new Date(Date.now() - 5 * 24 * 3600 * 1000),
-      ltv: new Prisma.Decimal(250.00)
-    }
+      ltv: new Prisma.Decimal(250.0),
+    },
   });
 
   // B. Seed 7 Days Financial Daily Mart Trends
@@ -2329,8 +2643,8 @@ async function main(): Promise<void> {
         totalExpenses: new Prisma.Decimal(300 + i * 50),
         totalRefunds: new Prisma.Decimal(0),
         averageCheck: new Prisma.Decimal(150 + i * 10),
-        outstandingDebt: new Prisma.Decimal(0)
-      }
+        outstandingDebt: new Prisma.Decimal(0),
+      },
     });
   }
 
@@ -2344,10 +2658,10 @@ async function main(): Promise<void> {
       appointmentsCount: 95,
       visitsCount: 82,
       paymentsCount: 75,
-      totalRevenue: new Prisma.Decimal(18750.00),
-      cac: new Prisma.Decimal(45.00),
-      roi: new Prisma.Decimal(1.78)
-    }
+      totalRevenue: new Prisma.Decimal(18750.0),
+      cac: new Prisma.Decimal(45.0),
+      roi: new Prisma.Decimal(1.78),
+    },
   });
 
   await prisma.marketingFunnelMetric.create({
@@ -2359,10 +2673,10 @@ async function main(): Promise<void> {
       appointmentsCount: 180,
       visitsCount: 172,
       paymentsCount: 165,
-      totalRevenue: new Prisma.Decimal(41250.00),
-      cac: new Prisma.Decimal(12.00),
-      roi: new Prisma.Decimal(16.18)
-    }
+      totalRevenue: new Prisma.Decimal(41250.0),
+      cac: new Prisma.Decimal(12.0),
+      roi: new Prisma.Decimal(16.18),
+    },
   });
 
   // D. Seed Operational Metrics Mart
@@ -2371,11 +2685,11 @@ async function main(): Promise<void> {
       tenantId: tenant.id,
       roomId: usiOffice.id,
       employeeId: employee.id,
-      utilizationPercent: new Prisma.Decimal(78.50),
+      utilizationPercent: new Prisma.Decimal(78.5),
       occupiedMinutes: 376,
       availableMinutes: 480,
-      measuredDate: new Date()
-    }
+      measuredDate: new Date(),
+    },
   });
 
   await prisma.noShowMetric.create({
@@ -2383,10 +2697,10 @@ async function main(): Promise<void> {
       tenantId: tenant.id,
       employeeId: employee.id,
       branchId: branch.id,
-      noShowRate: new Prisma.Decimal(4.50),
-      cancellationRate: new Prisma.Decimal(6.20),
-      measuredDate: new Date()
-    }
+      noShowRate: new Prisma.Decimal(4.5),
+      cancellationRate: new Prisma.Decimal(6.2),
+      measuredDate: new Date(),
+    },
   });
 
   await prisma.retentionMetric.create({
@@ -2394,9 +2708,9 @@ async function main(): Promise<void> {
       tenantId: tenant.id,
       patientSegment: 'REGULAR',
       retentionPeriodDays: 90,
-      retentionRate: new Prisma.Decimal(65.40),
-      repeatVisits: 235
-    }
+      retentionRate: new Prisma.Decimal(65.4),
+      repeatVisits: 235,
+    },
   });
 
   // E. Seed Doctor Performance KPI Mart
@@ -2406,13 +2720,13 @@ async function main(): Promise<void> {
       employeeId: employee.id,
       branchId: branch.id,
       totalVisits: 145,
-      totalRevenue: new Prisma.Decimal(36250.00),
-      utilizationRate: new Prisma.Decimal(82.40),
-      retentionRate: new Prisma.Decimal(71.20),
-      noShowRate: new Prisma.Decimal(3.10),
-      averageCheck: new Prisma.Decimal(250.00),
-      npsScore: new Prisma.Decimal(9.60)
-    }
+      totalRevenue: new Prisma.Decimal(36250.0),
+      utilizationRate: new Prisma.Decimal(82.4),
+      retentionRate: new Prisma.Decimal(71.2),
+      noShowRate: new Prisma.Decimal(3.1),
+      averageCheck: new Prisma.Decimal(250.0),
+      npsScore: new Prisma.Decimal(9.6),
+    },
   });
 
   // F. Seed Active Scheduled Report Rule
@@ -2425,8 +2739,8 @@ async function main(): Promise<void> {
       recipientsJson: ['director@demo.clinic', 'owner@demo.clinic'] as any,
       cronExpression: '0 8 * * 1',
       filtersJson: { period: 'last_7_days' } as any,
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   // G. Seed Realtime Cache metrics
@@ -2434,24 +2748,24 @@ async function main(): Promise<void> {
     data: {
       tenantId: tenant.id,
       metricCode: 'active_appointments_count',
-      metricValue: '12'
-    }
+      metricValue: '12',
+    },
   });
 
   await prisma.realtimeMetricCache.create({
     data: {
       tenantId: tenant.id,
       metricCode: 'pending_invoices_revenue',
-      metricValue: '4820'
-    }
+      metricValue: '4820',
+    },
   });
 
   await prisma.realtimeMetricCache.create({
     data: {
       tenantId: tenant.id,
       metricCode: 'checked_in_patients_count',
-      metricValue: '3'
-    }
+      metricValue: '3',
+    },
   });
 
   // H. Seed Warehouses
@@ -2463,8 +2777,8 @@ async function main(): Promise<void> {
       branchId: branch.id,
       warehouseType: 'MAIN',
       code: 'MAIN-WH',
-      name: 'Центральный склад'
-    }
+      name: 'Центральный склад',
+    },
   });
 
   const roomWarehouse = await prisma.warehouse.upsert({
@@ -2476,8 +2790,8 @@ async function main(): Promise<void> {
       roomId: usiOffice.id,
       warehouseType: 'ROOM',
       code: 'USI-OFFICE-ROOM',
-      name: 'Шкаф УЗИ-кабинета'
-    }
+      name: 'Шкаф УЗИ-кабинета',
+    },
   });
 
   // I. Seed Supplier
@@ -2489,8 +2803,8 @@ async function main(): Promise<void> {
       supplierCode: 'TAJ-MED',
       supplierName: 'Tajik Medical Supplies',
       phone: '+992900000001',
-      email: 'sales@tajmed.tj'
-    }
+      email: 'sales@tajmed.tj',
+    },
   });
 
   // J. Seed Nomenclature Inventory Items
@@ -2508,8 +2822,8 @@ async function main(): Promise<void> {
       requiresExpirationTracking: true,
       minimumStockLevel: 10.0,
       reorderLevel: 20.0,
-      defaultSupplierId: supplier.id
-    }
+      defaultSupplierId: supplier.id,
+    },
   });
 
   const gelItem = await prisma.inventoryItem.upsert({
@@ -2526,8 +2840,8 @@ async function main(): Promise<void> {
       requiresExpirationTracking: false,
       minimumStockLevel: 50.0,
       reorderLevel: 100.0,
-      defaultSupplierId: supplier.id
-    }
+      defaultSupplierId: supplier.id,
+    },
   });
 
   // K. Seed Expiring Batches for Lidocaine
@@ -2540,8 +2854,8 @@ async function main(): Promise<void> {
       expirationDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
       purchasePrice: 15.5,
       currentQuantity: 5.0,
-      warehouseId: roomWarehouse.id
-    }
+      warehouseId: roomWarehouse.id,
+    },
   });
 
   const batchB = await prisma.inventoryBatch.create({
@@ -2553,8 +2867,8 @@ async function main(): Promise<void> {
       expirationDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
       purchasePrice: 15.0,
       currentQuantity: 20.0,
-      warehouseId: roomWarehouse.id
-    }
+      warehouseId: roomWarehouse.id,
+    },
   });
 
   // L. Seed Balances for the Room Warehouse
@@ -2565,8 +2879,8 @@ async function main(): Promise<void> {
       itemId: lidoItem.id,
       batchId: batchA.id,
       availableQuantity: 5.0,
-      reservedQuantity: 0.0
-    }
+      reservedQuantity: 0.0,
+    },
   });
 
   await prisma.inventoryBalance.create({
@@ -2576,8 +2890,8 @@ async function main(): Promise<void> {
       itemId: lidoItem.id,
       batchId: batchB.id,
       availableQuantity: 20.0,
-      reservedQuantity: 0.0
-    }
+      reservedQuantity: 0.0,
+    },
   });
 
   await prisma.inventoryBalance.create({
@@ -2587,8 +2901,8 @@ async function main(): Promise<void> {
       itemId: gelItem.id,
       batchId: null,
       availableQuantity: 300.0,
-      reservedQuantity: 0.0
-    }
+      reservedQuantity: 0.0,
+    },
   });
 
   // M. Seed Service BOM technology recipe template
@@ -2605,17 +2919,17 @@ async function main(): Promise<void> {
             inventoryItemId: lidoItem.id,
             quantity: 2.0,
             unitOfMeasure: 'AMPULE',
-            isMandatory: true
+            isMandatory: true,
           },
           {
             inventoryItemId: gelItem.id,
             quantity: 50.0,
             unitOfMeasure: 'ML',
-            isMandatory: true
-          }
-        ]
-      }
-    }
+            isMandatory: true,
+          },
+        ],
+      },
+    },
   });
 
   // N. Seed StockAlertRule for Room Warehouse
@@ -2624,8 +2938,8 @@ async function main(): Promise<void> {
       tenantId_warehouseId_itemId: {
         tenantId: tenant.id,
         warehouseId: roomWarehouse.id,
-        itemId: lidoItem.id
-      }
+        itemId: lidoItem.id,
+      },
     },
     update: {},
     create: {
@@ -2635,8 +2949,8 @@ async function main(): Promise<void> {
       minimumQuantity: 5.0,
       criticalQuantity: 2.0,
       notificationTargetsJson: ['pharmacist@demo.clinic'] as any,
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   console.log('Seed completed');

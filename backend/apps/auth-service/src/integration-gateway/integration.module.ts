@@ -5,6 +5,6 @@ import { IntegrationGatewayService } from './integration.service';
 @Module({
   controllers: [IntegrationGatewayController],
   providers: [IntegrationGatewayService],
-  exports: [IntegrationGatewayService]
+  exports: [IntegrationGatewayService],
 })
 export class IntegrationGatewayModule {}

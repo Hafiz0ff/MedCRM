@@ -1,0 +1,72 @@
+{
+  "Common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "actions": "Actions",
+    "search": "Search...",
+    "confirm": "Confirm",
+    "error": "Error",
+    "success": "Success",
+    "noData": "No data",
+    "theme": "Theme",
+    "density": "Density",
+    "language": "Language"
+  },
+  "Auth": {
+    "title": "Sign In",
+    "subtitle": "MedCRM — Unified Digital Space of Clinic",
+    "tenantCode": "Clinic Code",
+    "email": "Email / Login",
+    "password": "Password",
+    "rememberMe": "Remember me",
+    "signIn": "Sign In",
+    "signingIn": "Signing In...",
+    "errors": {
+      "invalid": "Invalid login or password",
+      "required": "This field is required",
+      "emailInvalid": "Invalid email address"
+    }
+  },
+  "Dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome to MedCRM",
+    "stats": {
+      "totalPatients": "Total Patients",
+      "appointments": "Today's Appointments",
+      "utilization": "Room Utilization",
+      "revenue": "Revenue"
+    }
+  },
+  "Reception": {
+    "title": "Reception Workplace",
+    "queue": "Queue",
+    "vip": "VIP Client",
+    "status": {
+      "waiting": "Waiting",
+      "checkedIn": "Checked In",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    }
+  },
+  "Patients": {
+    "title": "Patients Directory",
+    "addPatient": "Add Patient",
+    "fullName": "Full Name",
+    "birthDate": "Birth Date",
+    "gender": "Gender",
+    "phone": "Phone",
+    "status": "Status",
+    "vip": "VIP"
+  },
+  "Scheduling": {
+    "title": "Smart Scheduling",
+    "newAppointment": "New Appointment",
+    "calendar": "Calendar",
+    "timeSlot": "Time Slot",
+    "doctor": "Doctor",
+    "service": "Service"
+  }
+}

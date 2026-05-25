@@ -1,13 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
-import { AuditLoggerService } from '@core/audit/audit-logger.service';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
-import {
-  AnalyticsFilterDto,
-  CreateScheduledReportDto,
-  RecalculateMetricsDto
-} from './dto/bi.dto';
+import { AnalyticsFilterDto, CreateScheduledReportDto, RecalculateMetricsDto } from './dto/bi.dto';
 
 @Injectable()
 export class BusinessIntelligenceService {
@@ -15,17 +11,19 @@ export class BusinessIntelligenceService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly audit: AuditLoggerService
+    private readonly audit: AuditLoggerService,
   ) {}
 
   // 1. ETL/ELT Sync Pipeline: Sync OLTP Transactional tables into DWH Facts
   async syncOltpToDwh(tenantId: string, dto?: RecalculateMetricsDto) {
     const correlationId = crypto.randomUUID();
-    this.logger.log(`Starting BI ETL Pipeline Sync for tenant: ${tenantId}, correlationId: ${correlationId}`);
+    this.logger.log(
+      `Starting BI ETL Pipeline Sync for tenant: ${tenantId}, correlationId: ${correlationId}`,
+    );
 
     // A. Sync Appointments to DwFactAppointment
     const appts = await this.prisma.appointment.findMany({
-      where: { tenantId }
+      where: { tenantId },
     });
 
     for (const app of appts) {
@@ -39,7 +37,7 @@ export class BusinessIntelligenceService {
           durationMinutes: app.durationMinutes,
           noShowFlag,
           completedFlag,
-          appointmentDate: app.startAt
+          appointmentDate: app.startAt,
         },
         create: {
           id: app.id,
@@ -54,21 +52,24 @@ export class BusinessIntelligenceService {
           noShowFlag,
           completedFlag,
           createdDate: app.createdAt,
-          appointmentDate: app.startAt
-        }
+          appointmentDate: app.startAt,
+        },
       });
     }
 
     // B. Sync Invoices and Payments to DwFactPayment
     const payments = await this.prisma.payment.findMany({
       where: { tenantId },
-      include: { invoice: { include: { items: true } } }
+      include: { invoice: { include: { items: true } } },
     });
 
     for (const pay of payments) {
       const discount = pay.invoice?.discountAmount || new Decimal(0);
       const items = pay.invoice?.items || [];
-      const totalMaterialCost = items.reduce((sum, item) => sum.add(item.materialCost || 0), new Decimal(0));
+      const totalMaterialCost = items.reduce(
+        (sum, item) => sum.add(item.materialCost || 0),
+        new Decimal(0),
+      );
 
       await this.prisma.dwFactPayment.upsert({
         where: { id: pay.id },
@@ -76,7 +77,7 @@ export class BusinessIntelligenceService {
           amount: pay.amount,
           discountAmount: discount,
           materialCost: totalMaterialCost,
-          paymentDate: pay.paidAt
+          paymentDate: pay.paidAt,
         },
         create: {
           id: pay.id,
@@ -88,8 +89,8 @@ export class BusinessIntelligenceService {
           amount: pay.amount,
           discountAmount: discount,
           materialCost: totalMaterialCost,
-          paymentDate: pay.paidAt
-        }
+          paymentDate: pay.paidAt,
+        },
       });
     }
 
@@ -99,8 +100,8 @@ export class BusinessIntelligenceService {
       include: {
         appointments: { where: { status: 'COMPLETED' }, orderBy: { startAt: 'asc' }, take: 1 },
         invoices: { include: { payments: true } },
-        leads: true
-      }
+        leads: true,
+      },
     });
 
     for (const pat of patients) {
@@ -127,7 +128,7 @@ export class BusinessIntelligenceService {
         update: {
           firstVisitDate: firstVisit,
           firstPaymentDate: firstPayment,
-          ltv: totalLtv
+          ltv: totalLtv,
         },
         create: {
           id: pat.id,
@@ -139,8 +140,8 @@ export class BusinessIntelligenceService {
           acquisitionCost: new Decimal(leadSource === 'MARKETING' ? 150 : 0),
           firstVisitDate: firstVisit,
           firstPaymentDate: firstPayment,
-          ltv: totalLtv
-        }
+          ltv: totalLtv,
+        },
       });
     }
 
@@ -154,7 +155,7 @@ export class BusinessIntelligenceService {
       action: 'bi.etl.synchronized',
       entityType: 'etl_pipeline',
       entityId: correlationId,
-      newValuesJson: { success: true, timestamp: new Date() } as any
+      newValuesJson: { success: true, timestamp: new Date() } as any,
     });
 
     return { success: true, message: 'Синхронизация OLTP в DWH успешно завершена', correlationId };
@@ -163,11 +164,14 @@ export class BusinessIntelligenceService {
   // Pre-computes daily financials
   private async recalculateDailyFinancials(tenantId: string) {
     const payments = await this.prisma.dwFactPayment.findMany({
-      where: { tenantId }
+      where: { tenantId },
     });
 
     // Group by date and branch
-    const groups: Record<string, { rev: Decimal; disc: Decimal; mat: Decimal; count: number; invoiceIds: Set<string> }> = {};
+    const groups: Record<
+      string,
+      { rev: Decimal; disc: Decimal; mat: Decimal; count: number; invoiceIds: Set<string> }
+    > = {};
 
     for (const p of payments) {
       const dateStr = p.paymentDate.toISOString().split('T')[0];
@@ -179,7 +183,7 @@ export class BusinessIntelligenceService {
           disc: new Decimal(0),
           mat: new Decimal(0),
           count: 0,
-          invoiceIds: new Set()
+          invoiceIds: new Set(),
         };
       }
 
@@ -202,14 +206,14 @@ export class BusinessIntelligenceService {
           tenantId_branchId_aggregationDate: {
             tenantId,
             branchId,
-            aggregationDate: aggDate
-          }
+            aggregationDate: aggDate,
+          },
         },
         update: {
           totalRevenue: totalRev,
           totalProfit: profit,
           totalExpenses: val.mat,
-          averageCheck: avgCheck
+          averageCheck: avgCheck,
         },
         create: {
           tenantId,
@@ -220,8 +224,8 @@ export class BusinessIntelligenceService {
           totalExpenses: val.mat,
           totalRefunds: new Decimal(0),
           averageCheck: avgCheck,
-          outstandingDebt: new Decimal(0)
-        }
+          outstandingDebt: new Decimal(0),
+        },
       });
     }
   }
@@ -232,26 +236,27 @@ export class BusinessIntelligenceService {
       tenantId,
       paymentDate: {
         gte: filters.dateFrom,
-        lte: filters.dateTo
-      }
+        lte: filters.dateTo,
+      },
     };
     if (filters.branchId) baseWhere.branchId = filters.branchId;
 
     const payments = await this.prisma.dwFactPayment.findMany({
-      where: baseWhere
+      where: baseWhere,
     });
 
     let totalRevenue = new Decimal(0);
     let totalDiscount = new Decimal(0);
     let totalMaterials = new Decimal(0);
-    let totalRefunds = new Decimal(0);
+    const totalRefunds = new Decimal(0);
     const paymentMethods: Record<string, number> = {};
 
     for (const pay of payments) {
       totalRevenue = totalRevenue.add(pay.amount);
       totalDiscount = totalDiscount.add(pay.discountAmount);
       totalMaterials = totalMaterials.add(pay.materialCost);
-      paymentMethods[pay.paymentMethod] = (paymentMethods[pay.paymentMethod] || 0) + Number(pay.amount);
+      paymentMethods[pay.paymentMethod] =
+        (paymentMethods[pay.paymentMethod] || 0) + Number(pay.amount);
     }
 
     // Profit calculation: Revenue - Material costs
@@ -266,10 +271,10 @@ export class BusinessIntelligenceService {
         branchId: filters.branchId || undefined,
         aggregationDate: {
           gte: filters.dateFrom,
-          lte: filters.dateTo
-        }
+          lte: filters.dateTo,
+        },
       },
-      orderBy: { aggregationDate: 'asc' }
+      orderBy: { aggregationDate: 'asc' },
     });
 
     // Breakdown metrics by branches
@@ -289,16 +294,16 @@ export class BusinessIntelligenceService {
         totalRefunds,
         averageCheck,
         transactionCount: payments.length,
-        outstandingDebt: new Decimal(0)
+        outstandingDebt: new Decimal(0),
       },
       trends: trends.map((t) => ({
         date: t.aggregationDate,
         revenue: t.totalRevenue,
         profit: t.totalProfit,
-        expenses: t.totalExpenses
+        expenses: t.totalExpenses,
       })),
       paymentBreakdown: paymentMethods,
-      branchBreakdown: branchStats
+      branchBreakdown: branchStats,
     };
   }
 
@@ -309,9 +314,9 @@ export class BusinessIntelligenceService {
         tenantId,
         measuredAt: {
           gte: filters.dateFrom,
-          lte: filters.dateTo
-        }
-      }
+          lte: filters.dateTo,
+        },
+      },
     });
 
     let totalSpend = new Decimal(0);
@@ -340,7 +345,7 @@ export class BusinessIntelligenceService {
         revenue: m.totalRevenue,
         spend,
         cac: m.cac,
-        roi: m.roi
+        roi: m.roi,
       };
     });
 
@@ -348,7 +353,7 @@ export class BusinessIntelligenceService {
     const conversions = {
       leadToAppointment: totalLeads > 0 ? (totalAppointments / totalLeads) * 100 : 0,
       appointmentToVisit: totalAppointments > 0 ? (totalVisits / totalAppointments) * 100 : 0,
-      visitToPayment: totalVisits > 0 ? (totalPayments / totalVisits) * 100 : 0
+      visitToPayment: totalVisits > 0 ? (totalPayments / totalVisits) * 100 : 0,
     };
 
     const overallRoi = totalSpend.gt(0)
@@ -363,7 +368,7 @@ export class BusinessIntelligenceService {
         leads: totalLeads,
         appointments: totalAppointments,
         visits: totalVisits,
-        payments: totalPayments
+        payments: totalPayments,
       },
       conversions,
       financials: {
@@ -371,9 +376,9 @@ export class BusinessIntelligenceService {
         totalRevenue,
         netReturn: totalRevenue.minus(totalSpend),
         averageCac,
-        roiPercent: overallRoi
+        roiPercent: overallRoi,
       },
-      channels: channelBreakdowns
+      channels: channelBreakdowns,
     };
   }
 
@@ -385,14 +390,15 @@ export class BusinessIntelligenceService {
         tenantId,
         measuredDate: {
           gte: filters.dateFrom,
-          lte: filters.dateTo
-        }
-      }
+          lte: filters.dateTo,
+        },
+      },
     });
 
-    const averageUtilization = roomUtil.length > 0
-      ? roomUtil.reduce((sum, r) => sum + Number(r.utilizationPercent), 0) / roomUtil.length
-      : 0;
+    const averageUtilization =
+      roomUtil.length > 0
+        ? roomUtil.reduce((sum, r) => sum + Number(r.utilizationPercent), 0) / roomUtil.length
+        : 0;
 
     // B. No-Show & cancellation metrics
     const noShow = await this.prisma.noShowMetric.findMany({
@@ -400,18 +406,20 @@ export class BusinessIntelligenceService {
         tenantId,
         measuredDate: {
           gte: filters.dateFrom,
-          lte: filters.dateTo
-        }
-      }
+          lte: filters.dateTo,
+        },
+      },
     });
 
-    const averageNoShowRate = noShow.length > 0
-      ? noShow.reduce((sum, n) => sum + Number(n.noShowRate), 0) / noShow.length
-      : 0;
+    const averageNoShowRate =
+      noShow.length > 0
+        ? noShow.reduce((sum, n) => sum + Number(n.noShowRate), 0) / noShow.length
+        : 0;
 
-    const averageCancellationRate = noShow.length > 0
-      ? noShow.reduce((sum, n) => sum + Number(n.cancellationRate), 0) / noShow.length
-      : 0;
+    const averageCancellationRate =
+      noShow.length > 0
+        ? noShow.reduce((sum, n) => sum + Number(n.cancellationRate), 0) / noShow.length
+        : 0;
 
     // C. Cohort Patient retention metrics
     const retention = await this.prisma.retentionMetric.findMany({
@@ -419,9 +427,9 @@ export class BusinessIntelligenceService {
         tenantId,
         measuredAt: {
           gte: filters.dateFrom,
-          lte: filters.dateTo
-        }
-      }
+          lte: filters.dateTo,
+        },
+      },
     });
 
     return {
@@ -433,8 +441,8 @@ export class BusinessIntelligenceService {
           utilizationPercent: r.utilizationPercent,
           occupiedMinutes: r.occupiedMinutes,
           availableMinutes: r.availableMinutes,
-          date: r.measuredDate
-        }))
+          date: r.measuredDate,
+        })),
       },
       noShow: {
         noShowRatePercent: averageNoShowRate,
@@ -444,16 +452,16 @@ export class BusinessIntelligenceService {
           branchId: n.branchId,
           noShowRate: n.noShowRate,
           cancellationRate: n.cancellationRate,
-          date: n.measuredDate
-        }))
+          date: n.measuredDate,
+        })),
       },
       retention: retention.map((r) => ({
         segment: r.patientSegment,
         periodDays: r.retentionPeriodDays,
         retentionRatePercent: r.retentionRate,
         repeatVisitsCount: r.repeatVisits,
-        date: r.measuredAt
-      }))
+        date: r.measuredAt,
+      })),
     };
   }
 
@@ -465,9 +473,9 @@ export class BusinessIntelligenceService {
         employeeId: filters.employeeId || undefined,
         measuredAt: {
           gte: filters.dateFrom,
-          lte: filters.dateTo
-        }
-      }
+          lte: filters.dateTo,
+        },
+      },
     });
 
     return kpis.map((k) => ({
@@ -479,7 +487,7 @@ export class BusinessIntelligenceService {
       retentionRate: k.retentionRate,
       noShowRate: k.noShowRate,
       averageCheck: k.averageCheck,
-      npsScore: k.npsScore || 9.5
+      npsScore: k.npsScore || 9.5,
     }));
   }
 
@@ -494,8 +502,8 @@ export class BusinessIntelligenceService {
         recipientsJson: dto.recipientsJson as any,
         cronExpression: dto.cronExpression,
         filtersJson: dto.filtersJson as any,
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     await this.audit.log({
@@ -504,7 +512,7 @@ export class BusinessIntelligenceService {
       action: 'report.scheduled',
       entityType: 'scheduled_report',
       entityId: report.id,
-      newValuesJson: report as any
+      newValuesJson: report as any,
     });
 
     return report;
@@ -512,7 +520,7 @@ export class BusinessIntelligenceService {
 
   async triggerScheduledReportGeneration(tenantId: string, reportId: string) {
     const report = await this.prisma.scheduledReport.findUnique({
-      where: { id: reportId }
+      where: { id: reportId },
     });
     if (!report || report.tenantId !== tenantId) {
       throw new NotFoundException('Запланированное правило отчета не найдено');
@@ -522,17 +530,18 @@ export class BusinessIntelligenceService {
       data: {
         tenantId,
         scheduledReportId: report.id,
-        generationStatus: 'PENDING'
-      }
+        generationStatus: 'PENDING',
+      },
     });
 
     try {
       // 1. Simulate finding storage provider credentials to output file
       const storage = await this.prisma.storageProvider.findFirst({
-        where: { tenantId, isActive: true }
+        where: { tenantId, isActive: true },
       });
 
-      if (!storage) throw new BadRequestException('Активный облачный S3 накопитель для отчетов не найден');
+      if (!storage)
+        throw new BadRequestException('Активный облачный S3 накопитель для отчетов не найден');
 
       const fileId = crypto.randomUUID();
       const objectKey = `${tenantId}/reports/${report.reportType.toLowerCase()}/${fileId}.${report.exportFormat.toLowerCase()}`;
@@ -549,8 +558,8 @@ export class BusinessIntelligenceService {
           mimeType: report.exportFormat === 'PDF' ? 'application/pdf' : 'application/octet-stream',
           extension: report.exportFormat.toLowerCase(),
           fileSize: 125000, // mock size 125 KB
-          objectKey
-        }
+          objectKey,
+        },
       });
 
       // 2. Mark report delivery completed
@@ -559,8 +568,8 @@ export class BusinessIntelligenceService {
         data: {
           generationStatus: 'SUCCESS',
           fileId: file.id,
-          deliveredAt: new Date()
-        }
+          deliveredAt: new Date(),
+        },
       });
 
       await this.audit.log({
@@ -569,7 +578,7 @@ export class BusinessIntelligenceService {
         action: 'report.generated',
         entityType: 'generated_report',
         entityId: genLog.id,
-        newValuesJson: { success: true, fileId: file.id } as any
+        newValuesJson: { success: true, fileId: file.id } as any,
       });
 
       return { success: true, generatedReportId: genLog.id, file };
@@ -577,8 +586,8 @@ export class BusinessIntelligenceService {
       await this.prisma.generatedReport.update({
         where: { id: genLog.id },
         data: {
-          generationStatus: 'FAILED'
-        }
+          generationStatus: 'FAILED',
+        },
       });
       throw err;
     }
@@ -587,7 +596,7 @@ export class BusinessIntelligenceService {
   // 7. Fast Realtime dashboard K-V cache updating
   async getRealtimeMetrics(tenantId: string) {
     const cached = await this.prisma.realtimeMetricCache.findMany({
-      where: { tenantId }
+      where: { tenantId },
     });
 
     const results: Record<string, string> = {};
@@ -600,38 +609,38 @@ export class BusinessIntelligenceService {
 
   async triggerRealtimeCacheUpdate(tenantId: string) {
     const activeApptsCount = await this.prisma.appointment.count({
-      where: { tenantId, status: 'SCHEDULED' }
+      where: { tenantId, status: 'SCHEDULED' },
     });
 
     const activeInvoicesSum = await this.prisma.invoice.aggregate({
       where: { tenantId, status: 'PENDING' },
-      _sum: { totalAmount: true }
+      _sum: { totalAmount: true },
     });
 
     const checkedInCount = await this.prisma.appointment.count({
-      where: { tenantId, status: 'CHECKED_IN' }
+      where: { tenantId, status: 'CHECKED_IN' },
     });
 
     const metrics = [
       { code: 'active_appointments_count', val: String(activeApptsCount) },
       { code: 'pending_invoices_revenue', val: String(activeInvoicesSum._sum?.totalAmount || 0) },
-      { code: 'checked_in_patients_count', val: String(checkedInCount) }
+      { code: 'checked_in_patients_count', val: String(checkedInCount) },
     ];
 
     for (const m of metrics) {
       await this.prisma.realtimeMetricCache.upsert({
         where: {
-          tenantId_metricCode: { tenantId, metricCode: m.code }
+          tenantId_metricCode: { tenantId, metricCode: m.code },
         },
         update: {
           metricValue: m.val,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
         create: {
           tenantId,
           metricCode: m.code,
-          metricValue: m.val
-        }
+          metricValue: m.val,
+        },
       });
     }
 

@@ -10,13 +10,13 @@ export const AuditLogQuerySchema = z
     dateFrom: z.string().datetime({ offset: true }).optional(),
     dateTo: z.string().datetime({ offset: true }).optional(),
     page: z.coerce.number().int().min(1).optional().default(1),
-    pageSize: z.coerce.number().int().min(1).max(200).optional().default(50)
+    pageSize: z.coerce.number().int().min(1).max(200).optional().default(50),
   })
   .refine(
     (value) => {
       if (!value.dateFrom || !value.dateTo) return true;
       return new Date(value.dateFrom).getTime() <= new Date(value.dateTo).getTime();
     },
-    { message: 'dateFrom must be earlier than or equal to dateTo' }
+    { message: 'dateFrom must be earlier than or equal to dateTo' },
   );
 export type AuditLogQueryDto = z.infer<typeof AuditLogQuerySchema>;

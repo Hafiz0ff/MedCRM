@@ -7,7 +7,7 @@ export const appointmentStatusMeta: Record<string, { label: string; tone: string
   COMPLETED_PENDING_PAYMENT: { label: 'К оплате', tone: 'warning' },
   CANCELLED: { label: 'Отменен', tone: 'danger' },
   NO_SHOW: { label: 'Не пришел', tone: 'danger' },
-  RESCHEDULED: { label: 'Перенесен', tone: 'neutral' }
+  RESCHEDULED: { label: 'Перенесен', tone: 'neutral' },
 };
 
 export const patientStatusMeta: Record<string, { label: string; tone: string }> = {
@@ -16,7 +16,7 @@ export const patientStatusMeta: Record<string, { label: string; tone: string }> 
   SLEEPING: { label: 'Спящий', tone: 'warning' },
   VIP: { label: 'VIP', tone: 'violet' },
   BLOCKED: { label: 'Ограничен', tone: 'danger' },
-  ARCHIVED: { label: 'Архив', tone: 'neutral' }
+  ARCHIVED: { label: 'Архив', tone: 'neutral' },
 };
 
 export function statusLabel(status: string, type: 'appointment' | 'patient' = 'appointment') {
@@ -37,6 +37,6 @@ export function formatDate(value: Date) {
   return value.toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'long',
-    weekday: 'long'
+    weekday: 'long',
   });
 }

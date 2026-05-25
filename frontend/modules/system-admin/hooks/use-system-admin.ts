@@ -146,7 +146,7 @@ const QK = {
   users: ['system', 'users'] as const,
   userRoles: (userId: string) => ['system', 'user-roles', userId] as const,
   integrations: ['system', 'integrations'] as const,
-  auditLog: (filters: AuditFilters) => ['system', 'audit', filters] as const
+  auditLog: (filters: AuditFilters) => ['system', 'audit', filters] as const,
 };
 
 export const SystemAdminQueryKeys = QK;
@@ -156,7 +156,7 @@ export const SystemAdminQueryKeys = QK;
 export function useTenantProfile() {
   return useQuery({
     queryKey: QK.tenantProfile,
-    queryFn: () => apiFetch<TenantProfile>('/system/tenant')
+    queryFn: () => apiFetch<TenantProfile>('/system/tenant'),
   });
 }
 
@@ -166,18 +166,18 @@ export function useUpdateTenantProfile() {
     mutationFn: (dto: Partial<Pick<TenantProfile, 'name' | 'defaultLocale' | 'timezone'>>) =>
       apiFetch<TenantProfile>('/system/tenant', {
         method: 'PATCH',
-        body: JSON.stringify(dto)
+        body: JSON.stringify(dto),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QK.tenantProfile });
-    }
+    },
   });
 }
 
 export function useTenantModules() {
   return useQuery({
     queryKey: QK.modules,
-    queryFn: () => apiFetch<TenantModule[]>('/system/modules')
+    queryFn: () => apiFetch<TenantModule[]>('/system/modules'),
   });
 }
 
@@ -193,12 +193,12 @@ export function useUpdateTenantModule() {
         method: 'PATCH',
         body: JSON.stringify({
           enabled: input.enabled,
-          configuration: input.configuration
-        })
+          configuration: input.configuration,
+        }),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QK.modules });
-    }
+    },
   });
 }
 
@@ -207,14 +207,14 @@ export function useUpdateTenantModule() {
 export function usePermissionCatalog() {
   return useQuery({
     queryKey: QK.permissions,
-    queryFn: () => apiFetch<PermissionCatalogEntry[]>('/system/permissions')
+    queryFn: () => apiFetch<PermissionCatalogEntry[]>('/system/permissions'),
   });
 }
 
 export function useRoles() {
   return useQuery({
     queryKey: QK.roles,
-    queryFn: () => apiFetch<RoleSummary[]>('/system/roles')
+    queryFn: () => apiFetch<RoleSummary[]>('/system/roles'),
   });
 }
 
@@ -224,9 +224,9 @@ export function useCreateRole() {
     mutationFn: (dto: { code: string; name: string; description?: string | null }) =>
       apiFetch<RoleSummary>('/system/roles', {
         method: 'POST',
-        body: JSON.stringify(dto)
+        body: JSON.stringify(dto),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QK.roles })
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.roles }),
   });
 }
 
@@ -236,9 +236,9 @@ export function useUpdateRole() {
     mutationFn: (input: { roleId: string; name?: string; description?: string | null }) =>
       apiFetch<RoleSummary>(`/system/roles/${input.roleId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ name: input.name, description: input.description })
+        body: JSON.stringify({ name: input.name, description: input.description }),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QK.roles })
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.roles }),
   });
 }
 
@@ -247,7 +247,7 @@ export function useDeleteRole() {
   return useMutation({
     mutationFn: (roleId: string) =>
       apiFetch<{ ok: true }>(`/system/roles/${roleId}`, { method: 'DELETE' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QK.roles })
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.roles }),
   });
 }
 
@@ -264,16 +264,16 @@ export function useSetRolePermissions() {
     mutationFn: (input: { roleId: string; permissionCodes: string[] }) =>
       apiFetch<RolePermissionsUpdated>(`/system/roles/${input.roleId}/permissions`, {
         method: 'PUT',
-        body: JSON.stringify({ permissionCodes: input.permissionCodes })
+        body: JSON.stringify({ permissionCodes: input.permissionCodes }),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QK.roles })
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.roles }),
   });
 }
 
 export function useTenantUsers() {
   return useQuery({
     queryKey: QK.users,
-    queryFn: () => apiFetch<TenantUserSummary[]>('/system/users')
+    queryFn: () => apiFetch<TenantUserSummary[]>('/system/users'),
   });
 }
 
@@ -281,7 +281,7 @@ export function useUserRoles(userId: string | null) {
   return useQuery({
     queryKey: userId ? QK.userRoles(userId) : ['system', 'user-roles', 'none'],
     queryFn: () => apiFetch<UserRoleTree>(`/system/users/${userId}/roles`),
-    enabled: Boolean(userId)
+    enabled: Boolean(userId),
   });
 }
 
@@ -300,12 +300,12 @@ export function useAssignUserRoles() {
     }) =>
       apiFetch<UserRolesUpdated>(`/system/users/${input.userId}/roles`, {
         method: 'PUT',
-        body: JSON.stringify({ assignments: input.assignments })
+        body: JSON.stringify({ assignments: input.assignments }),
       }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: QK.userRoles(vars.userId) });
       qc.invalidateQueries({ queryKey: QK.roles });
-    }
+    },
   });
 }
 
@@ -314,7 +314,7 @@ export function useAssignUserRoles() {
 export function useIntegrationProviders() {
   return useQuery({
     queryKey: QK.integrations,
-    queryFn: () => apiFetch<IntegrationProvider[]>('/system/integrations')
+    queryFn: () => apiFetch<IntegrationProvider[]>('/system/integrations'),
   });
 }
 
@@ -331,9 +331,9 @@ export function useCreateIntegration() {
     }) =>
       apiFetch<IntegrationCreatedResponse>('/system/integrations', {
         method: 'POST',
-        body: JSON.stringify(dto)
+        body: JSON.stringify(dto),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QK.integrations })
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.integrations }),
   });
 }
 
@@ -353,10 +353,10 @@ export function useUpdateIntegration() {
           providerName: input.providerName,
           rateLimitPerMinute: input.rateLimitPerMinute,
           isActive: input.isActive,
-          configuration: input.configuration
-        })
+          configuration: input.configuration,
+        }),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QK.integrations })
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.integrations }),
   });
 }
 
@@ -364,11 +364,10 @@ export function useRotateIntegrationKey() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (providerId: string) =>
-      apiFetch<IntegrationRotatedResponse>(
-        `/system/integrations/${providerId}/rotate-key`,
-        { method: 'POST' }
-      ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QK.integrations })
+      apiFetch<IntegrationRotatedResponse>(`/system/integrations/${providerId}/rotate-key`, {
+        method: 'POST',
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.integrations }),
   });
 }
 
@@ -377,7 +376,7 @@ export function useDeleteIntegration() {
   return useMutation({
     mutationFn: (providerId: string) =>
       apiFetch<{ ok: true }>(`/system/integrations/${providerId}`, { method: 'DELETE' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QK.integrations })
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.integrations }),
   });
 }
 
@@ -398,6 +397,6 @@ export function useAuditLog(filters: AuditFilters) {
       const qs = params.toString();
       return apiFetch<AuditLogPage>(`/system/audit-logs${qs ? `?${qs}` : ''}`);
     },
-    placeholderData: (prev) => prev
+    placeholderData: (prev) => prev,
   });
 }

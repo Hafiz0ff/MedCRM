@@ -15,10 +15,9 @@ export class ZodValidationPipe<TInput, TOutput> implements PipeTransform<TInput,
     if (!result.success) {
       throw new BadRequestException({
         message: 'Validation failed',
-        issues: result.error.issues
+        issues: result.error.issues,
       });
     }
     return result.data;
   }
 }
-

@@ -138,7 +138,14 @@ export type PayrollRule = {
   };
 };
 
-export type PaymentMethod = 'CASH' | 'CARD' | 'QR' | 'BANK_TRANSFER' | 'WALLET' | 'FAMILY_BALANCE' | 'ONLINE_GATEWAY';
+export type PaymentMethod =
+  | 'CASH'
+  | 'CARD'
+  | 'QR'
+  | 'BANK_TRANSFER'
+  | 'WALLET'
+  | 'FAMILY_BALANCE'
+  | 'ONLINE_GATEWAY';
 export type WalletType = 'DEPOSIT' | 'BONUS' | 'CREDIT';
 export type PayrollType = 'REVENUE_SHARE' | 'FIXED' | 'HYBRID' | 'KPI_BASED';
 
@@ -154,11 +161,15 @@ function invalidateFinance(queryClient: ReturnType<typeof useQueryClient>) {
 export function useFinanceSummary() {
   return useQuery({
     queryKey: ['finance-summary'],
-    queryFn: () => apiFetch<FinanceSummary>('/finance/summary')
+    queryFn: () => apiFetch<FinanceSummary>('/finance/summary'),
   });
 }
 
-export function useFinanceInvoices(filters: { patientId?: string; status?: string; paymentMethod?: string }) {
+export function useFinanceInvoices(filters: {
+  patientId?: string;
+  status?: string;
+  paymentMethod?: string;
+}) {
   const params = new URLSearchParams();
   if (filters.patientId) params.set('patientId', filters.patientId);
   if (filters.status) params.set('status', filters.status);
@@ -166,22 +177,30 @@ export function useFinanceInvoices(filters: { patientId?: string; status?: strin
   const queryString = params.toString();
 
   return useQuery({
-    queryKey: ['finance-invoices', filters.patientId ?? '', filters.status ?? '', filters.paymentMethod ?? ''],
-    queryFn: () => apiFetch<ListResponse<FinanceInvoice>>(`/finance/invoices${queryString ? `?${queryString}` : ''}`)
+    queryKey: [
+      'finance-invoices',
+      filters.patientId ?? '',
+      filters.status ?? '',
+      filters.paymentMethod ?? '',
+    ],
+    queryFn: () =>
+      apiFetch<ListResponse<FinanceInvoice>>(
+        `/finance/invoices${queryString ? `?${queryString}` : ''}`,
+      ),
   });
 }
 
 export function useFinancePayments() {
   return useQuery({
     queryKey: ['finance-payments'],
-    queryFn: () => apiFetch<ListResponse<FinancePayment>>('/finance/payments')
+    queryFn: () => apiFetch<ListResponse<FinancePayment>>('/finance/payments'),
   });
 }
 
 export function useActiveShift() {
   return useQuery({
     queryKey: ['finance-active-shift'],
-    queryFn: () => apiFetch<CashierShift | null>('/finance/shifts/active')
+    queryFn: () => apiFetch<CashierShift | null>('/finance/shifts/active'),
   });
 }
 
@@ -189,11 +208,14 @@ export function useOpenShift() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: { branchId: string; openingBalance: number }) =>
-      apiFetch<CashierShift>('/finance/shifts/open', { method: 'POST', body: JSON.stringify(input) }),
+      apiFetch<CashierShift>('/finance/shifts/open', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['finance-active-shift'] });
       queryClient.invalidateQueries({ queryKey: ['finance-summary'] });
-    }
+    },
   });
 }
 
@@ -203,36 +225,61 @@ export function useCloseShift() {
     mutationFn: ({ shiftId, closingBalance }: { shiftId: string; closingBalance: number }) =>
       apiFetch<CashierShift>(`/finance/shifts/close/${shiftId}`, {
         method: 'POST',
-        body: JSON.stringify({ closingBalance })
+        body: JSON.stringify({ closingBalance }),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['finance-active-shift'] });
       queryClient.invalidateQueries({ queryKey: ['finance-summary'] });
-    }
+    },
   });
 }
 
 export function useCreatePayment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ invoiceId, ...input }: { invoiceId: string; paymentMethod: PaymentMethod; amount: number; currency: string; paymentProvider?: string; externalTransactionId?: string }) =>
-      apiFetch<{ payment: FinancePayment; invoice: FinanceInvoice }>(`/finance/invoices/${invoiceId}/payments`, {
-        method: 'POST',
-        body: JSON.stringify(input)
-      }),
-    onSuccess: () => invalidateFinance(queryClient)
+    mutationFn: ({
+      invoiceId,
+      ...input
+    }: {
+      invoiceId: string;
+      paymentMethod: PaymentMethod;
+      amount: number;
+      currency: string;
+      paymentProvider?: string;
+      externalTransactionId?: string;
+    }) =>
+      apiFetch<{ payment: FinancePayment; invoice: FinanceInvoice }>(
+        `/finance/invoices/${invoiceId}/payments`,
+        {
+          method: 'POST',
+          body: JSON.stringify(input),
+        },
+      ),
+    onSuccess: () => invalidateFinance(queryClient),
   });
 }
 
 export function useCreateRefund() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ invoiceId, ...input }: { invoiceId: string; paymentId: string; refundAmount: number; refundMethod: string; reason?: string }) =>
-      apiFetch<{ refund: FinanceRefund; invoice: FinanceInvoice }>(`/finance/invoices/${invoiceId}/refunds`, {
-        method: 'POST',
-        body: JSON.stringify(input)
-      }),
-    onSuccess: () => invalidateFinance(queryClient)
+    mutationFn: ({
+      invoiceId,
+      ...input
+    }: {
+      invoiceId: string;
+      paymentId: string;
+      refundAmount: number;
+      refundMethod: string;
+      reason?: string;
+    }) =>
+      apiFetch<{ refund: FinanceRefund; invoice: FinanceInvoice }>(
+        `/finance/invoices/${invoiceId}/refunds`,
+        {
+          method: 'POST',
+          body: JSON.stringify(input),
+        },
+      ),
+    onSuccess: () => invalidateFinance(queryClient),
   });
 }
 
@@ -240,19 +287,27 @@ export function usePatientWallet(patientId?: string) {
   return useQuery({
     queryKey: ['finance-wallet', patientId ?? ''],
     queryFn: () => apiFetch<PatientWallet[]>(`/finance/wallets/patient/${patientId}`),
-    enabled: Boolean(patientId)
+    enabled: Boolean(patientId),
   });
 }
 
 export function useTopUpWallet() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { patientId: string; walletType: WalletType; amount: number; currency: string }) =>
-      apiFetch<PatientWallet>('/finance/wallets/topup', { method: 'POST', body: JSON.stringify(input) }),
+    mutationFn: (input: {
+      patientId: string;
+      walletType: WalletType;
+      amount: number;
+      currency: string;
+    }) =>
+      apiFetch<PatientWallet>('/finance/wallets/topup', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
     onSuccess: (_wallet, input) => {
       queryClient.invalidateQueries({ queryKey: ['finance-wallet', input.patientId] });
       queryClient.invalidateQueries({ queryKey: ['finance-summary'] });
-    }
+    },
   });
 }
 
@@ -260,17 +315,28 @@ export function usePayrollRules(enabled: boolean) {
   return useQuery({
     queryKey: ['finance-payroll-rules'],
     queryFn: () => apiFetch<ListResponse<PayrollRule>>('/finance/payroll/rules'),
-    enabled
+    enabled,
   });
 }
 
 export function useCreatePayrollRule() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { employeeId: string; payrollType: PayrollType; percentageRate: number; fixedAmount: number; deductMaterialCost: boolean; appliesFrom: string; appliesTo?: string | null }) =>
-      apiFetch<PayrollRule>('/finance/payroll/rules', { method: 'POST', body: JSON.stringify(input) }),
+    mutationFn: (input: {
+      employeeId: string;
+      payrollType: PayrollType;
+      percentageRate: number;
+      fixedAmount: number;
+      deductMaterialCost: boolean;
+      appliesFrom: string;
+      appliesTo?: string | null;
+    }) =>
+      apiFetch<PayrollRule>('/finance/payroll/rules', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['finance-payroll-rules'] });
-    }
+    },
   });
 }

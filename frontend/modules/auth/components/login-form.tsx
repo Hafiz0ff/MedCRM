@@ -1,12 +1,19 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ACCESS_TOKEN_COOKIE } from '@/shared/auth/cookies';
 import { loginSchema } from '../schemas/login.schema';
+import { MfaChallenge } from './mfa-challenge';
+import { useRouter } from '@/i18n/routing';
+import { ACCESS_TOKEN_COOKIE } from '@/shared/auth/cookies';
+import { Button } from '@/shared/ui/button';
+import { Input } from '@/shared/ui/input';
+import { Label } from '@/shared/ui/label';
 
 type LoginResponse = {
-  accessToken: string;
+  accessToken?: string;
+  mfaRequired?: boolean;
+  mfaToken?: string;
 };
 
 function apiBaseUrl(): string {
@@ -15,11 +22,13 @@ function apiBaseUrl(): string {
 
 export function LoginForm() {
   const router = useRouter();
+  const t = useTranslations('Auth');
   const [tenantCode, setTenantCode] = useState('demo-clinic');
   const [email, setEmail] = useState('admin@demo.clinic');
   const [password, setPassword] = useState('Admin123!');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,7 +36,7 @@ export function LoginForm() {
 
     const parsed = loginSchema.safeParse({ tenantCode, email, password });
     if (!parsed.success) {
-      setError('Проверьте tenant, email и пароль.');
+      setError(t('errors.required'));
       return;
     }
 
@@ -37,18 +46,24 @@ export function LoginForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(parsed.data)
+        body: JSON.stringify(parsed.data),
       });
 
       if (!response.ok) {
-        setError('Не удалось войти. Проверьте данные доступа.');
+        setError(t('errors.invalid'));
         return;
       }
 
       const data = (await response.json()) as LoginResponse;
-      document.cookie = `${ACCESS_TOKEN_COOKIE}=${data.accessToken}; path=/; max-age=900; samesite=lax`;
-      router.replace('/dashboard');
-      router.refresh();
+
+      if (data.mfaRequired && data.mfaToken) {
+        setMfaToken(data.mfaToken);
+        return;
+      }
+
+      if (data.accessToken) {
+        handleAuthSuccess(data.accessToken);
+      }
     } catch {
       setError('API недоступен. Проверьте, что backend запущен.');
     } finally {
@@ -56,25 +71,58 @@ export function LoginForm() {
     }
   }
 
+  function handleAuthSuccess(accessToken: string) {
+    document.cookie = `${ACCESS_TOKEN_COOKIE}=${accessToken}; path=/; max-age=900; samesite=lax`;
+    router.replace('/dashboard');
+    router.refresh();
+  }
+
+  if (mfaToken) {
+    return (
+      <MfaChallenge
+        mfaToken={mfaToken}
+        onSuccess={handleAuthSuccess}
+        onCancel={() => setMfaToken(null)}
+      />
+    );
+  }
+
   return (
-    <form className="form" onSubmit={submit}>
-      <div className="field">
-        <label htmlFor="tenantCode">Код клиники</label>
-        <input id="tenantCode" autoComplete="organization" value={tenantCode} onChange={(event) => setTenantCode(event.target.value)} />
+    <form className="form flex flex-col gap-4" onSubmit={submit}>
+      <div className="field flex flex-col gap-1.5">
+        <Label htmlFor="tenantCode">{t('tenantCode')}</Label>
+        <Input
+          id="tenantCode"
+          autoComplete="organization"
+          value={tenantCode}
+          onChange={(event) => setTenantCode(event.target.value)}
+        />
       </div>
-      <div className="field">
-        <label htmlFor="email">Email</label>
-        <input id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+      <div className="field flex flex-col gap-1.5">
+        <Label htmlFor="email">{t('email')}</Label>
+        <Input
+          id="email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
       </div>
-      <div className="field">
-        <label htmlFor="password">Пароль</label>
-        <input id="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} />
+      <div className="field flex flex-col gap-1.5">
+        <Label htmlFor="password">{t('password')}</Label>
+        <Input
+          id="password"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
       </div>
-      {error ? <div className="error">{error}</div> : null}
-      <button className="button" type="submit" disabled={submitting}>
-        {submitting ? 'Вход...' : 'Войти'}
-      </button>
-      <p className="muted">Demo: demo-clinic · admin@demo.clinic</p>
+      {error ? <div className="error text-sm text-danger font-medium">{error}</div> : null}
+      <Button type="submit" disabled={submitting} className="w-full">
+        {submitting ? t('signingIn') : t('signIn')}
+      </Button>
+      <p className="muted text-xs text-muted">Demo: demo-clinic · admin@demo.clinic</p>
     </form>
   );
 }

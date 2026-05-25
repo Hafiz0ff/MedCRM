@@ -17,32 +17,32 @@ tenants
 
 Назначение: глобальный реестр модулей платформы.
 
-| Поле | Тип | Обязательность | Комментарий |
-|---|---|---|---|
-| id | uuid | Да | Primary key |
-| code | varchar | Да | Уникальный код: `patient-crm` |
-| name | varchar | Да | Человекочитаемое имя |
-| version | varchar | Да | SemVer |
-| is_core | boolean | Да | Core-модуль нельзя отключить |
-| dependencies | jsonb | Да | Список кодов зависимостей |
-| status | varchar | Да | `active`, `deprecated`, `disabled` |
-| created_at | timestamptz | Да | Дата создания |
-| updated_at | timestamptz | Да | Дата обновления |
+| Поле         | Тип         | Обязательность | Комментарий                        |
+| ------------ | ----------- | -------------- | ---------------------------------- |
+| id           | uuid        | Да             | Primary key                        |
+| code         | varchar     | Да             | Уникальный код: `patient-crm`      |
+| name         | varchar     | Да             | Человекочитаемое имя               |
+| version      | varchar     | Да             | SemVer                             |
+| is_core      | boolean     | Да             | Core-модуль нельзя отключить       |
+| dependencies | jsonb       | Да             | Список кодов зависимостей          |
+| status       | varchar     | Да             | `active`, `deprecated`, `disabled` |
+| created_at   | timestamptz | Да             | Дата создания                      |
+| updated_at   | timestamptz | Да             | Дата обновления                    |
 
 ## 3. Таблица `tenant_modules`
 
 Назначение: подключение модулей к конкретной клинике.
 
-| Поле | Тип | Обязательность | Комментарий |
-|---|---|---|---|
-| id | uuid | Да | Primary key |
-| tenant_id | uuid | Да | FK на `tenants` |
-| module_id | uuid | Да | FK на `system_modules` |
-| enabled | boolean | Да | Включен ли модуль |
-| activated_at | timestamptz | Нет | Дата активации |
-| configuration_json | jsonb | Да | Конфигурация модуля |
-| created_at | timestamptz | Да | Дата создания |
-| updated_at | timestamptz | Да | Дата обновления |
+| Поле               | Тип         | Обязательность | Комментарий            |
+| ------------------ | ----------- | -------------- | ---------------------- |
+| id                 | uuid        | Да             | Primary key            |
+| tenant_id          | uuid        | Да             | FK на `tenants`        |
+| module_id          | uuid        | Да             | FK на `system_modules` |
+| enabled            | boolean     | Да             | Включен ли модуль      |
+| activated_at       | timestamptz | Нет            | Дата активации         |
+| configuration_json | jsonb       | Да             | Конфигурация модуля    |
+| created_at         | timestamptz | Да             | Дата создания          |
+| updated_at         | timestamptz | Да             | Дата обновления        |
 
 Ограничение: `unique(tenant_id, module_id)`.
 
@@ -184,4 +184,3 @@ Input: tenant_id, requested_module_code, user_id, action
 - `user.2fa.enabled`;
 - `patient.accessed`;
 - `document.downloaded`.
-

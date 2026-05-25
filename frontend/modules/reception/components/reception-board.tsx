@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Clock3,
@@ -15,29 +14,34 @@ import {
   AlertTriangle,
   Award,
   CircleDollarSign,
-  Users
+  Users,
 } from 'lucide-react';
-import { BootstrapPayload } from '@/shared/types/bootstrap';
-import { getRealtimeSocket } from '@/shared/realtime/socket';
-import { formatVisitTime, statusLabel, statusTone } from '@/shared/ui/status';
-import { SkeletonTable } from '@/shared/ui/skeleton';
-import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
-import { useToast } from '@/shared/ui/toast';
+import { useEffect, useState, useCallback } from 'react';
 import {
   useReceptionDashboard,
   useReceptionTransition,
   useReceptionCheckIn,
   usePatientPreview,
   useUpdateQueuePriority,
-  DashboardCounters
+  DashboardCounters,
 } from '../hooks/use-reception-dashboard';
+import { getRealtimeSocket } from '@/shared/realtime/socket';
+import { BootstrapPayload } from '@/shared/types/bootstrap';
+import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
+import { SkeletonTable } from '@/shared/ui/skeleton';
+import { formatVisitTime, statusLabel, statusTone } from '@/shared/ui/status';
+import { useToast } from '@/shared/ui/toast';
 
 // We map 'План' status to 'WAITING' as returned by the backend cache.
 const columns = [
   { label: 'Ожидает', statuses: ['WAITING', 'CHECKED_IN'], dropStatus: 'CHECKED_IN' },
   { label: 'В кабинете', statuses: ['IN_PROGRESS'], dropStatus: 'IN_PROGRESS' },
-  { label: 'Оформление', statuses: ['COMPLETED_PENDING_PAYMENT'], dropStatus: 'COMPLETED_PENDING_PAYMENT' },
-  { label: 'Завершено', statuses: ['COMPLETED'], dropStatus: 'COMPLETED' }
+  {
+    label: 'Оформление',
+    statuses: ['COMPLETED_PENDING_PAYMENT'],
+    dropStatus: 'COMPLETED_PENDING_PAYMENT',
+  },
+  { label: 'Завершено', statuses: ['COMPLETED'], dropStatus: 'COMPLETED' },
 ];
 
 const COUNTER_META: Array<{ key: keyof DashboardCounters; label: string }> = [
@@ -46,13 +50,13 @@ const COUNTER_META: Array<{ key: keyof DashboardCounters; label: string }> = [
   { key: 'checkedIn', label: 'Очередь' },
   { key: 'inProgress', label: 'В кабинете' },
   { key: 'completedPendingPayment', label: 'Оформление' },
-  { key: 'completed', label: 'Завершено' }
+  { key: 'completed', label: 'Завершено' },
 ];
 
 function QuickActions({
   appointmentId,
   status,
-  onAction
+  onAction,
 }: {
   appointmentId: string;
   status: string;
@@ -103,7 +107,13 @@ function QuickActions({
         className="button"
         onClick={() => onAction(appointmentId, 'COMPLETED')}
         type="button"
-        style={{ padding: '4px 8px', fontSize: '11px', minHeight: 'auto', gap: '4px', background: '#f97316' }}
+        style={{
+          padding: '4px 8px',
+          fontSize: '11px',
+          minHeight: 'auto',
+          gap: '4px',
+          background: '#f97316',
+        }}
       >
         <CircleDollarSign size={12} />
         Оплата
@@ -120,7 +130,10 @@ function PatientSlideOver({ patientId, onClose }: { patientId: string; onClose: 
     <>
       <div className="slide-over-backdrop" onClick={onClose} />
       <aside className="slide-over" style={{ width: '420px', maxWidth: '100%' }}>
-        <div className="slide-over-header" style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+        <div
+          className="slide-over-header"
+          style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}
+        >
           <h2>Карточка пациента</h2>
           <button className="icon-button" onClick={onClose} type="button" aria-label="Закрыть">
             <X size={18} />
@@ -131,14 +144,43 @@ function PatientSlideOver({ patientId, onClose }: { patientId: string; onClose: 
             <SkeletonTable rows={5} />
           </div>
         ) : patient ? (
-          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', height: 'calc(100% - 70px)' }}>
-            <div className="patient-identity" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div className="avatar" style={{ width: '48px', height: '48px', fontSize: '16px', background: 'var(--brand-soft)', color: 'var(--brand)', display: 'grid', placeItems: 'center', borderRadius: '50%', fontWeight: 'bold' }}>
+          <div
+            style={{
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+              overflowY: 'auto',
+              height: 'calc(100% - 70px)',
+            }}
+          >
+            <div
+              className="patient-identity"
+              style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
+            >
+              <div
+                className="avatar"
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  fontSize: '16px',
+                  background: 'var(--brand-soft)',
+                  color: 'var(--brand)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  borderRadius: '50%',
+                  fontWeight: 'bold',
+                }}
+              >
                 {patient.fullName?.[0] || 'П'}
               </div>
               <div>
-                <strong style={{ fontSize: '16px', color: 'var(--ink)' }}>{patient.fullName}</strong>
-                <span className="muted" style={{ display: 'block', fontSize: '12px' }}>{patient.patientCode}</span>
+                <strong style={{ fontSize: '16px', color: 'var(--ink)' }}>
+                  {patient.fullName}
+                </strong>
+                <span className="muted" style={{ display: 'block', fontSize: '12px' }}>
+                  {patient.patientCode}
+                </span>
               </div>
             </div>
 
@@ -162,10 +204,25 @@ function PatientSlideOver({ patientId, onClose }: { patientId: string; onClose: 
             {/* Custom tags */}
             {patient.tags?.length > 0 && (
               <div>
-                <span className="eyebrow" style={{ fontSize: '10px', display: 'block', marginBottom: '6px' }}>Теги CRM</span>
+                <span
+                  className="eyebrow"
+                  style={{ fontSize: '10px', display: 'block', marginBottom: '6px' }}
+                >
+                  Теги CRM
+                </span>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                   {patient.tags.map((t: any) => (
-                    <span key={t.id} style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px', background: t.color || '#e2e8f0', color: '#1e293b', fontWeight: 600 }}>
+                    <span
+                      key={t.id}
+                      style={{
+                        fontSize: '11px',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        background: t.color || '#e2e8f0',
+                        color: '#1e293b',
+                        fontWeight: 600,
+                      }}
+                    >
                       {t.name}
                     </span>
                   ))}
@@ -174,16 +231,54 @@ function PatientSlideOver({ patientId, onClose }: { patientId: string; onClose: 
             )}
 
             {/* General Info */}
-            <div className="list" style={{ border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--surface-soft)', padding: '12px' }}>
-              <div className="row" style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '13px' }}>
+            <div
+              className="list"
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                background: 'var(--surface-soft)',
+                padding: '12px',
+              }}
+            >
+              <div
+                className="row"
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '6px 0',
+                  fontSize: '13px',
+                }}
+              >
                 <span className="muted">Возраст</span>
                 <strong>{patient.age ? `${patient.age} лет` : 'Не указан'}</strong>
               </div>
-              <div className="row" style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '13px' }}>
+              <div
+                className="row"
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '6px 0',
+                  fontSize: '13px',
+                }}
+              >
                 <span className="muted">Пол</span>
-                <strong>{patient.gender === 'MALE' ? 'Мужской' : patient.gender === 'FEMALE' ? 'Женский' : 'Не указан'}</strong>
+                <strong>
+                  {patient.gender === 'MALE'
+                    ? 'Мужской'
+                    : patient.gender === 'FEMALE'
+                      ? 'Женский'
+                      : 'Не указан'}
+                </strong>
               </div>
-              <div className="row" style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '13px' }}>
+              <div
+                className="row"
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '6px 0',
+                  fontSize: '13px',
+                }}
+              >
                 <span className="muted">Телефон</span>
                 <strong>{patient.phone || 'Нет'}</strong>
               </div>
@@ -192,15 +287,42 @@ function PatientSlideOver({ patientId, onClose }: { patientId: string; onClose: 
             {/* Metrics */}
             {patient.metrics && (
               <div>
-                <span className="eyebrow" style={{ fontSize: '10px', display: 'block', marginBottom: '6px' }}>Показатели</span>
+                <span
+                  className="eyebrow"
+                  style={{ fontSize: '10px', display: 'block', marginBottom: '6px' }}
+                >
+                  Показатели
+                </span>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <div style={{ border: '1px solid var(--border)', borderRadius: '6px', padding: '8px', background: 'var(--surface)' }}>
-                    <span className="muted" style={{ fontSize: '10px', display: 'block' }}>Всего визитов</span>
-                    <strong style={{ fontSize: '14px', color: 'var(--ink)' }}>{patient.metrics.totalVisits}</strong>
+                  <div
+                    style={{
+                      border: '1px solid var(--border)',
+                      borderRadius: '6px',
+                      padding: '8px',
+                      background: 'var(--surface)',
+                    }}
+                  >
+                    <span className="muted" style={{ fontSize: '10px', display: 'block' }}>
+                      Всего визитов
+                    </span>
+                    <strong style={{ fontSize: '14px', color: 'var(--ink)' }}>
+                      {patient.metrics.totalVisits}
+                    </strong>
                   </div>
-                  <div style={{ border: '1px solid var(--border)', borderRadius: '6px', padding: '8px', background: 'var(--surface)' }}>
-                    <span className="muted" style={{ fontSize: '10px', display: 'block' }}>Выручка (LTV)</span>
-                    <strong style={{ fontSize: '14px', color: 'var(--ink)' }}>{patient.metrics.ltv} ₽</strong>
+                  <div
+                    style={{
+                      border: '1px solid var(--border)',
+                      borderRadius: '6px',
+                      padding: '8px',
+                      background: 'var(--surface)',
+                    }}
+                  >
+                    <span className="muted" style={{ fontSize: '10px', display: 'block' }}>
+                      Выручка (LTV)
+                    </span>
+                    <strong style={{ fontSize: '14px', color: 'var(--ink)' }}>
+                      {patient.metrics.ltv} ₽
+                    </strong>
                   </div>
                 </div>
               </div>
@@ -209,10 +331,26 @@ function PatientSlideOver({ patientId, onClose }: { patientId: string; onClose: 
             {/* Family Members */}
             {patient.familyMembers?.length > 0 && (
               <div>
-                <span className="eyebrow" style={{ fontSize: '10px', display: 'block', marginBottom: '6px' }}>Семья</span>
+                <span
+                  className="eyebrow"
+                  style={{ fontSize: '10px', display: 'block', marginBottom: '6px' }}
+                >
+                  Семья
+                </span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {patient.familyMembers.map((fm: any) => (
-                    <div key={fm.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '6px 8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)' }}>
+                    <div
+                      key={fm.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: '12px',
+                        padding: '6px 8px',
+                        border: '1px solid var(--border)',
+                        borderRadius: '6px',
+                        background: 'var(--surface)',
+                      }}
+                    >
                       <strong>{fm.name}</strong>
                       <span className="muted">{fm.relation}</span>
                     </div>
@@ -224,15 +362,37 @@ function PatientSlideOver({ patientId, onClose }: { patientId: string; onClose: 
             {/* Recent Appointments */}
             {patient.recentAppointments?.length > 0 && (
               <div>
-                <span className="eyebrow" style={{ fontSize: '10px', display: 'block', marginBottom: '6px' }}>Ближайшая история</span>
+                <span
+                  className="eyebrow"
+                  style={{ fontSize: '10px', display: 'block', marginBottom: '6px' }}
+                >
+                  Ближайшая история
+                </span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {patient.recentAppointments.map((app: any) => (
-                    <div key={app.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', padding: '8px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface)' }}>
+                    <div
+                      key={app.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontSize: '12px',
+                        padding: '8px',
+                        border: '1px solid var(--border)',
+                        borderRadius: '6px',
+                        background: 'var(--surface)',
+                      }}
+                    >
                       <div>
                         <strong style={{ display: 'block' }}>{app.service}</strong>
-                        <span className="muted">{new Date(app.date).toLocaleDateString('ru-RU')}</span>
+                        <span className="muted">
+                          {new Date(app.date).toLocaleDateString('ru-RU')}
+                        </span>
                       </div>
-                      <span className={`status-badge status-${statusTone(app.status)}`} style={{ scale: '0.9', padding: '2px 6px' }}>
+                      <span
+                        className={`status-badge status-${statusTone(app.status)}`}
+                        style={{ scale: '0.9', padding: '2px 6px' }}
+                      >
                         {statusLabel(app.status)}
                       </span>
                     </div>
@@ -241,7 +401,11 @@ function PatientSlideOver({ patientId, onClose }: { patientId: string; onClose: 
               </div>
             )}
 
-            <a className="button" href={`/patients/${patient.id}`} style={{ marginTop: 'auto', width: '100%', justifyContent: 'center' }}>
+            <a
+              className="button"
+              href={`/patients/${patient.id}`}
+              style={{ marginTop: 'auto', width: '100%', justifyContent: 'center' }}
+            >
               <User size={16} />
               Открыть полную карту
             </a>
@@ -295,8 +459,8 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
           { appointmentId },
           {
             onSuccess: () => toast('success', 'Check-in', 'Пациент отмечен'),
-            onError: () => toast('error', 'Ошибка', 'Не удалось выполнить check-in')
-          }
+            onError: () => toast('error', 'Ошибка', 'Не удалось выполнить check-in'),
+          },
         );
       } else if (action === 'CANCEL') {
         setCancelTarget(appointmentId);
@@ -305,12 +469,12 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
           { id: appointmentId, status: action },
           {
             onSuccess: () => toast('success', 'Статус обновлен'),
-            onError: () => toast('error', 'Ошибка', 'Не удалось обновить статус')
-          }
+            onError: () => toast('error', 'Ошибка', 'Не удалось обновить статус'),
+          },
         );
       }
     },
-    [checkIn, transition, toast]
+    [checkIn, transition, toast],
   );
 
   const handleConfirmCancel = useCallback(() => {
@@ -322,8 +486,8 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
           toast('success', 'Визит отменен');
           setCancelTarget(null);
         },
-        onError: () => toast('error', 'Ошибка', 'Не удалось отменить визит')
-      }
+        onError: () => toast('error', 'Ошибка', 'Не удалось отменить визит'),
+      },
     );
   }, [cancelTarget, transition, toast]);
 
@@ -392,7 +556,14 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
           <div className="panel-header">
             <div>
               <h2>Доска приёма</h2>
-              <p className="muted">Обновлено {new Date(dashboard.data.recalculatedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}; перетащите карточку или используйте быстрые действия.</p>
+              <p className="muted">
+                Обновлено{' '}
+                {new Date(dashboard.data.recalculatedAt).toLocaleTimeString('ru-RU', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+                ; перетащите карточку или используйте быстрые действия.
+              </p>
             </div>
             <span className="realtime-pill">
               <span className="dot" /> Live
@@ -401,7 +572,9 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
           <div className="board-wrap">
             <div className="board live-queue-board">
               {columns.map((column) => {
-                const appointments = column.statuses.flatMap((status) => dashboard.data.columns[status] ?? []);
+                const appointments = column.statuses.flatMap(
+                  (status) => dashboard.data.columns[status] ?? [],
+                );
                 return (
                   <div
                     className={`board-column${dragOverColumn === column.label ? ' drag-over' : ''}`}
@@ -419,18 +592,31 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
                           { id, status: column.dropStatus },
                           {
                             onSuccess: () => toast('success', 'Статус обновлен'),
-                            onError: () => toast('error', 'Ошибка', 'Не удалось обновить статус')
-                          }
+                            onError: () => toast('error', 'Ошибка', 'Не удалось обновить статус'),
+                          },
                         );
                       }
                     }}
-                    style={{ minHeight: '550px', display: 'flex', flexDirection: 'column', gap: '8px' }}
+                    style={{
+                      minHeight: '550px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                    }}
                   >
                     <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '6px' }}>
                       <span>{column.label}</span>
                       <span className="badge">{appointments.length}</span>
                     </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, overflowY: 'auto' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        flex: 1,
+                        overflowY: 'auto',
+                      }}
+                    >
                       {appointments.map((appointment) => {
                         const late = isLateAppointment(appointment.startAt, appointment.status);
                         return (
@@ -447,8 +633,8 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
                               borderLeft: late
                                 ? '4px solid var(--danger)'
                                 : appointment.isVip
-                                ? '4px solid var(--violet)'
-                                : '1px solid var(--line)'
+                                  ? '4px solid var(--violet)'
+                                  : '1px solid var(--line)',
                             }}
                           >
                             <div className="visit-card-header">
@@ -460,7 +646,7 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
                                     minHeight: 'auto',
                                     fontWeight: 700,
                                     color: appointment.isVip ? 'var(--violet)' : 'var(--ink)',
-                                    textAlign: 'left'
+                                    textAlign: 'left',
                                   }}
                                   onClick={() => setPreviewPatientId(appointment.patientId)}
                                   type="button"
@@ -472,37 +658,77 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
                                 style={{
                                   fontSize: '11px',
                                   fontWeight: 'bold',
-                                  color: late ? 'var(--danger)' : 'var(--muted)'
+                                  color: late ? 'var(--danger)' : 'var(--muted)',
                                 }}
                               >
                                 {formatVisitTime(appointment.startAt)}
                               </span>
                             </div>
 
-                            <div style={{ fontSize: '11px', color: 'var(--muted)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              <span>{appointment.service?.name ?? 'Визит'} · {appointment.appointmentNumber}</span>
-                              {appointment.doctorName && <span>Врач: {appointment.doctorName}</span>}
+                            <div
+                              style={{
+                                fontSize: '11px',
+                                color: 'var(--muted)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '2px',
+                              }}
+                            >
+                              <span>
+                                {appointment.service?.name ?? 'Визит'} ·{' '}
+                                {appointment.appointmentNumber}
+                              </span>
+                              {appointment.doctorName && (
+                                <span>Врач: {appointment.doctorName}</span>
+                              )}
                               {appointment.roomName && <span>Кабинет: {appointment.roomName}</span>}
                             </div>
 
                             {/* Flags inside card */}
-                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
-                              <span className={`status-badge status-${statusTone(appointment.status)}`} style={{ fontSize: '10px', padding: '1px 5px', minHeight: '18px' }}>
+                            <div
+                              style={{
+                                display: 'flex',
+                                gap: '4px',
+                                flexWrap: 'wrap',
+                                marginTop: '2px',
+                              }}
+                            >
+                              <span
+                                className={`status-badge status-${statusTone(appointment.status)}`}
+                                style={{ fontSize: '10px', padding: '1px 5px', minHeight: '18px' }}
+                              >
                                 {statusLabel(appointment.status)}
                               </span>
                               {appointment.isVip && (
-                                <span className="status-badge status-violet" style={{ fontSize: '10px', padding: '1px 5px', minHeight: '18px' }}>
+                                <span
+                                  className="status-badge status-violet"
+                                  style={{
+                                    fontSize: '10px',
+                                    padding: '1px 5px',
+                                    minHeight: '18px',
+                                  }}
+                                >
                                   VIP
                                 </span>
                               )}
                               {(appointment.debt ?? 0) > 0 && (
-                                <span className="status-badge status-danger" style={{ fontSize: '10px', padding: '1px 5px', minHeight: '18px' }}>
+                                <span
+                                  className="status-badge status-danger"
+                                  style={{
+                                    fontSize: '10px',
+                                    padding: '1px 5px',
+                                    minHeight: '18px',
+                                  }}
+                                >
                                   Долг {appointment.debt} ₽
                                 </span>
                               )}
                             </div>
 
-                            <div className="inline-actions" style={{ marginTop: '4px', gap: '4px' }}>
+                            <div
+                              className="inline-actions"
+                              style={{ marginTop: '4px', gap: '4px' }}
+                            >
                               <QuickActions
                                 appointmentId={appointment.id}
                                 status={appointment.status}
@@ -517,7 +743,7 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
                                     color: 'var(--danger)',
                                     padding: '4px 6px',
                                     minHeight: 'auto',
-                                    fontSize: '11px'
+                                    fontSize: '11px',
                                   }}
                                   onClick={() => handleQuickAction(appointment.id, 'CANCEL')}
                                   type="button"
@@ -568,12 +794,23 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
                       border: '1px solid var(--border)',
                       borderRadius: '8px',
                       background: item.isVip ? 'rgba(109, 40, 217, 0.03)' : 'var(--surface)',
-                      borderLeft: item.isVip ? '4px solid var(--violet)' : '1px solid var(--border)',
-                      gap: '8px'
+                      borderLeft: item.isVip
+                        ? '4px solid var(--violet)'
+                        : '1px solid var(--border)',
+                      gap: '8px',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '8px',
+                      }}
+                    >
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}
+                      >
                         <span
                           style={{
                             background: item.isVip ? 'var(--violet-soft)' : 'var(--surface-soft)',
@@ -584,7 +821,7 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
                             display: 'grid',
                             placeItems: 'center',
                             fontSize: '11px',
-                            fontWeight: 'bold'
+                            fontWeight: 'bold',
                           }}
                         >
                           {index + 1}
@@ -600,7 +837,7 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
                             color: item.isVip ? 'var(--violet)' : 'var(--ink)',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
+                            whiteSpace: 'nowrap',
                           }}
                           onClick={() => setPreviewPatientId(item.patientId)}
                           type="button"
@@ -613,14 +850,26 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
                         style={{
                           fontSize: '11px',
                           fontWeight: 750,
-                          color: estWait > 30 ? 'var(--danger)' : estWait > 15 ? '#d97706' : 'var(--success)'
+                          color:
+                            estWait > 30
+                              ? 'var(--danger)'
+                              : estWait > 15
+                                ? '#d97706'
+                                : 'var(--success)',
                         }}
                       >
                         {estWait === 0 ? 'След.' : `~${estWait} мин`}
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '8px',
+                      }}
+                    >
                       <span className="muted" style={{ fontSize: '11px' }}>
                         Кабинет: {item.roomName || 'Не назначен'}
                       </span>
@@ -634,10 +883,11 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
                                 toast(
                                   'success',
                                   'Приоритет изменен',
-                                  'Очередь автоматически пересчитана'
+                                  'Очередь автоматически пересчитана',
                                 ),
-                              onError: () => toast('error', 'Ошибка', 'Не удалось обновить приоритет')
-                            }
+                              onError: () =>
+                                toast('error', 'Ошибка', 'Не удалось обновить приоритет'),
+                            },
                           );
                         }}
                         style={{
@@ -648,7 +898,7 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
                           background: 'var(--surface-soft)',
                           color: 'var(--ink)',
                           cursor: 'pointer',
-                          fontWeight: '600'
+                          fontWeight: '600',
                         }}
                       >
                         <option value="VIP">★ VIP</option>
@@ -664,7 +914,9 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
               <div className="empty-state" style={{ padding: '24px' }}>
                 <div>
                   <strong>Очередь пуста</strong>
-                  <span style={{ fontSize: '11px' }}>Новые check-in появятся здесь автоматически.</span>
+                  <span style={{ fontSize: '11px' }}>
+                    Новые check-in появятся здесь автоматически.
+                  </span>
                 </div>
               </div>
             )}
@@ -674,10 +926,7 @@ export function ReceptionBoard({ bootstrap }: { bootstrap: BootstrapPayload }) {
 
       {/* Patient preview slide-over */}
       {previewPatientId ? (
-        <PatientSlideOver
-          patientId={previewPatientId}
-          onClose={() => setPreviewPatientId(null)}
-        />
+        <PatientSlideOver patientId={previewPatientId} onClose={() => setPreviewPatientId(null)} />
       ) : null}
 
       {/* Cancel confirmation dialog */}
