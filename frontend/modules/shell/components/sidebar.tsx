@@ -119,10 +119,20 @@ export function Sidebar({ bootstrap }: { bootstrap: BootstrapPayload }) {
             <FileText size={18} strokeWidth={2.2} />
             Отчёты
           </Link>
-          <Link href="/dashboard" className="nav-disabled" aria-disabled="true">
-            <Settings size={18} strokeWidth={2.2} />
-            Настройки
-          </Link>
+          {can(bootstrap, 'system.settings.read') ? (
+            <Link
+              className={pathname === '/settings' || pathname.startsWith('/settings/') ? 'active' : undefined}
+              href="/settings"
+            >
+              <Settings size={18} strokeWidth={2.2} />
+              Настройки
+            </Link>
+          ) : (
+            <Link href="/dashboard" className="nav-disabled" aria-disabled="true">
+              <Settings size={18} strokeWidth={2.2} />
+              Настройки
+            </Link>
+          )}
         </nav>
       </section>
 

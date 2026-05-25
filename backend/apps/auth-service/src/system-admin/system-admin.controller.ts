@@ -142,6 +142,12 @@ export class SystemAdminController {
     return this.roles.setRolePermissions(user, roleId, dto);
   }
 
+  @Get('users')
+  @RequirePermissions('users.read')
+  listTenantUsers(@CurrentUser() user: AuthenticatedUser) {
+    return this.roles.listTenantUsers(user);
+  }
+
   @Get('users/:userId/roles')
   @RequirePermissions('users.read')
   listUserRoles(@CurrentUser() user: AuthenticatedUser, @Param('userId') userId: string) {

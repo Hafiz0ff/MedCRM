@@ -166,6 +166,17 @@ export class IntegrationCredentialsService {
       }
     });
 
+    this.realtime.emitTenantSystemEvent(
+      'tenant.integration.updated',
+      user.tenantId,
+      {
+        tenantId: user.tenantId,
+        providerId,
+        providerCode: updated.providerCode,
+        isActive: updated.isActive
+      }
+    );
+
     return {
       id: updated.id,
       providerName: updated.providerName,
@@ -236,6 +247,16 @@ export class IntegrationCredentialsService {
         providerCode: existing.providerCode
       }
     });
+
+    this.realtime.emitTenantSystemEvent(
+      'tenant.integration.deleted',
+      user.tenantId,
+      {
+        tenantId: user.tenantId,
+        providerId,
+        providerCode: existing.providerCode
+      }
+    );
 
     return { ok: true };
   }

@@ -226,6 +226,55 @@ export class RoleManagementService {
     };
   }
 
+  /**
+   * Lightweight list of tenant users with the count of their active role
+   * assignments — used by the settings UI to pick a user to manage.
+   */
+  async listTenantUsers(user: AuthenticatedUser) {
+    const users = await this.prisma.user.findMany({
+      where: { tenantId: user.tenantId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        status: true,
+        lastLoginAt: true,
+        branchRoles: {
+          where: { tenantId: user.tenantId, activeTo: null },
+          select: {
+            isPrimary: true,
+            role: { select: { id: true, code: true, name: true } },
+            branch: { select: { id: true, code: true, name: true } }
+          }
+        }
+      },
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }]
+    });
+
+    return users.map((u) => ({
+      id: u.id,
+      email: u.email,
+      firstName: u.firstName,
+      lastName: u.lastName,
+      status: u.status,
+      lastLoginAt: u.lastLoginAt,
+      activeAssignmentCount: u.branchRoles.length,
+      primaryRole:
+        u.branchRoles.find((r) => r.isPrimary)?.role.name ??
+        u.branchRoles[0]?.role.name ??
+        null,
+      branches: Array.from(
+        new Map(
+          u.branchRoles.map((r) => [
+            r.branch.id,
+            { id: r.branch.id, code: r.branch.code, name: r.branch.name }
+          ])
+        ).values()
+      )
+    }));
+  }
+
   async listUserRoles(user: AuthenticatedUser, targetUserId: string) {
     const target = await this.assertUserBelongsToTenant(user.tenantId, targetUserId);
     const assignments = await this.prisma.userBranchRole.findMany({
