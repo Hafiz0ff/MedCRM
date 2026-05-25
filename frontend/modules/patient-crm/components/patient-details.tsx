@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import { CalendarPlus, MessageSquare, Phone, StickyNote } from 'lucide-react';
 import { statusLabel, statusTone } from '@/shared/ui/status';
-import { usePatient, useUpdatePatient } from '../hooks/use-patients';
+import { usePatient, useUpdatePatient, usePatientTimeline } from '../hooks/use-patients';
 
 export function PatientDetails({ id }: { id: string }) {
   const patient = usePatient(id);
   const updatePatient = useUpdatePatient(id);
+  const timeline = usePatientTimeline(id);
   const [status, setStatus] = useState('ACTIVE');
 
   useEffect(() => {
@@ -115,18 +116,34 @@ export function PatientDetails({ id }: { id: string }) {
         <div className="panel-header">
           <div>
             <h2>Timeline</h2>
-            <p className="muted">Заготовка под историю визитов, звонков, документов и заметок.</p>
+            <p className="muted">Хронологическая история визитов, звонков, документов и заметок.</p>
           </div>
         </div>
-        <div className="timeline">
-          <div className="timeline-item">
-            <span className="timeline-dot" />
+        {timeline.isLoading ? (
+          <p className="muted">Загрузка таймлайна...</p>
+        ) : timeline.data?.length ? (
+          <div className="timeline">
+            {timeline.data.map((event) => (
+              <div className="timeline-item" key={event.id}>
+                <span className="timeline-dot" />
+                <div>
+                  <strong>{event.title}</strong>
+                  {event.body ? <p className="muted">{event.body}</p> : null}
+                  <span className="muted" style={{ display: 'block', fontSize: '0.8rem', marginTop: '4px' }}>
+                    {new Date(event.eventDate).toLocaleString('ru-RU')}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">
             <div>
-              <strong>Карточка пациента создана</strong>
-              <p className="muted">Пациент доступен для записи, коммуникаций и CRM-сегментации.</p>
+              <strong>Нет событий в истории</strong>
+              <span>Вся история активности пациента отобразится здесь.</span>
             </div>
           </div>
-        </div>
+        )}
       </section>
     </>
   );

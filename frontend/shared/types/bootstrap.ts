@@ -62,4 +62,10 @@ export type Appointment = {
   notes?: string | null;
   patient: Patient;
   service?: Service | null;
+  employee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    middleName?: string | null;
+  } | null;
 };

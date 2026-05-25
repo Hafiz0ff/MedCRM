@@ -49,3 +49,19 @@ export function useUpdatePatient(id: string) {
   });
 }
 
+export type PatientTimelineEvent = {
+  id: string;
+  eventType: string;
+  title: string;
+  body?: string | null;
+  eventDate: string;
+};
+
+export function usePatientTimeline(id: string) {
+  return useQuery({
+    queryKey: ['patient-timeline', id],
+    queryFn: () => apiFetch<PatientTimelineEvent[]>(`/patients/${id}/timeline`)
+  });
+}
+
+

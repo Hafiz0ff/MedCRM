@@ -2,13 +2,25 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/shared/api/client-api';
-import { Appointment } from '@/shared/types/bootstrap';
+import { Appointment, Patient } from '@/shared/types/bootstrap';
+
+export type DashboardCounters = {
+  total: number;
+  waiting: number;
+  checkedIn: number;
+  inProgress: number;
+  completed: number;
+  cancelled: number;
+  noShow: number;
+};
 
 export type ReceptionDashboard = {
   branchId: string;
   date: string;
   columns: Record<string, Appointment[]>;
+  counters: DashboardCounters;
   queue: Appointment[];
+  recalculatedAt: string;
 };
 
 export function useReceptionDashboard(branchId?: string) {
@@ -27,6 +39,38 @@ export function useReceptionTransition() {
       if (status === 'CONFIRMED') return apiFetch<Appointment>(`/appointments/${id}/confirm`, { method: 'POST', body: '{}' });
       return apiFetch<Appointment>(`/appointments/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reception-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    }
+  });
+}
+
+export function usePatientPreview(patientId?: string) {
+  return useQuery({
+    queryKey: ['patient-preview', patientId],
+    queryFn: () => apiFetch<Patient>(`/patients/${patientId}`),
+    enabled: !!patientId
+  });
+}
+
+export function useReceptionCheckIn() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { appointmentId: string; notes?: string }) =>
+      apiFetch<Appointment>('/reception/checkin', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reception-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    }
+  });
+}
+
+export function useFastBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { patientId: string; serviceId: string; branchId: string; employeeId: string; startAt: string }) =>
+      apiFetch<Appointment>('/appointments/fast-book', { method: 'POST', body: JSON.stringify(data) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reception-dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
