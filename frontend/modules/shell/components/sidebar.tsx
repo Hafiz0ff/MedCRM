@@ -12,7 +12,8 @@ import {
   Settings,
   Stethoscope,
   UserRoundCheck,
-  Users
+  Users,
+  WalletCards
 } from 'lucide-react';
 import { BootstrapPayload } from '@/shared/types/bootstrap';
 import { can, moduleEnabled } from '@/shared/permissions/can';
@@ -58,6 +59,14 @@ const navItems: NavItem[] = [
     permission: 'patients.read',
     group: 'Рабочая зона',
     icon: Users
+  },
+  {
+    href: '/finance',
+    label: 'Финансы',
+    module: 'finance-billing',
+    permission: 'finance.invoice.read',
+    group: 'Управление',
+    icon: WalletCards
   }
 ];
 

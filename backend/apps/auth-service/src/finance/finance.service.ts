@@ -22,8 +22,154 @@ export class FinanceService {
     private readonly realtime: RealtimeGateway
   ) {}
 
+  async getSummary(user: AuthenticatedUser) {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+
+    const branchFilter = { in: user.branchIds };
+    const [activeShift, todayInvoices, pendingInvoices, paidInvoices, payments, refunds, subscription] = await Promise.all([
+      this.getActiveShift(user),
+      this.prisma.invoice.aggregate({
+        where: {
+          tenantId: user.tenantId,
+          branchId: branchFilter,
+          invoiceDate: { gte: startOfDay, lt: endOfDay }
+        },
+        _sum: { totalAmount: true, dueAmount: true, paidAmount: true },
+        _count: true
+      }),
+      this.prisma.invoice.aggregate({
+        where: {
+          tenantId: user.tenantId,
+          branchId: branchFilter,
+          status: { in: ['DRAFT', 'PENDING_PAYMENT', 'PARTIALLY_PAID'] }
+        },
+        _sum: { dueAmount: true },
+        _count: true
+      }),
+      this.prisma.invoice.count({
+        where: {
+          tenantId: user.tenantId,
+          branchId: branchFilter,
+          status: 'PAID',
+          invoiceDate: { gte: startOfDay, lt: endOfDay }
+        }
+      }),
+      this.prisma.payment.aggregate({
+        where: {
+          tenantId: user.tenantId,
+          branchId: branchFilter,
+          paidAt: { gte: startOfDay, lt: endOfDay }
+        },
+        _sum: { amount: true },
+        _count: true
+      }),
+      this.prisma.refund.aggregate({
+        where: {
+          tenantId: user.tenantId,
+          invoice: { branchId: branchFilter },
+          refundedAt: { gte: startOfDay, lt: endOfDay }
+        },
+        _sum: { refundAmount: true },
+        _count: true
+      }),
+      this.getSubscription(user)
+    ]);
+
+    return {
+      activeShift,
+      today: {
+        invoicesCount: todayInvoices._count,
+        invoicesTotal: Number(todayInvoices._sum.totalAmount ?? 0),
+        paidAmount: Number(payments._sum.amount ?? 0),
+        paidCount: payments._count,
+        refundedAmount: Number(refunds._sum.refundAmount ?? 0),
+        refundsCount: refunds._count,
+        pendingCount: pendingInvoices._count,
+        pendingDueAmount: Number(pendingInvoices._sum.dueAmount ?? 0),
+        fullyPaidInvoicesCount: paidInvoices
+      },
+      subscription
+    };
+  }
+
+  async listInvoices(
+    user: AuthenticatedUser,
+    filters: { patientId?: string; status?: string; paymentMethod?: string }
+  ) {
+    const status = filters.status?.trim().toUpperCase();
+    const paymentMethod = filters.paymentMethod?.trim().toUpperCase();
+
+    const invoices = await this.prisma.invoice.findMany({
+      where: {
+        tenantId: user.tenantId,
+        branchId: { in: user.branchIds },
+        ...(filters.patientId ? { patientId: filters.patientId } : {}),
+        ...(status ? { status } : {}),
+        ...(paymentMethod ? { payments: { some: { paymentMethod } } } : {})
+      },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            patientCode: true,
+            firstName: true,
+            lastName: true,
+            middleName: true
+          }
+        },
+        branch: { select: { id: true, name: true } },
+        appointment: { select: { id: true, appointmentNumber: true, startAt: true, status: true } },
+        items: {
+          include: {
+            service: { select: { id: true, name: true, code: true } },
+            performer: { select: { id: true, firstName: true, lastName: true } }
+          },
+          orderBy: { createdAt: 'asc' }
+        },
+        payments: { orderBy: { paidAt: 'desc' } },
+        refunds: { orderBy: { refundedAt: 'desc' } }
+      },
+      orderBy: [{ invoiceDate: 'desc' }, { createdAt: 'desc' }],
+      take: 100
+    });
+
+    return { items: invoices, total: invoices.length };
+  }
+
+  async listPayments(user: AuthenticatedUser) {
+    const payments = await this.prisma.payment.findMany({
+      where: {
+        tenantId: user.tenantId,
+        branchId: { in: user.branchIds }
+      },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            patientCode: true,
+            firstName: true,
+            lastName: true,
+            middleName: true
+          }
+        },
+        invoice: { select: { id: true, invoiceNumber: true, status: true, totalAmount: true } },
+        cashier: { select: { id: true, email: true } },
+        refunds: true
+      },
+      orderBy: { paidAt: 'desc' },
+      take: 50
+    });
+
+    return { items: payments, total: payments.length };
+  }
+
   // 1. Cashier Shifts
   async openShift(user: AuthenticatedUser, dto: OpenShiftDto) {
+    if (!user.branchIds.includes(dto.branchId)) throw new ForbiddenException('Branch access denied');
+
     const active = await this.prisma.cashierShift.findFirst({
       where: {
         tenantId: user.tenantId,
@@ -118,6 +264,7 @@ export class FinanceService {
       where: {
         tenantId: user.tenantId,
         cashierUserId: user.userId,
+        branchId: { in: user.branchIds },
         closedAt: null
       }
     });
@@ -558,6 +705,15 @@ export class FinanceService {
   }
 
   async createPayrollRule(user: AuthenticatedUser, dto: CreatePayrollRuleDto) {
+    const employee = await this.prisma.employee.findFirst({
+      where: {
+        id: dto.employeeId,
+        tenantId: user.tenantId,
+        positions: { some: { branchId: { in: user.branchIds }, activeTo: null } }
+      }
+    });
+    if (!employee) throw new NotFoundException('Сотрудник не найден');
+
     // Deactivate previous rules
     await this.prisma.payrollRule.updateMany({
       where: { tenantId: user.tenantId, employeeId: dto.employeeId, isActive: true },
@@ -588,6 +744,31 @@ export class FinanceService {
     });
 
     return rule;
+  }
+
+  async listPayrollRules(user: AuthenticatedUser) {
+    const rules = await this.prisma.payrollRule.findMany({
+      where: {
+        tenantId: user.tenantId,
+        employee: {
+          positions: { some: { branchId: { in: user.branchIds }, activeTo: null } }
+        }
+      },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            middleName: true,
+            employeeNumber: true
+          }
+        }
+      },
+      orderBy: [{ isActive: 'desc' }, { appliesFrom: 'desc' }]
+    });
+
+    return { items: rules, total: rules.length };
   }
 
   // 6. SaaS Tenant Billing & Auto Restriction

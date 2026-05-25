@@ -34,6 +34,29 @@ import {
 export class FinanceController {
   constructor(private readonly finance: FinanceService) {}
 
+  @Get('summary')
+  @RequirePermissions('finance.invoice.read')
+  getSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.finance.getSummary(user);
+  }
+
+  @Get('invoices')
+  @RequirePermissions('finance.invoice.read')
+  listInvoices(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('patientId') patientId?: string,
+    @Query('status') status?: string,
+    @Query('paymentMethod') paymentMethod?: string
+  ) {
+    return this.finance.listInvoices(user, { patientId, status, paymentMethod });
+  }
+
+  @Get('payments')
+  @RequirePermissions('finance.invoice.read')
+  listPayments(@CurrentUser() user: AuthenticatedUser) {
+    return this.finance.listPayments(user);
+  }
+
   @Post('shifts/open')
   @RequirePermissions('finance.shift.manage')
   @UsePipes(new ZodValidationPipe(OpenShiftSchema))
@@ -98,6 +121,12 @@ export class FinanceController {
   @UsePipes(new ZodValidationPipe(CreatePayrollRuleSchema))
   createPayrollRule(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreatePayrollRuleDto) {
     return this.finance.createPayrollRule(user, dto);
+  }
+
+  @Get('payroll/rules')
+  @RequirePermissions('finance.payroll.manage')
+  listPayrollRules(@CurrentUser() user: AuthenticatedUser) {
+    return this.finance.listPayrollRules(user);
   }
 
   @Post('payroll/calculate')

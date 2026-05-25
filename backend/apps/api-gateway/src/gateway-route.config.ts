@@ -60,6 +60,7 @@ const compatibilityPrefixes = [
   '/slots',
   '/services',
   '/doctors',
+  '/finance',
   '/reception',
   '/waiting-list',
   '/resource-buffers',
