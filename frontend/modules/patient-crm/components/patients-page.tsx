@@ -1,9 +1,9 @@
 'use client';
 
 import { Filter, Plus, Search, UserPlus, X, AlertTriangle, BadgeAlert, Coins } from 'lucide-react';
-import Link from 'next/link';
 import { useState } from 'react';
 import { useCreatePatient, usePatients, useListTags } from '../hooks/use-patients';
+import { Link } from '@/i18n/routing';
 import { can } from '@/shared/permissions/can';
 import { BootstrapPayload } from '@/shared/types/bootstrap';
 import { statusLabel, statusTone } from '@/shared/ui/status';

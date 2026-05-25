@@ -14,9 +14,8 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ComponentType } from 'react';
+import { Link, usePathname } from '@/i18n/routing';
 import { can, moduleEnabled } from '@/shared/permissions/can';
 import { BootstrapPayload } from '@/shared/types/bootstrap';
 
