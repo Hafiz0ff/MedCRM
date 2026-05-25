@@ -4,12 +4,21 @@ import { ReactNode } from 'react';
 import { Sidebar } from '@/modules/shell/components/sidebar';
 import { getBootstrap } from '@/shared/api/server-api';
 import { AppQueryProvider } from '@/shared/query/query-provider';
+import { AppearanceSelector } from '@/shared/ui/appearance-selector';
 import { formatDate } from '@/shared/ui/status';
 
-export default async function ProtectedLayout({ children }: { children: ReactNode }) {
+interface ProtectedLayoutProps {
+  children: ReactNode;
+  params: Promise<{ locale: string }>;
+}
+
+export default async function ProtectedLayout({ children, params }: ProtectedLayoutProps) {
+  const { locale } = await params;
   const bootstrap = await getBootstrap();
+
   if (!bootstrap) {
-    redirect('/auth/login');
+    redirect(`/${locale}/auth/login`);
+    return null;
   }
 
   const branch = bootstrap.branches[0];
@@ -39,7 +48,8 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
               aria-label="Глобальный поиск"
             />
           </label>
-          <div className="topbar-actions">
+          <div className="topbar-actions flex items-center gap-3">
+            <AppearanceSelector />
             <span className="realtime-pill">
               <span className="dot" />
               Live

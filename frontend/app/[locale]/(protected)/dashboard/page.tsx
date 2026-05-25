@@ -2,10 +2,17 @@ import { redirect } from 'next/navigation';
 import { DashboardView } from './dashboard-view';
 import { getBootstrap } from '@/shared/api/server-api';
 
-export default async function DashboardPage() {
+interface DashboardPageProps {
+  params: Promise<{ locale: string }>;
+}
+
+export default async function DashboardPage({ params }: DashboardPageProps) {
+  const { locale } = await params;
   const bootstrap = await getBootstrap();
+
   if (!bootstrap) {
-    redirect('/auth/login');
+    redirect(`/${locale}/auth/login`);
+    return null;
   }
 
   return <DashboardView bootstrap={bootstrap} />;

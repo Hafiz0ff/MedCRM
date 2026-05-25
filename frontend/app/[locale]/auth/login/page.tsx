@@ -1,8 +1,17 @@
+import { useTranslations } from 'next-intl';
 import { LoginForm } from '@/modules/auth/components/login-form';
+import { AppearanceSelector } from '@/shared/ui/appearance-selector';
 
 export default function LoginPage() {
+  const t = useTranslations('Auth');
+
   return (
-    <main className="auth-page">
+    <main className="auth-page relative min-h-screen">
+      {/* Floating Appearance Controls */}
+      <div className="absolute top-4 right-4 z-50">
+        <AppearanceSelector />
+      </div>
+
       <section className="auth-visual">
         <div className="auth-brand">
           <span className="brand-mark">M</span>
@@ -32,9 +41,9 @@ export default function LoginPage() {
       </section>
       <section className="auth-form-wrap">
         <div className="auth-panel">
-          <span className="eyebrow">Вход в систему</span>
+          <span className="eyebrow">{t('title')}</span>
           <h2>Откройте смену клиники</h2>
-          <div className="muted">Используйте код клиники и учетные данные администратора.</div>
+          <div className="muted">{t('subtitle')}</div>
           <LoginForm />
         </div>
       </section>

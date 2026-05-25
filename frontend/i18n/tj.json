@@ -1,0 +1,72 @@
+{
+  "Common": {
+    "loading": "Дар ҳоли боргирӣ...",
+    "save": "Захира кардан",
+    "cancel": "Баргардонидан",
+    "delete": "Нест кардан",
+    "edit": "Таҳрир кардан",
+    "actions": "Амалҳо",
+    "search": "Ҷустуҷӯ...",
+    "confirm": "Тасдиқ кардан",
+    "error": "Хатогӣ",
+    "success": "Муваффақият",
+    "noData": "Маълумот нест",
+    "theme": "Мавзӯъ",
+    "density": "Зичӣ",
+    "language": "Забон"
+  },
+  "Auth": {
+    "title": "Воридшавӣ ба система",
+    "subtitle": "MedCRM — Фазои ягонаи рақамии клиника",
+    "tenantCode": "Рамзи клиника",
+    "email": "Почтаи электронӣ / Логин",
+    "password": "Рамз",
+    "rememberMe": "Маро дар хотир нигоҳ доред",
+    "signIn": "Ворид шудан",
+    "signingIn": "Воридшавӣ...",
+    "errors": {
+      "invalid": "Логин ё рамзи нодуруст",
+      "required": "Ин майдон ҳатмист",
+      "emailInvalid": "Суроғаи почтаи электронии нодуруст"
+    }
+  },
+  "Dashboard": {
+    "title": "Панели идоракунӣ",
+    "welcome": "Хуш омадед ба MedCRM",
+    "stats": {
+      "totalPatients": "Ҳамаи беморон",
+      "appointments": "Қабулҳои имрӯза",
+      "utilization": "Боркунии ҳуҷраҳо",
+      "revenue": "Даромад"
+    }
+  },
+  "Reception": {
+    "title": "Ҷойи кории бақайдгирӣ",
+    "queue": "Навбат",
+    "vip": "Мизоҷи VIP",
+    "status": {
+      "waiting": "Мунтазир",
+      "checkedIn": "Бақайдгирифташуда",
+      "inProgress": "Дар қабул",
+      "completed": "Анҷомёфта"
+    }
+  },
+  "Patients": {
+    "title": "Феҳристи беморон",
+    "addPatient": "Илова кардани бемор",
+    "fullName": "Ному насаб",
+    "birthDate": "Таърихи таваллуд",
+    "gender": "Ҷинс",
+    "phone": "Телефон",
+    "status": "Статус",
+    "vip": "VIP"
+  },
+  "Scheduling": {
+    "title": "Ҷадвали зеҳнӣ",
+    "newAppointment": "Сабти нав",
+    "calendar": "Тақвим",
+    "timeSlot": "Вақти холӣ",
+    "doctor": "Духтур",
+    "service": "Хизматрасонӣ"
+  }
+}

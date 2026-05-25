@@ -1,9 +1,13 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { loginSchema } from '../schemas/login.schema';
+import { useRouter } from '@/i18n/routing';
 import { ACCESS_TOKEN_COOKIE } from '@/shared/auth/cookies';
+import { Button } from '@/shared/ui/button';
+import { Input } from '@/shared/ui/input';
+import { Label } from '@/shared/ui/label';
 
 type LoginResponse = {
   accessToken: string;
@@ -15,6 +19,7 @@ function apiBaseUrl(): string {
 
 export function LoginForm() {
   const router = useRouter();
+  const t = useTranslations('Auth');
   const [tenantCode, setTenantCode] = useState('demo-clinic');
   const [email, setEmail] = useState('admin@demo.clinic');
   const [password, setPassword] = useState('Admin123!');
@@ -27,7 +32,7 @@ export function LoginForm() {
 
     const parsed = loginSchema.safeParse({ tenantCode, email, password });
     if (!parsed.success) {
-      setError('Проверьте tenant, email и пароль.');
+      setError(t('errors.required'));
       return;
     }
 
@@ -41,7 +46,7 @@ export function LoginForm() {
       });
 
       if (!response.ok) {
-        setError('Не удалось войти. Проверьте данные доступа.');
+        setError(t('errors.invalid'));
         return;
       }
 
@@ -57,19 +62,19 @@ export function LoginForm() {
   }
 
   return (
-    <form className="form" onSubmit={submit}>
-      <div className="field">
-        <label htmlFor="tenantCode">Код клиники</label>
-        <input
+    <form className="form flex flex-col gap-4" onSubmit={submit}>
+      <div className="field flex flex-col gap-1.5">
+        <Label htmlFor="tenantCode">{t('tenantCode')}</Label>
+        <Input
           id="tenantCode"
           autoComplete="organization"
           value={tenantCode}
           onChange={(event) => setTenantCode(event.target.value)}
         />
       </div>
-      <div className="field">
-        <label htmlFor="email">Email</label>
-        <input
+      <div className="field flex flex-col gap-1.5">
+        <Label htmlFor="email">{t('email')}</Label>
+        <Input
           id="email"
           type="email"
           autoComplete="email"
@@ -77,9 +82,9 @@ export function LoginForm() {
           onChange={(event) => setEmail(event.target.value)}
         />
       </div>
-      <div className="field">
-        <label htmlFor="password">Пароль</label>
-        <input
+      <div className="field flex flex-col gap-1.5">
+        <Label htmlFor="password">{t('password')}</Label>
+        <Input
           id="password"
           type="password"
           autoComplete="current-password"
@@ -87,11 +92,11 @@ export function LoginForm() {
           onChange={(event) => setPassword(event.target.value)}
         />
       </div>
-      {error ? <div className="error">{error}</div> : null}
-      <button className="button" type="submit" disabled={submitting}>
-        {submitting ? 'Вход...' : 'Войти'}
-      </button>
-      <p className="muted">Demo: demo-clinic · admin@demo.clinic</p>
+      {error ? <div className="error text-sm text-danger font-medium">{error}</div> : null}
+      <Button type="submit" disabled={submitting} className="w-full">
+        {submitting ? t('signingIn') : t('signIn')}
+      </Button>
+      <p className="muted text-xs text-muted">Demo: demo-clinic · admin@demo.clinic</p>
     </form>
   );
 }

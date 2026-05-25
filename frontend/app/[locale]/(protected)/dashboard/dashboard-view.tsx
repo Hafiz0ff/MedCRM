@@ -3,6 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { Activity, CalendarPlus, ClipboardList, Clock3, Users } from 'lucide-react';
 import { useEffect } from 'react';
+import { Link } from '@/i18n/routing';
 import {
   useReceptionDashboard,
   type ReceptionAppointment,
@@ -153,24 +154,24 @@ export function DashboardView({ bootstrap }: { bootstrap: BootstrapPayload }) {
           </p>
         </div>
         <div className="page-actions">
-          <a className="secondary-button" href="/reception">
+          <Link className="secondary-button" href="/reception">
             <ClipboardList size={18} />
             Очередь
-          </a>
-          <a className="button" href="/schedule">
+          </Link>
+          <Link className="button" href="/schedule">
             <CalendarPlus size={18} />
             Записать
-          </a>
+          </Link>
         </div>
       </div>
 
       <section className="dashboard-grid" aria-label="Ключевые показатели смены">
         {metrics.map((metric) => (
-          <a className="metric-card clickable" href={metric.href} key={metric.label}>
+          <Link className="metric-card clickable" href={metric.href} key={metric.label}>
             <span>{metric.label}</span>
             <strong>{metric.value}</strong>
             <small>{metric.hint}</small>
-          </a>
+          </Link>
         ))}
       </section>
 
