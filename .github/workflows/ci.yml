@@ -21,11 +21,6 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Create Scheduling Database
-        run: |
-          postgres_container="$(docker ps --filter "ancestor=postgres:17-alpine" --format "{{.ID}}" | head -n 1)"
-          docker exec "$postgres_container" createdb -U medcrm medcrm_scheduling
-
       - name: Generate Prisma Client
         run: npm run prisma:generate
         env:
@@ -81,7 +76,7 @@ jobs:
 
       - name: Create Scheduling Database
         run: |
-          postgres_container="$(docker ps --filter "ancestor=postgres:17-alpine" --format "{{.ID}}" | head -n 1)"
+          postgres_container="$(docker ps --format "{{.ID}} {{.Image}}" | awk '/postgres/ {print $1; exit}')"
           docker exec "$postgres_container" createdb -U medcrm medcrm_scheduling
 
       - name: Generate Prisma Client
@@ -150,6 +145,11 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
+
+      - name: Create Scheduling Database
+        run: |
+          postgres_container="$(docker ps --format "{{.ID}} {{.Image}}" | awk '/postgres/ {print $1; exit}')"
+          docker exec "$postgres_container" createdb -U medcrm medcrm_scheduling
 
       - name: Generate Prisma Client
         run: npm run prisma:generate
@@ -319,7 +319,7 @@ jobs:
 
       - name: Create Prisma Shadow Databases
         run: |
-          postgres_container="$(docker ps --filter "ancestor=postgres:17-alpine" --format "{{.ID}}" | head -n 1)"
+          postgres_container="$(docker ps --format "{{.ID}} {{.Image}}" | awk '/postgres/ {print $1; exit}')"
           docker exec "$postgres_container" createdb -U medcrm medcrm_scheduling
           docker exec "$postgres_container" createdb -U medcrm medcrm_shadow
           docker exec "$postgres_container" createdb -U medcrm medcrm_scheduling_shadow

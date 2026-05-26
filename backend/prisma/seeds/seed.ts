@@ -574,7 +574,7 @@ async function main(): Promise<void> {
     create: {
       tenantId: tenant.id,
       branchId: branch.id,
-      roomId: usiOffice.id,
+      roomId: null,
       categoryId: categoryMap.get('USI_SCANNER')!,
       inventoryNumber: 'EQ-USI-001',
       serialNumber: 'SN129381283',
