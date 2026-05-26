@@ -46,6 +46,20 @@ describe('gateway route config', () => {
     assert.ok(compatibilityRoutes.some((route) => route.gatewayPrefix === '/appointments'));
   });
 
+  it('routes clinic directory endpoints to auth-service until scheduling owns the catalog', () => {
+    const doctorRoutes = [...publicRoutes, ...compatibilityRoutes].filter((route) =>
+      route.gatewayPrefix.endsWith('/doctors'),
+    );
+    const serviceRoutes = [...publicRoutes, ...compatibilityRoutes].filter((route) =>
+      route.gatewayPrefix.endsWith('/services'),
+    );
+
+    assert.ok(doctorRoutes.length > 0);
+    assert.ok(serviceRoutes.length > 0);
+    assert.ok(doctorRoutes.every((route) => route.targetEnv === 'AUTH_SERVICE_URL'));
+    assert.ok(serviceRoutes.every((route) => route.targetEnv === 'AUTH_SERVICE_URL'));
+  });
+
   it('separates internal routes from public routes', () => {
     assert.ok(internalRoutes.every((route) => route.gatewayPrefix.startsWith('/internal/v1/')));
     assert.ok(publicRoutes.every((route) => route.gatewayPrefix.startsWith('/api/v1/')));

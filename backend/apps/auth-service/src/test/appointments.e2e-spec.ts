@@ -39,6 +39,10 @@ describe('E2E Appointments & Smart Scheduling', () => {
   it('should create an appointment successfully', async () => {
     const startAt = new Date();
     startAt.setDate(startAt.getDate() + testDaysOffset);
+    // Ensure we are on a weekday (Monday-Friday) for schedule checks
+    const day = startAt.getDay();
+    if (day === 0) startAt.setDate(startAt.getDate() + 1);
+    else if (day === 6) startAt.setDate(startAt.getDate() + 2);
     startAt.setHours(10, 0, 0, 0);
 
     const endAt = new Date(startAt);
@@ -92,6 +96,10 @@ describe('E2E Appointments & Smart Scheduling', () => {
   it('should create a recurring appointment series successfully', async () => {
     const startAt = new Date();
     startAt.setDate(startAt.getDate() + testDaysOffset + 10);
+    // Ensure we are on a weekday (Monday-Friday) for schedule checks
+    const day = startAt.getDay();
+    if (day === 0) startAt.setDate(startAt.getDate() + 1);
+    else if (day === 6) startAt.setDate(startAt.getDate() + 2);
     startAt.setHours(14, 0, 0, 0);
 
     const endAt = new Date(startAt);

@@ -408,7 +408,7 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                                       color: 'var(--ink)',
                                     }}
                                   >
-                                    {appointment.patient.fullName}
+                                    {appointment.patient?.fullName ?? 'Неизвестный пациент'}
                                   </strong>
                                   <span style={{ fontSize: '9px', fontWeight: 'bold' }}>
                                     {formatVisitTime(appointment.startAt)}
@@ -542,7 +542,8 @@ export function CalendarPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
                             verticalAlign: 'middle',
                           }}
                         />
-                        {formatVisitTime(appointment.startAt)} · {appointment.patient.fullName}
+                        {formatVisitTime(appointment.startAt)} ·{' '}
+                        {appointment.patient?.fullName ?? 'Неизвестный пациент'}
                       </strong>
                       <span className={`status-badge status-${statusTone(appointment.status)}`}>
                         {statusLabel(appointment.status)}

@@ -41,7 +41,7 @@ describe('Security & Compliance Baseline E2E Verification', () => {
 
       // 2. Query the raw database bypassing transparent decryption hooks
       const rawRows = await context.prisma.$queryRawUnsafe<any[]>(
-        `SELECT first_name, first_name_enc, first_name_bi, last_name, last_name_enc, last_name_bi FROM patients WHERE id = $1::uuid`,
+        `SELECT first_name, first_name_enc, first_name_bi, last_name, last_name_enc, last_name_bi FROM "patients"."patients" WHERE id = $1::uuid`,
         patient.id,
       );
 
@@ -120,12 +120,16 @@ describe('Security & Compliance Baseline E2E Verification', () => {
 
       try {
         // 3. Tamper with the action column of the target log directly in Postgres (bypassing application rules)
-        await context.prisma.$queryRawUnsafe(`ALTER TABLE audit_logs DISABLE TRIGGER ALL`);
         await context.prisma.$queryRawUnsafe(
-          `UPDATE audit_logs SET action = 'test.tampered.event' WHERE id = $1::uuid`,
+          `ALTER TABLE "platform"."audit_logs" DISABLE TRIGGER ALL`,
+        );
+        await context.prisma.$queryRawUnsafe(
+          `UPDATE "platform"."audit_logs" SET action = 'test.tampered.event' WHERE id = $1::uuid`,
           targetLogId,
         );
-        await context.prisma.$queryRawUnsafe(`ALTER TABLE audit_logs ENABLE TRIGGER ALL`);
+        await context.prisma.$queryRawUnsafe(
+          `ALTER TABLE "platform"."audit_logs" ENABLE TRIGGER ALL`,
+        );
 
         // 4. Run chain integrity scanner and verify it successfully catches the broken chain link
         const tamperedReport = await auditChain.verifyChain(context.tenantId);
@@ -133,12 +137,16 @@ describe('Security & Compliance Baseline E2E Verification', () => {
         assert.ok(tamperedReport.message.includes('Tampering detected'));
       } finally {
         // 5. Restore the tampered action back to the original value to heal the chain and avoid leaving the database broken
-        await context.prisma.$queryRawUnsafe(`ALTER TABLE audit_logs DISABLE TRIGGER ALL`);
         await context.prisma.$queryRawUnsafe(
-          `UPDATE audit_logs SET action = 'test.verification.event2' WHERE id = $1::uuid`,
+          `ALTER TABLE "platform"."audit_logs" DISABLE TRIGGER ALL`,
+        );
+        await context.prisma.$queryRawUnsafe(
+          `UPDATE "platform"."audit_logs" SET action = 'test.verification.event2' WHERE id = $1::uuid`,
           targetLogId,
         );
-        await context.prisma.$queryRawUnsafe(`ALTER TABLE audit_logs ENABLE TRIGGER ALL`);
+        await context.prisma.$queryRawUnsafe(
+          `ALTER TABLE "platform"."audit_logs" ENABLE TRIGGER ALL`,
+        );
       }
     });
   });

@@ -197,6 +197,10 @@ describe('E2E Communications & Notifications Studio', () => {
     // 1. Create a scheduled appointment
     const startAt = new Date();
     startAt.setDate(startAt.getDate() + testDaysOffset);
+    // Ensure we are on a weekday (Monday-Friday) for schedule checks
+    const day = startAt.getDay();
+    if (day === 0) startAt.setDate(startAt.getDate() + 1);
+    else if (day === 6) startAt.setDate(startAt.getDate() + 2);
     startAt.setHours(10, 0, 0, 0);
     const endAt = new Date(startAt);
     endAt.setMinutes(endAt.getMinutes() + 30);

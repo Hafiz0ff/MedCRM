@@ -5,11 +5,11 @@ async function main() {
   console.log('Cleaning up tampered test logs from audit_logs table...');
 
   try {
-    await prisma.$queryRawUnsafe(`ALTER TABLE audit_logs DISABLE TRIGGER ALL`);
+    await prisma.$queryRawUnsafe(`ALTER TABLE "platform"."audit_logs" DISABLE TRIGGER ALL`);
     const deleteCount = await prisma.$executeRawUnsafe(
-      `DELETE FROM audit_logs WHERE action IN ('test.verification.event1', 'test.verification.event2', 'test.tampered.event')`,
+      `DELETE FROM "platform"."audit_logs" WHERE action IN ('test.verification.event1', 'test.verification.event2', 'test.tampered.event')`,
     );
-    await prisma.$queryRawUnsafe(`ALTER TABLE audit_logs ENABLE TRIGGER ALL`);
+    await prisma.$queryRawUnsafe(`ALTER TABLE "platform"."audit_logs" ENABLE TRIGGER ALL`);
 
     console.log(`Successfully deleted ${deleteCount} tampered/test log entries.`);
   } catch (err) {

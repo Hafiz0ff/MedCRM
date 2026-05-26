@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { RealtimeGateway } from './realtime.gateway';
+import { SmartSchedulingController } from './smart-scheduling.controller';
 import { SmartSchedulingService } from './smart-scheduling.service';
 
 @Module({
@@ -22,6 +23,7 @@ import { SmartSchedulingService } from './smart-scheduling.service';
       },
     ]),
   ],
+  controllers: [SmartSchedulingController],
   providers: [SmartSchedulingService, RealtimeGateway],
   exports: [SmartSchedulingService, RealtimeGateway],
 })

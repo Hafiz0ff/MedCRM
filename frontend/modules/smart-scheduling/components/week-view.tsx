@@ -71,7 +71,7 @@ export function WeekView({ bootstrap, selectedDate, branchId }: WeekViewProps) {
                     dayApps.map((app) => {
                       const emp = app.employee;
                       const docName = emp
-                        ? `${emp.lastName} ${emp.firstName.slice(0, 1)}.`
+                        ? `${emp.lastName || ''} ${(emp.firstName || '').slice(0, 1)}.`
                         : 'Врач';
 
                       return (
@@ -80,7 +80,9 @@ export function WeekView({ bootstrap, selectedDate, branchId }: WeekViewProps) {
                             <Clock3 size={12} />
                             <span>{formatVisitTime(app.startAt)}</span>
                           </div>
-                          <strong className="week-app-patient">{app.patient.fullName}</strong>
+                          <strong className="week-app-patient">
+                            {app.patient?.fullName ?? 'Неизвестный пациент'}
+                          </strong>
                           <span className="week-app-service">
                             {app.service?.name ?? 'Без услуги'}
                           </span>

@@ -489,43 +489,67 @@ export class SmartSchedulingService {
       }
     }
 
-    const weekday = startAt.getDay() === 0 ? 7 : startAt.getDay();
-    const schedules = await this.prisma.workingSchedule.findMany({
-      where: { tenantId, entityType, entityId, weekday, isActive: true },
+    const allSchedules = await this.prisma.workingSchedule.findMany({
+      where: { tenantId, entityType, entityId, isActive: true },
     });
 
-    if (schedules.length > 0) {
-      let withinSchedule = false;
-      for (const sched of schedules) {
-        const [sH, sM] = sched.startTime.split(':').map(Number);
-        const [eH, eM] = sched.endTime.split(':').map(Number);
-        const schedStart = new Date(startAt);
-        schedStart.setHours(sH, sM, 0, 0);
-        const schedEnd = new Date(startAt);
-        schedEnd.setHours(eH, eM, 0, 0);
+    if (allSchedules.length === 0) {
+      return; // Skip validation if no schedules are configured
+    }
 
-        if (startAt >= schedStart && endAt <= schedEnd) {
-          if (sched.breakStart && sched.breakEnd) {
-            const [bSH, bSM] = sched.breakStart.split(':').map(Number);
-            const [bEH, bEM] = sched.breakEnd.split(':').map(Number);
-            const breakStart = new Date(startAt);
-            breakStart.setHours(bSH, bSM, 0, 0);
-            const breakEnd = new Date(startAt);
-            breakEnd.setHours(bEH, bEM, 0, 0);
+    let withinSchedule = false;
+    let hasScheduleForDay = false;
 
-            if (startAt < breakEnd && endAt > breakStart) {
-              continue;
-            }
+    for (const sched of allSchedules) {
+      const tz = sched.timezone || 'Europe/Moscow';
+
+      // Determine weekday name in the schedule's timezone
+      const nameFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: tz });
+      const dayName = nameFormatter.format(startAt);
+      const dayMap: Record<string, number> = {
+        Monday: 1,
+        Tuesday: 2,
+        Wednesday: 3,
+        Thursday: 4,
+        Friday: 5,
+        Saturday: 6,
+        Sunday: 7,
+      };
+      const currentWeekday = dayMap[dayName];
+
+      if (sched.weekday !== currentWeekday) {
+        continue;
+      }
+
+      hasScheduleForDay = true;
+
+      // Format time in the schedule's timezone
+      const timeFormatter = new Intl.DateTimeFormat('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: tz,
+      });
+      const startStr = timeFormatter.format(startAt);
+      const endStr = timeFormatter.format(endAt);
+
+      if (startStr >= sched.startTime && endStr <= sched.endTime) {
+        if (sched.breakStart && sched.breakEnd) {
+          if (startStr < sched.breakEnd && endStr > sched.breakStart) {
+            continue;
           }
-          withinSchedule = true;
-          break;
         }
+        withinSchedule = true;
+        break;
       }
-      if (!withinSchedule) {
-        throw new BadRequestException(
-          `${entityType} schedule does not allow bookings at this hour`,
-        );
-      }
+    }
+
+    if (!hasScheduleForDay) {
+      throw new BadRequestException(`${entityType} schedule does not allow bookings on this day`);
+    }
+
+    if (!withinSchedule) {
+      throw new BadRequestException(`${entityType} schedule does not allow bookings at this hour`);
     }
   }
 

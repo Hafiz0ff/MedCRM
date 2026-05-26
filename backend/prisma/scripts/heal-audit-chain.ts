@@ -36,7 +36,7 @@ async function main() {
 
   console.log(`Found ${logs.length} logs. Recalculating hash chain...`);
 
-  await prisma.$queryRawUnsafe(`ALTER TABLE audit_logs DISABLE TRIGGER ALL`);
+  await prisma.$queryRawUnsafe(`ALTER TABLE "platform"."audit_logs" DISABLE TRIGGER ALL`);
 
   let prevHash: string | null = null;
   let updatedCount = 0;
@@ -56,7 +56,7 @@ async function main() {
 
     if (log.prevHash !== expectedPrevHash || log.hash !== expectedHash) {
       await prisma.$executeRawUnsafe(
-        `UPDATE audit_logs SET prev_hash = $1, hash = $2 WHERE id = $3::uuid`,
+        `UPDATE "platform"."audit_logs" SET prev_hash = $1, hash = $2 WHERE id = $3::uuid`,
         expectedPrevHash,
         expectedHash,
         log.id,
@@ -67,7 +67,7 @@ async function main() {
     prevHash = expectedHash;
   }
 
-  await prisma.$queryRawUnsafe(`ALTER TABLE audit_logs ENABLE TRIGGER ALL`);
+  await prisma.$queryRawUnsafe(`ALTER TABLE "platform"."audit_logs" ENABLE TRIGGER ALL`);
 
   console.log(`Cryptographic hash chain healed successfully! Updated ${updatedCount} logs.`);
   await prisma.$disconnect();

@@ -105,7 +105,8 @@ services:
       - .env.example
     environment:
       PORT: ${SCHEDULING_SERVICE_PORT:-3003}
-      DATABASE_URL: ${SCHEDULING_DATABASE_URL:-postgresql://medcrm:medcrm_password@postgres:5432/medcrm_scheduling?schema=public}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://medcrm:medcrm_password@postgres:5432/medcrm?schema=public}
+      SCHEDULING_DATABASE_URL: ${SCHEDULING_DATABASE_URL:-postgresql://medcrm:medcrm_password@postgres:5432/medcrm_scheduling?schema=public}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       NATS_URL: ${NATS_URL:-nats://nats:4222}
       SCHEDULING_SERVICE_TCP_PORT: ${SCHEDULING_SERVICE_TCP_PORT:-3004}

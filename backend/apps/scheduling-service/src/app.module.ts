@@ -1,5 +1,6 @@
 import { AuditModule } from '@core/audit/audit.module';
 import { RedisModule } from '@core/cache/redis.module';
+import { PrismaModule as CorePrismaModule } from '@core/database/prisma.module';
 import { EventBusModule } from '@core/eventbus/eventbus.module';
 import { TenancyModule } from '@core/tenancy/tenancy.module';
 import { Module } from '@nestjs/common';
@@ -11,6 +12,7 @@ import { SmartSchedulingModule } from './smart-scheduling/smart-scheduling.modul
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    CorePrismaModule,
     PrismaModule,
     RedisModule.forRoot(),
     TenancyModule,
