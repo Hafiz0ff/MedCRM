@@ -11,11 +11,11 @@ model Department {
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  tenant              Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  branch              Branch                   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  parent              Department?              @relation("DepartmentTree", fields: [parentDepartmentId], references: [id], onDelete: SetNull)
-  children            Department[]             @relation("DepartmentTree")
-  employeePositions   EmployeePosition[]
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch            Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  parent            Department?        @relation("DepartmentTree", fields: [parentDepartmentId], references: [id], onDelete: SetNull)
+  children          Department[]       @relation("DepartmentTree")
+  employeePositions EmployeePosition[]
 
   encounters Encounter[]
   warehouses Warehouse[]
@@ -80,9 +80,9 @@ model Employee {
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  tenant          Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user            User?                    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  positions       EmployeePosition[]
+  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  positions EmployeePosition[]
 
   performedInvoiceItems InvoiceItem[]
 

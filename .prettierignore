@@ -6,3 +6,4 @@ backend/prisma/generated
 **/*next-env.d.ts
 **/*.d.ts
 **/storybook-static/**
+docs/superpowers/plans/*.html

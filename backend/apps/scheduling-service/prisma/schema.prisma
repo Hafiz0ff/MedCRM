@@ -1,6 +1,6 @@
 generator client {
-  provider        = "prisma-client-js"
-  output          = "../src/generated/prisma-client"
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma-client"
 }
 
 datasource db {
@@ -105,7 +105,7 @@ model RoomType {
   isSystem  Boolean  @default(false) @map("is_system")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  rooms  Room[]
+  rooms Room[]
 
   @@unique([tenantId, code])
   @@map("room_types")
@@ -129,11 +129,11 @@ model Room {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  roomType       RoomType                 @relation(fields: [roomTypeId], references: [id])
-  specialties    RoomSpecialty[]
-  equipment      Equipment[]
-  roomEquipment  RoomEquipment[]
-  assignments    EmployeeRoomAssignment[]
+  roomType      RoomType                 @relation(fields: [roomTypeId], references: [id])
+  specialties   RoomSpecialty[]
+  equipment     Equipment[]
+  roomEquipment RoomEquipment[]
+  assignments   EmployeeRoomAssignment[]
 
   @@unique([tenantId, branchId, code])
   @@map("rooms")
@@ -145,7 +145,7 @@ model RoomSpecialty {
   roomId      String @map("room_id") @db.Uuid
   specialtyId String @map("specialty_id") @db.Uuid
 
-  room      Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, specialtyId])
   @@map("room_specialties")
@@ -223,7 +223,7 @@ model EmployeeRoomAssignment {
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  room       Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@map("employee_room_assignments")
   @@schema("scheduling")

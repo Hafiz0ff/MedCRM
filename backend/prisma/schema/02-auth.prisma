@@ -13,18 +13,18 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  tenant              Tenant                 @relation(fields: [tenantId], references: [id])
-  branchRoles         UserBranchRole[]
-  sessions            UserSession[]
-  auditLogs           AuditLog[]
-  managedPatients     Patient[]              @relation("PatientAssignedManager")
-  twoFactorSettings   User2faSettings?
-  employee            Employee?
-  patientNotes        PatientNote[]
-  signedDocuments     PatientLegalDocument[]
-  credentials         UserCredential[]
+  tenant            Tenant                 @relation(fields: [tenantId], references: [id])
+  branchRoles       UserBranchRole[]
+  sessions          UserSession[]
+  auditLogs         AuditLog[]
+  managedPatients   Patient[]              @relation("PatientAssignedManager")
+  twoFactorSettings User2faSettings?
+  employee          Employee?
+  patientNotes      PatientNote[]
+  signedDocuments   PatientLegalDocument[]
+  credentials       UserCredential[]
 
-  createdInvoices    Invoice[]
+  createdInvoices Invoice[]
 
   signedEncounters     Encounter[]
   digitalSignatures    DigitalSignature[]

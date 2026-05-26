@@ -19,10 +19,15 @@
     "prisma:seed": "npm --workspace backend run prisma:seed",
     "prepare": "husky",
     "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "npm --workspace backend run typecheck && npm --workspace frontend run typecheck",
-    "verify": "npm run lint && npm run format:check && npm run typecheck && npm --workspace backend run test:gateway && for f in backend/apps/auth-service/src/test/*.e2e-spec.ts; do TS_NODE_PROJECT=backend/tsconfig.json node -r ts-node/register -r tsconfig-paths/register --test \"$f\" || exit 1; done"
+    "prisma:format": "npm --workspace backend run prisma:format",
+    "prisma:validate": "npm --workspace backend run prisma:validate",
+    "prisma:drift": "npm --workspace backend run prisma:drift",
+    "security:audit": "npm audit --audit-level=high",
+    "verify": "npm run lint && npm run format:check && npm run typecheck && npm run prisma:validate && npm --workspace backend run test:gateway && npm --workspace frontend run test && for f in backend/apps/auth-service/src/test/*.e2e-spec.ts; do TS_NODE_PROJECT=backend/tsconfig.json node -r ts-node/register -r tsconfig-paths/register --test \"$f\" || exit 1; done"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
@@ -32,8 +37,8 @@
     "*.{json,md,yml,yaml,css}": [
       "prettier --write"
     ],
-    "backend/prisma/schema.prisma": [
-      "npx --workspace backend prisma format"
+    "{backend/prisma,backend/apps/scheduling-service/prisma}/**/*.prisma": [
+      "npm --workspace backend run prisma:format"
     ]
   },
   "devDependencies": {

@@ -39,8 +39,8 @@ model Patient {
   timelineEvents PatientTimelineEvent[]
   notes          PatientNote[]
 
-  portalGrants        PatientPortalGrant[]
-  invoices      Invoice[]
+  portalGrants PatientPortalGrant[]
+  invoices     Invoice[]
 
   medicalRecord  MedicalRecord?
   episodesOfCare EpisodeOfCare[]

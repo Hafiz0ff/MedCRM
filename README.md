@@ -13,6 +13,8 @@
 <br />
 
 [![Status](https://img.shields.io/badge/status-active-22C55E?style=for-the-badge&logo=statuspage&logoColor=white)](#)
+[![CI](https://github.com/Hafiz0ff/MedCRM/actions/workflows/ci.yml/badge.svg)](https://github.com/Hafiz0ff/MedCRM/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Hafiz0ff/MedCRM/actions/workflows/codeql.yml/badge.svg)](https://github.com/Hafiz0ff/MedCRM/actions/workflows/codeql.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0-079685?style=for-the-badge&logo=semver&logoColor=white)](#)
 [![License](https://img.shields.io/badge/license-Private-111827?style=for-the-badge&logo=protondb&logoColor=white)](#-license--лицензия)
 [![PRs](https://img.shields.io/badge/PRs-welcome-FF6B6B?style=for-the-badge&logo=git&logoColor=white)](#)

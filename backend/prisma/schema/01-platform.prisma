@@ -9,21 +9,21 @@ model Tenant {
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  branches        Branch[]
-  users           User[]
-  tenantModules   TenantModule[]
-  roles           Role[]
-  userBranchRoles UserBranchRole[]
-  userSessions    UserSession[]
-  auditLogs       AuditLog[]
-  patients        Patient[]
-  services        Service[]
-  departments             Department[]
-  positions               Position[]
-  employees               Employee[]
-  employeePositions       EmployeePosition[]
-  invoices                    Invoice[]
-  invoiceItems                InvoiceItem[]
+  branches          Branch[]
+  users             User[]
+  tenantModules     TenantModule[]
+  roles             Role[]
+  userBranchRoles   UserBranchRole[]
+  userSessions      UserSession[]
+  auditLogs         AuditLog[]
+  patients          Patient[]
+  services          Service[]
+  departments       Department[]
+  positions         Position[]
+  employees         Employee[]
+  employeePositions EmployeePosition[]
+  invoices          Invoice[]
+  invoiceItems      InvoiceItem[]
 
   medicalRecords       MedicalRecord[]
   episodesOfCare       EpisodeOfCare[]
@@ -131,13 +131,13 @@ model Branch {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  tenant       Tenant           @relation(fields: [tenantId], references: [id])
-  userRoles    UserBranchRole[]
-  patients     Patient[]
-  departments             Department[]
-  employeePositions       EmployeePosition[]
-  legalDocuments          PatientLegalDocument[]
-  invoices                    Invoice[]
+  tenant            Tenant                 @relation(fields: [tenantId], references: [id])
+  userRoles         UserBranchRole[]
+  patients          Patient[]
+  departments       Department[]
+  employeePositions EmployeePosition[]
+  legalDocuments    PatientLegalDocument[]
+  invoices          Invoice[]
 
   episodesOfCare EpisodeOfCare[]
   payments       Payment[]

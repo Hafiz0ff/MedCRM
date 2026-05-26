@@ -128,9 +128,9 @@ model NotificationsQueue {
   processedAt    DateTime? @map("processed_at") @db.Timestamptz(6)
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  patient     Patient?        @relation(fields: [patientId], references: [id], onDelete: SetNull)
-  template    MessageTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient  Patient?        @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  template MessageTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@map("notifications_queue")
   @@schema("communications")
