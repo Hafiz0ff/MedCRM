@@ -21,7 +21,8 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@core/*": ["core/*"],
-      "@shared/*": ["shared/*"]
+      "@shared/*": ["shared/*"],
+      "@contracts/*": ["contracts/*"]
     }
   },
   "include": ["apps/**/*.ts", "core/**/*.ts", "shared/**/*.ts", "prisma/**/*.ts"],

@@ -1,0 +1,281 @@
+model IntegrationProvider {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tenantId           String   @map("tenant_id") @db.Uuid
+  providerType       String   @map("provider_type") @db.VarChar(40) // LIS, TELEPHONY, SMS, PAYMENT, STORAGE, DEVICE, EMAIL
+  providerCode       String   @map("provider_code") @db.VarChar(80)
+  providerName       String   @map("provider_name") @db.VarChar(255)
+  authenticationType String   @map("authentication_type") @db.VarChar(80) // API_KEY, HMAC, OAUTH2
+  configurationJson  Json     @map("configuration_json")
+  rateLimitPerMinute Int      @default(60) @map("rate_limit_per_minute")
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  webhookEvents WebhookEvent[]
+  logs          IntegrationLog[]
+  metrics       IntegrationMetric[]
+
+  @@map("integration_providers")
+  @@schema("integrations")
+}
+
+model WebhookEvent {
+  id                 String    @id @default(uuid()) @db.Uuid
+  tenantId           String    @map("tenant_id") @db.Uuid
+  providerId         String?   @map("provider_id") @db.Uuid
+  webhookType        String    @map("webhook_type") @db.VarChar(80) // LIS_RESULT, TELEPHONY_EVENT, etc.
+  externalEventId    String?   @map("external_event_id") @db.VarChar(255)
+  requestHeadersJson Json      @map("request_headers_json")
+  payloadJson        Json      @map("payload_json")
+  processingStatus   String    @default("RECEIVED") @map("processing_status") @db.VarChar(40) // RECEIVED, VALIDATED, PROCESSING, COMPLETED, FAILED, RETRYING
+  receivedAt         DateTime  @default(now()) @map("received_at") @db.Timestamptz(6)
+  processedAt        DateTime? @map("processed_at") @db.Timestamptz(6)
+
+  tenant   Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  provider IntegrationProvider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+
+  @@map("webhook_events")
+  @@schema("integrations")
+}
+
+model IntegrationLog {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  providerId      String?  @map("provider_id") @db.Uuid
+  direction       String   @db.VarChar(40) // INBOUND, OUTBOUND
+  requestPayload  Json?    @map("request_payload")
+  responsePayload Json?    @map("response_payload")
+  statusCode      Int?     @map("status_code")
+  executionTimeMs Int?     @map("execution_time_ms")
+  correlationId   String?  @map("correlation_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant   Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  provider IntegrationProvider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+
+  @@map("integration_logs")
+  @@schema("integrations")
+}
+
+model LaboratoryProvider {
+  id                 String  @id @default(uuid()) @db.Uuid
+  tenantId           String  @map("tenant_id") @db.Uuid
+  providerCode       String  @map("provider_code") @db.VarChar(80)
+  providerName       String  @map("provider_name") @db.VarChar(255)
+  apiProtocol        String  @map("api_protocol") @db.VarChar(40) // HL7, REST, FHIR
+  endpointUrl        String  @map("endpoint_url") @db.VarChar(255)
+  authenticationJson Json    @map("authentication_json")
+  mappingSchemaJson  Json?   @map("mapping_schema_json")
+  isActive           Boolean @default(true) @map("is_active")
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  labOrders LabOrder[]
+
+  @@map("laboratory_providers")
+  @@schema("integrations")
+}
+
+model LabOrderItem {
+  id         String  @id @default(uuid()) @db.Uuid
+  labOrderId String  @map("lab_order_id") @db.Uuid
+  testCode   String  @map("test_code") @db.VarChar(80)
+  testName   String  @map("test_name") @db.VarChar(255)
+  loincCode  String? @map("loinc_code") @db.VarChar(80)
+  sampleType String? @map("sample_type") @db.VarChar(120)
+  status     String  @default("PENDING") @db.VarChar(40)
+
+  order LabOrder @relation(fields: [labOrderId], references: [id], onDelete: Cascade)
+
+  @@map("lab_order_items")
+  @@schema("integrations")
+}
+
+model LabResult {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  patientId         String   @map("patient_id") @db.Uuid
+  encounterId       String?  @map("encounter_id") @db.Uuid
+  labOrderId        String?  @map("lab_order_id") @db.Uuid
+  externalResultId  String?  @map("external_result_id") @db.VarChar(120)
+  resultStatus      String   @map("result_status") @db.VarChar(40) // FINAL, PRELIMINARY, CORRECTED
+  resultJson        Json     @map("result_json")
+  abnormalFlagsJson Json?    @map("abnormal_flags_json")
+  receivedAt        DateTime @default(now()) @map("received_at") @db.Timestamptz(6)
+
+  tenant       Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient      Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  encounter    Encounter?            @relation(fields: [encounterId], references: [id], onDelete: SetNull)
+  order        LabOrder?             @relation(fields: [labOrderId], references: [id], onDelete: SetNull)
+  observations ClinicalObservation[]
+  files        File[]
+
+  @@map("lab_results")
+  @@schema("integrations")
+}
+
+model StorageProvider {
+  id              String  @id @default(uuid()) @db.Uuid
+  tenantId        String  @map("tenant_id") @db.Uuid
+  providerCode    String  @map("provider_code") @db.VarChar(80) // AMAZON_S3, MINIO, YANDEX_DISK
+  providerType    String  @map("provider_type") @db.VarChar(80) // S3_COMPATIBLE, REST
+  bucketName      String  @map("bucket_name") @db.VarChar(120)
+  region          String? @db.VarChar(80)
+  endpointUrl     String  @map("endpoint_url") @db.VarChar(255)
+  credentialsJson Json    @map("credentials_json")
+  isDefault       Boolean @default(false) @map("is_default")
+  isActive        Boolean @default(true) @map("is_active")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  files  File[]
+
+  @@map("storage_providers")
+  @@schema("integrations")
+}
+
+model File {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  patientId         String?  @map("patient_id") @db.Uuid
+  encounterId       String?  @map("encounter_id") @db.Uuid
+  labResultId       String?  @map("lab_result_id") @db.Uuid
+  uploadedBy        String   @map("uploaded_by") @db.Uuid
+  storageProviderId String   @map("storage_provider_id") @db.Uuid
+  fileCategory      String   @map("file_category") @db.VarChar(80) // DICOM, XRAY, ULTRASOUND, LAB_REPORT, DOCUMENT, AUDIO_CALL, IMAGE, PDF
+  fileName          String   @map("file_name") @db.VarChar(255)
+  mimeType          String   @map("mime_type") @db.VarChar(120)
+  extension         String   @db.VarChar(20)
+  fileSize          Int      @map("file_size")
+  objectKey         String   @map("object_key") @db.VarChar(512)
+  checksumHash      String?  @map("checksum_hash") @db.VarChar(160)
+  isEncrypted       Boolean  @default(false) @map("is_encrypted")
+  uploadedAt        DateTime @default(now()) @map("uploaded_at") @db.Timestamptz(6)
+
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient         Patient?        @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  encounter       Encounter?      @relation(fields: [encounterId], references: [id], onDelete: SetNull)
+  labResult       LabResult?      @relation(fields: [labResultId], references: [id], onDelete: SetNull)
+  uploader        User            @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  storageProvider StorageProvider @relation(fields: [storageProviderId], references: [id], onDelete: Cascade)
+  links           FileLink[]
+  callEvents      CallEvent[]
+
+  @@map("files")
+  @@schema("integrations")
+}
+
+model FileLink {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  fileId     String   @map("file_id") @db.Uuid
+  entityType String   @map("entity_type") @db.VarChar(80) // INVOICE, APPOINTMENT, PATIENT, etc.
+  entityId   String   @map("entity_id") @db.Uuid
+  linkedAt   DateTime @default(now()) @map("linked_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  file   File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@map("file_links")
+  @@schema("integrations")
+}
+
+model TelephonyProvider {
+  id                String  @id @default(uuid()) @db.Uuid
+  tenantId          String  @map("tenant_id") @db.Uuid
+  providerCode      String  @map("provider_code") @db.VarChar(80)
+  providerName      String  @map("provider_name") @db.VarChar(120)
+  apiEndpoint       String? @map("api_endpoint") @db.VarChar(255)
+  webhookSecret     String? @map("webhook_secret") @db.VarChar(255)
+  configurationJson Json    @map("configuration_json")
+  isActive          Boolean @default(true) @map("is_active")
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  callEvents CallEvent[]
+
+  @@map("telephony_providers")
+  @@schema("integrations")
+}
+
+model CallEvent {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  providerId      String?  @map("provider_id") @db.Uuid
+  callId          String   @map("call_id") @db.VarChar(120)
+  patientId       String?  @map("patient_id") @db.Uuid
+  eventType       String   @map("event_type") @db.VarChar(80) // CALL_STARTED, CALL_ANSWERED, CALL_ENDED, RECORDING_READY, MISSED_CALL
+  phoneNumber     String   @map("phone_number") @db.VarChar(60)
+  direction       String   @db.VarChar(40) // INBOUND, OUTBOUND
+  durationSeconds Int?     @map("duration_seconds")
+  recordingFileId String?  @map("recording_file_id") @db.Uuid
+  metadataJson    Json?    @map("metadata_json")
+  occurredAt      DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  provider      TelephonyProvider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  patient       Patient?           @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  recordingFile File?              @relation(fields: [recordingFileId], references: [id], onDelete: SetNull)
+
+  @@map("call_events")
+  @@schema("integrations")
+}
+
+model MedicalDevice {
+  id             String  @id @default(uuid()) @db.Uuid
+  tenantId       String  @map("tenant_id") @db.Uuid
+  branchId       String  @map("branch_id") @db.Uuid
+  roomId         String? @map("room_id") @db.Uuid
+  deviceType     String  @map("device_type") @db.VarChar(80) // USI, ECG, ANALYZER, MONITOR
+  manufacturer   String  @db.VarChar(120)
+  model          String  @db.VarChar(120)
+  serialNumber   String  @map("serial_number") @db.VarChar(120)
+  protocolType   String  @map("protocol_type") @db.VarChar(40) // HL7, DICOM, REST, TCP_IP, SERIAL
+  connectionType String  @map("connection_type") @db.VarChar(40)
+  isActive       Boolean @default(true) @map("is_active")
+
+  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch       Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  room         Room?               @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  measurements DeviceMeasurement[]
+
+  @@map("medical_devices")
+  @@schema("integrations")
+}
+
+model DeviceMeasurement {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @map("tenant_id") @db.Uuid
+  patientId           String   @map("patient_id") @db.Uuid
+  encounterId         String?  @map("encounter_id") @db.Uuid
+  deviceId            String   @map("device_id") @db.Uuid
+  measurementType     String   @map("measurement_type") @db.VarChar(80)
+  measurementDataJson Json     @map("measurement_data_json")
+  measuredAt          DateTime @default(now()) @map("measured_at") @db.Timestamptz(6)
+
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient   Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  encounter Encounter?    @relation(fields: [encounterId], references: [id], onDelete: SetNull)
+  device    MedicalDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@map("device_measurements")
+  @@schema("integrations")
+}
+
+model IntegrationOutbox {
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  eventType     String    @map("event_type") @db.VarChar(120)
+  aggregateType String    @map("aggregate_type") @db.VarChar(120)
+  aggregateId   String    @map("aggregate_id") @db.Uuid
+  payloadJson   Json      @map("payload_json")
+  scheduledAt   DateTime  @default(now()) @map("scheduled_at") @db.Timestamptz(6)
+  attemptCount  Int       @default(0) @map("attempt_count")
+  lastError     String?   @map("last_error")
+  processedAt   DateTime? @map("processed_at") @db.Timestamptz(6)
+  state         String    @default("PENDING") @db.VarChar(20) // PENDING | IN_PROGRESS | DONE | FAILED
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([state, scheduledAt])
+  @@index([tenantId, aggregateType, aggregateId])
+  @@map("integration_outbox")
+  @@schema("integrations")
+}

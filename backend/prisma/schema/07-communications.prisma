@@ -1,0 +1,277 @@
+model Conversation {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tenantId           String   @map("tenant_id") @db.Uuid
+  patientId          String?  @map("patient_id") @db.Uuid
+  primaryChannel     String   @map("primary_channel") @db.VarChar(40) // Channel type e.g. TELEGRAM, WHATSAPP, SMS, etc.
+  assignedOperatorId String?  @map("assigned_operator_id") @db.Uuid
+  conversationStatus String   @default("OPEN") @map("conversation_status") @db.VarChar(40) // OPEN, PENDING, WAITING_PATIENT, RESOLVED, CLOSED
+  lastMessageAt      DateTime @default(now()) @map("last_message_at") @db.Timestamptz(6)
+  unreadCount        Int      @default(0) @map("unread_count")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant            Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient           Patient?                  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  assignedOperator  User?                     @relation("ConversationsAssigned", fields: [assignedOperatorId], references: [id], onDelete: SetNull)
+  participants      ConversationParticipant[]
+  messages          Message[]
+  assignments       ConversationAssignment[]
+  chatbotActionLogs ChatbotActionLog[]
+
+  @@map("conversations")
+  @@schema("communications")
+}
+
+model ConversationParticipant {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  conversationId  String   @map("conversation_id") @db.Uuid
+  participantType String   @map("participant_type") @db.VarChar(40) // PATIENT, EMPLOYEE, BOT
+  participantId   String   @map("participant_id") @db.Uuid
+  joinedAt        DateTime @default(now()) @map("joined_at") @db.Timestamptz(6)
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("conversation_participants")
+  @@schema("communications")
+}
+
+model Message {
+  id                String    @id @default(uuid()) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  conversationId    String    @map("conversation_id") @db.Uuid
+  patientId         String?   @map("patient_id") @db.Uuid
+  senderType        String    @map("sender_type") @db.VarChar(40) // PATIENT, EMPLOYEE, BOT
+  senderId          String    @map("sender_id") @db.Uuid
+  channelType       String    @map("channel_type") @db.VarChar(40) // TELEGRAM, WHATSAPP, SMS, EMAIL, INTERNAL, WEBCHAT
+  externalMessageId String?   @map("external_message_id") @db.VarChar(255)
+  direction         String    @db.VarChar(40) // INBOUND, OUTBOUND
+  messageType       String    @default("TEXT") @map("message_type") @db.VarChar(40) // TEXT, MEDIA, SYSTEM
+  messageText       String?   @map("message_text") @db.Text
+  mediaFileId       String?   @map("media_file_id") @db.Uuid
+  deliveryStatus    String    @default("PENDING") @map("delivery_status") @db.VarChar(40) // PENDING, SENT, DELIVERED, READ, FAILED, CANCELLED
+  metadataJson      Json?     @map("metadata_json")
+  sentAt            DateTime  @default(now()) @map("sent_at") @db.Timestamptz(6)
+  deliveredAt       DateTime? @map("delivered_at") @db.Timestamptz(6)
+  readAt            DateTime? @map("read_at") @db.Timestamptz(6)
+
+  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  patient      Patient?            @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  attachments  MessageAttachment[]
+
+  @@map("messages")
+  @@schema("communications")
+}
+
+model CommunicationChannel {
+  id                String  @id @default(uuid()) @db.Uuid
+  tenantId          String  @map("tenant_id") @db.Uuid
+  channelType       String  @map("channel_type") @db.VarChar(40) // TELEGRAM, WHATSAPP, SMS, EMAIL, INTERNAL, WEBCHAT
+  providerCode      String  @map("provider_code") @db.VarChar(80)
+  configurationJson Json    @map("configuration_json")
+  isActive          Boolean @default(true) @map("is_active")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("communication_channels")
+  @@schema("communications")
+}
+
+model SmsProvider {
+  id                 String  @id @default(uuid()) @db.Uuid
+  tenantId           String  @map("tenant_id") @db.Uuid
+  providerCode       String  @map("provider_code") @db.VarChar(80) // BABILON_T, TCELL, MEGAFON_TJ, OSON_SMS
+  providerName       String  @map("provider_name") @db.VarChar(120)
+  apiCredentialsJson Json    @map("api_credentials_json")
+  senderName         String  @map("sender_name") @db.VarChar(80)
+  dailyLimit         Int     @default(1000) @map("daily_limit")
+  isActive           Boolean @default(true) @map("is_active")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("sms_providers")
+  @@schema("communications")
+}
+
+model NotificationRule {
+  id             String  @id @default(uuid()) @db.Uuid
+  tenantId       String  @map("tenant_id") @db.Uuid
+  ruleName       String  @map("rule_name") @db.VarChar(255)
+  triggerEvent   String  @map("trigger_event") @db.VarChar(120) // appointment.confirmed, appointment.completed, invoice.overdue, etc.
+  channelType    String  @map("channel_type") @db.VarChar(40) // TELEGRAM, WHATSAPP, SMS, etc.
+  templateId     String  @map("template_id") @db.Uuid
+  delayMinutes   Int     @default(0) @map("delay_minutes")
+  conditionsJson Json?   @map("conditions_json")
+  isActive       Boolean @default(true) @map("is_active")
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  template MessageTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("notification_rules")
+  @@schema("communications")
+}
+
+model NotificationsQueue {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  patientId      String?   @map("patient_id") @db.Uuid
+  appointmentId  String?   @map("appointment_id") @db.Uuid
+  channelType    String    @map("channel_type") @db.VarChar(40)
+  templateId     String    @map("template_id") @db.Uuid
+  scheduledAt    DateTime  @map("scheduled_at") @db.Timestamptz(6)
+  priority       String    @default("MEDIUM") @db.VarChar(40) // HIGH, MEDIUM, LOW
+  payloadJson    Json?     @map("payload_json")
+  deliveryStatus String    @default("PENDING") @map("delivery_status") @db.VarChar(40) // PENDING, SENT, DELIVERED, READ, FAILED, CANCELLED
+  retryCount     Int       @default(0) @map("retry_count")
+  processedAt    DateTime? @map("processed_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient     Patient?        @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  appointment Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  template    MessageTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("notifications_queue")
+  @@schema("communications")
+}
+
+model ChatbotFlow {
+  id             String  @id @default(uuid()) @db.Uuid
+  tenantId       String  @map("tenant_id") @db.Uuid
+  flowName       String  @map("flow_name") @db.VarChar(255)
+  triggerType    String  @map("trigger_type") @db.VarChar(80) // WELCOME, KEYWORD, INTENT
+  flowSchemaJson Json    @map("flow_schema_json")
+  isActive       Boolean @default(true) @map("is_active")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("chatbot_flows")
+  @@schema("communications")
+}
+
+model ChatbotActionLog {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  patientId       String?  @map("patient_id") @db.Uuid
+  conversationId  String?  @map("conversation_id") @db.Uuid
+  actionType      String   @map("action_type") @db.VarChar(120) // CONFIRM_APPOINTMENT, CANCEL_APPOINTMENT, SHOW_SLOTS
+  sourceMessageId String?  @map("source_message_id") @db.VarChar(255)
+  actionResult    String   @map("action_result") @db.Text
+  performedAt     DateTime @default(now()) @map("performed_at") @db.Timestamptz(6)
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient      Patient?      @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  @@map("chatbot_actions_log")
+  @@schema("communications")
+}
+
+model MessageTemplate {
+  id            String  @id @default(uuid()) @db.Uuid
+  tenantId      String  @map("tenant_id") @db.Uuid
+  templateCode  String  @map("template_code") @db.VarChar(80)
+  templateName  String  @map("template_name") @db.VarChar(255)
+  channelType   String  @map("channel_type") @db.VarChar(40) // TELEGRAM, WHATSAPP, SMS, etc.
+  languageCode  String  @default("ru") @map("language_code") @db.VarChar(10) // ru, tg
+  subject       String? @db.VarChar(255)
+  templateBody  String  @map("template_body") @db.Text
+  variablesJson Json?   @map("variables_json")
+  isSystem      Boolean @default(false) @map("is_system")
+  isActive      Boolean @default(true) @map("is_active")
+
+  tenant             Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  notificationRules  NotificationRule[]
+  notificationsQueue NotificationsQueue[]
+  campaigns          CommunicationCampaign[]
+
+  @@unique([tenantId, templateCode, languageCode])
+  @@map("message_templates")
+  @@schema("communications")
+}
+
+model CommunicationCampaign {
+  id                String    @id @default(uuid()) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  campaignName      String    @map("campaign_name") @db.VarChar(255)
+  targetSegmentJson Json      @map("target_segment_json")
+  channelType       String    @map("channel_type") @db.VarChar(40)
+  templateId        String    @map("template_id") @db.Uuid
+  campaignStatus    String    @default("DRAFT") @map("campaign_status") @db.VarChar(40) // DRAFT, SCHEDULED, ACTIVE, COMPLETED, FAILED
+  scheduledAt       DateTime? @map("scheduled_at") @db.Timestamptz(6)
+  createdBy         String    @map("created_by") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  template MessageTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  creator  User            @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@map("communication_campaigns")
+  @@schema("communications")
+}
+
+model CommunicationMetric {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  channelType String   @map("channel_type") @db.VarChar(40)
+  metricCode  String   @map("metric_code") @db.VarChar(80)
+  metricValue Decimal  @map("metric_value") @db.Decimal(12, 4)
+  measuredAt  DateTime @default(now()) @map("measured_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("communication_metrics")
+  @@schema("communications")
+}
+
+model ConversationAssignment {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  conversationId   String   @map("conversation_id") @db.Uuid
+  assignedToUserId String   @map("assigned_to_user_id") @db.Uuid
+  assignedBy       String   @map("assigned_by") @db.Uuid
+  assignedAt       DateTime @default(now()) @map("assigned_at") @db.Timestamptz(6)
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  assignedTo   User         @relation("AssignmentsReceived", fields: [assignedToUserId], references: [id], onDelete: Cascade)
+  assigner     User         @relation("AssignmentsMadeBy", fields: [assignedBy], references: [id], onDelete: Cascade)
+
+  @@map("conversation_assignments")
+  @@schema("communications")
+}
+
+model MessageAttachment {
+  id             String @id @default(uuid()) @db.Uuid
+  tenantId       String @map("tenant_id") @db.Uuid
+  messageId      String @map("message_id") @db.Uuid
+  fileId         String @map("file_id") @db.Uuid
+  attachmentType String @map("attachment_type") @db.VarChar(40) // IMAGE, PDF, AUDIO, VIDEO, DICOM
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("message_attachments")
+  @@schema("communications")
+}
+
+model CommunicationPreference {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  patientId        String   @map("patient_id") @db.Uuid
+  channelType      String   @map("channel_type") @db.VarChar(40)
+  marketingAllowed Boolean  @default(true) @map("marketing_allowed")
+  remindersAllowed Boolean  @default(true) @map("reminders_allowed")
+  isBlocked        Boolean  @default(false) @map("is_blocked")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, patientId, channelType])
+  @@map("communication_preferences")
+  @@schema("communications")
+}

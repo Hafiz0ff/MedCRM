@@ -1,0 +1,348 @@
+model Warehouse {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @map("tenant_id") @db.Uuid
+  parentWarehouseId     String?  @map("parent_warehouse_id") @db.Uuid
+  branchId              String?  @map("branch_id") @db.Uuid
+  departmentId          String?  @map("department_id") @db.Uuid
+  roomId                String?  @map("room_id") @db.Uuid
+  warehouseType         String   @map("warehouse_type") @db.VarChar(40) // MAIN, BRANCH, DEPARTMENT, ROOM, MOBILE
+  code                  String   @db.VarChar(80)
+  name                  String   @db.VarChar(255)
+  responsibleEmployeeId String?  @map("responsible_employee_id") @db.Uuid
+  isActive              Boolean  @default(true) @map("is_active")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch          Branch?     @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  department      Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  room            Room?       @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  parentWarehouse Warehouse?  @relation("WarehouseHierarchy", fields: [parentWarehouseId], references: [id], onDelete: SetNull)
+  childWarehouses Warehouse[] @relation("WarehouseHierarchy")
+
+  batches              InventoryBatch[]
+  balances             InventoryBalance[]
+  transactions         InventoryTransaction[]
+  sourceTransfers      InventoryTransfer[]    @relation("SourceWarehouseTransfers")
+  destinationTransfers InventoryTransfer[]    @relation("DestinationWarehouseTransfers")
+  purchaseOrders       PurchaseOrder[]
+  audits               InventoryAudit[]
+  consumptions         InventoryConsumption[]
+  stockAlertRules      StockAlertRule[]
+  stockAlerts          StockAlert[]
+
+  @@unique([tenantId, code])
+  @@map("warehouses")
+  @@schema("inventory")
+}
+
+model InventoryItem {
+  id                         String  @id @default(uuid()) @db.Uuid
+  tenantId                   String  @map("tenant_id") @db.Uuid
+  itemCode                   String  @map("item_code") @db.VarChar(80)
+  barcode                    String? @db.VarChar(120)
+  itemName                   String  @map("item_name") @db.VarChar(255)
+  itemCategoryId             String? @map("item_category_id") @db.Uuid
+  unitOfMeasure              String  @map("unit_of_measure") @db.VarChar(40) // PCS, ML, AMPULE, BOX, etc.
+  inventoryType              String  @map("inventory_type") @db.VarChar(60) // MEDICATION, CONSUMABLE, MEDICAL_DEVICE, LAB_MATERIAL, OFFICE_SUPPLY
+  requiresBatchTracking      Boolean @default(false) @map("requires_batch_tracking")
+  requiresExpirationTracking Boolean @default(false) @map("requires_expiration_tracking")
+  minimumStockLevel          Decimal @default(0.00) @map("minimum_stock_level") @db.Decimal(12, 4)
+  reorderLevel               Decimal @default(0.00) @map("reorder_level") @db.Decimal(12, 4)
+  defaultSupplierId          String? @map("default_supplier_id") @db.Uuid
+  isActive                   Boolean @default(true) @map("is_active")
+
+  tenant          Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category        InventoryCategory? @relation(fields: [itemCategoryId], references: [id], onDelete: SetNull)
+  defaultSupplier Supplier?          @relation(fields: [defaultSupplierId], references: [id], onDelete: SetNull)
+
+  batches         InventoryBatch[]
+  balances        InventoryBalance[]
+  transactions    InventoryTransaction[]
+  bomItems        ServiceBomItem[]
+  auditItems      InventoryAuditItem[]
+  stockAlertRules StockAlertRule[]
+  stockAlerts     StockAlert[]
+
+  @@unique([tenantId, itemCode])
+  @@map("inventory_items")
+  @@schema("inventory")
+}
+
+model InventoryCategory {
+  id               String  @id @default(uuid()) @db.Uuid
+  tenantId         String  @map("tenant_id") @db.Uuid
+  parentCategoryId String? @map("parent_category_id") @db.Uuid
+  code             String  @db.VarChar(80)
+  name             String  @db.VarChar(255)
+  isActive         Boolean @default(true) @map("is_active")
+
+  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parentCategory  InventoryCategory?  @relation("CategoryTree", fields: [parentCategoryId], references: [id], onDelete: SetNull)
+  childCategories InventoryCategory[] @relation("CategoryTree")
+  items           InventoryItem[]
+
+  @@unique([tenantId, code])
+  @@map("inventory_categories")
+  @@schema("inventory")
+}
+
+model InventoryBatch {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  itemId           String    @map("item_id") @db.Uuid
+  supplierId       String?   @map("supplier_id") @db.Uuid
+  batchNumber      String    @map("batch_number") @db.VarChar(120)
+  serialNumber     String?   @map("serial_number") @db.VarChar(120)
+  expirationDate   DateTime? @map("expiration_date") @db.Date
+  productionDate   DateTime? @map("production_date") @db.Date
+  purchasePrice    Decimal   @map("purchase_price") @db.Decimal(12, 4)
+  currentQuantity  Decimal   @map("current_quantity") @db.Decimal(12, 4)
+  reservedQuantity Decimal   @default(0.00) @map("reserved_quantity") @db.Decimal(12, 4)
+  warehouseId      String    @map("warehouse_id") @db.Uuid
+  receivedAt       DateTime  @default(now()) @map("received_at") @db.Timestamptz(6)
+
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  supplier  Supplier?     @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  warehouse Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  balances     InventoryBalance[]
+  transactions InventoryTransaction[]
+  auditItems   InventoryAuditItem[]
+
+  @@map("inventory_batches")
+  @@schema("inventory")
+}
+
+model InventoryTransaction {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  warehouseId      String   @map("warehouse_id") @db.Uuid
+  itemId           String   @map("item_id") @db.Uuid
+  batchId          String?  @map("batch_id") @db.Uuid
+  transactionType  String   @map("transaction_type") @db.VarChar(60) // PURCHASE, TRANSFER_IN, TRANSFER_OUT, WRITE_OFF, CONSUMPTION, INVENTORY_ADJUSTMENT, RETURN_TO_SUPPLIER
+  quantity         Decimal  @db.Decimal(12, 4)
+  unitPrice        Decimal? @map("unit_price") @db.Decimal(12, 4)
+  totalAmount      Decimal? @map("total_amount") @db.Decimal(12, 4)
+  sourceEntityType String?  @map("source_entity_type") @db.VarChar(80) // APPOINTMENT, ENCOUNTER, PURCHASE_ORDER, TRANSFER
+  sourceEntityId   String?  @map("source_entity_id") @db.Uuid
+  referenceNumber  String?  @map("reference_number") @db.VarChar(120)
+  performedBy      String   @map("performed_by") @db.Uuid
+  transactionDate  DateTime @default(now()) @map("transaction_date") @db.Timestamptz(6)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  warehouse Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  item      InventoryItem   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  batch     InventoryBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  performer User            @relation(fields: [performedBy], references: [id], onDelete: Cascade)
+
+  @@map("inventory_transactions")
+  @@schema("inventory")
+}
+
+model Supplier {
+  id           String  @id @default(uuid()) @db.Uuid
+  tenantId     String  @map("tenant_id") @db.Uuid
+  supplierCode String  @map("supplier_code") @db.VarChar(80)
+  supplierName String  @map("supplier_name") @db.VarChar(255)
+  phone        String? @db.VarChar(60)
+  email        String? @db.VarChar(255)
+  taxNumber    String? @map("tax_number") @db.VarChar(120)
+  address      String?
+  status       String  @default("ACTIVE") @db.VarChar(40) // ACTIVE, INACTIVE
+
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  batches        InventoryBatch[]
+  purchaseOrders PurchaseOrder[]
+  items          InventoryItem[]
+
+  @@unique([tenantId, supplierCode])
+  @@map("suppliers")
+  @@schema("inventory")
+}
+
+model PurchaseOrder {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  supplierId  String    @map("supplier_id") @db.Uuid
+  warehouseId String    @map("warehouse_id") @db.Uuid
+  orderStatus String    @map("order_status") @db.VarChar(40) // DRAFT, ORDERED, RECEIVED, CANCELLED
+  totalAmount Decimal   @map("total_amount") @db.Decimal(12, 4)
+  orderedBy   String    @map("ordered_by") @db.Uuid
+  orderedAt   DateTime  @default(now()) @map("ordered_at") @db.Timestamptz(6)
+  receivedAt  DateTime? @map("received_at") @db.Timestamptz(6)
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier  Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  creator   User      @relation(fields: [orderedBy], references: [id], onDelete: Cascade)
+
+  @@map("purchase_orders")
+  @@schema("inventory")
+}
+
+model InventoryTransfer {
+  id                     String    @id @default(uuid()) @db.Uuid
+  tenantId               String    @map("tenant_id") @db.Uuid
+  sourceWarehouseId      String    @map("source_warehouse_id") @db.Uuid
+  destinationWarehouseId String    @map("destination_warehouse_id") @db.Uuid
+  transferStatus         String    @map("transfer_status") @db.VarChar(40) // REQUESTED, APPROVED, IN_TRANSIT, COMPLETED, CANCELLED
+  requestedBy            String    @map("requested_by") @db.Uuid
+  approvedBy             String?   @map("approved_by") @db.Uuid
+  transferredAt          DateTime? @map("transferred_at") @db.Timestamptz(6)
+
+  tenant               Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sourceWarehouse      Warehouse @relation("SourceWarehouseTransfers", fields: [sourceWarehouseId], references: [id], onDelete: Cascade)
+  destinationWarehouse Warehouse @relation("DestinationWarehouseTransfers", fields: [destinationWarehouseId], references: [id], onDelete: Cascade)
+  requester            User      @relation(fields: [requestedBy], references: [id], onDelete: Cascade)
+  approver             User?     @relation("ApprovedTransfers", fields: [approvedBy], references: [id], onDelete: SetNull)
+
+  @@map("inventory_transfers")
+  @@schema("inventory")
+}
+
+model InventoryBalance {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  warehouseId       String   @map("warehouse_id") @db.Uuid
+  itemId            String   @map("item_id") @db.Uuid
+  batchId           String?  @map("batch_id") @db.Uuid
+  availableQuantity Decimal  @map("available_quantity") @db.Decimal(12, 4)
+  reservedQuantity  Decimal  @default(0.00) @map("reserved_quantity") @db.Decimal(12, 4)
+  updatedAt         DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  warehouse Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  item      InventoryItem   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  batch     InventoryBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, warehouseId, itemId, batchId])
+  @@map("inventory_balances")
+  @@schema("inventory")
+}
+
+model InventoryAudit {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  warehouseId String    @map("warehouse_id") @db.Uuid
+  auditStatus String    @map("audit_status") @db.VarChar(40) // DRAFT, IN_PROGRESS, COMPLETED, CANCELLED
+  startedBy   String    @map("started_by") @db.Uuid
+  completedBy String?   @map("completed_by") @db.Uuid
+  startedAt   DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  tenant     Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  warehouse  Warehouse            @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  starter    User                 @relation(fields: [startedBy], references: [id], onDelete: Cascade)
+  completer  User?                @relation("CompletedAudits", fields: [completedBy], references: [id], onDelete: SetNull)
+  auditItems InventoryAuditItem[]
+
+  @@map("inventory_audits")
+  @@schema("inventory")
+}
+
+model InventoryAuditItem {
+  id                  String  @id @default(uuid()) @db.Uuid
+  auditId             String  @map("audit_id") @db.Uuid
+  itemId              String  @map("item_id") @db.Uuid
+  batchId             String? @map("batch_id") @db.Uuid
+  expectedQuantity    Decimal @map("expected_quantity") @db.Decimal(12, 4)
+  countedQuantity     Decimal @map("counted_quantity") @db.Decimal(12, 4)
+  discrepancyQuantity Decimal @map("discrepancy_quantity") @db.Decimal(12, 4)
+
+  audit InventoryAudit  @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  item  InventoryItem   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  batch InventoryBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  @@map("inventory_audit_items")
+  @@schema("inventory")
+}
+
+model ServiceBomTemplate {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  serviceId String   @map("service_id") @db.Uuid
+  version   String   @db.VarChar(40)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  service  Service          @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  bomItems ServiceBomItem[]
+
+  @@map("service_bom_templates")
+  @@schema("inventory")
+}
+
+model ServiceBomItem {
+  id              String  @id @default(uuid()) @db.Uuid
+  bomTemplateId   String  @map("bom_template_id") @db.Uuid
+  inventoryItemId String  @map("inventory_item_id") @db.Uuid
+  quantity        Decimal @db.Decimal(12, 4)
+  unitOfMeasure   String  @map("unit_of_measure") @db.VarChar(40)
+  isMandatory     Boolean @default(true) @map("is_mandatory")
+
+  bomTemplate ServiceBomTemplate @relation(fields: [bomTemplateId], references: [id], onDelete: Cascade)
+  item        InventoryItem      @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@map("service_bom_items")
+  @@schema("inventory")
+}
+
+model InventoryConsumption {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  appointmentId     String?  @map("appointment_id") @db.Uuid
+  encounterId       String?  @map("encounter_id") @db.Uuid
+  employeeId        String   @map("employee_id") @db.Uuid
+  warehouseId       String   @map("warehouse_id") @db.Uuid
+  consumptionStatus String   @map("consumption_status") @db.VarChar(40) // PENDING, COMPLETED, FAILED
+  consumedAt        DateTime @default(now()) @map("consumed_at") @db.Timestamptz(6)
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  encounter   Encounter?   @relation(fields: [encounterId], references: [id], onDelete: SetNull)
+  warehouse   Warehouse    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@map("inventory_consumptions")
+  @@schema("inventory")
+}
+
+model StockAlertRule {
+  id                      String  @id @default(uuid()) @db.Uuid
+  tenantId                String  @map("tenant_id") @db.Uuid
+  warehouseId             String  @map("warehouse_id") @db.Uuid
+  itemId                  String  @map("item_id") @db.Uuid
+  minimumQuantity         Decimal @map("minimum_quantity") @db.Decimal(12, 4)
+  criticalQuantity        Decimal @map("critical_quantity") @db.Decimal(12, 4)
+  notificationTargetsJson Json    @map("notification_targets_json")
+  isActive                Boolean @default(true) @map("is_active")
+
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  warehouse Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, warehouseId, itemId])
+  @@map("stock_alert_rules")
+  @@schema("inventory")
+}
+
+model StockAlert {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  warehouseId     String   @map("warehouse_id") @db.Uuid
+  itemId          String   @map("item_id") @db.Uuid
+  currentQuantity Decimal  @map("current_quantity") @db.Decimal(12, 4)
+  alertLevel      String   @map("alert_level") @db.VarChar(40) // WARNING, CRITICAL, OUT_OF_STOCK, EXPIRED_BATCH
+  alertStatus     String   @map("alert_status") @db.VarChar(40) // ACTIVE, RESOLVED, SNOOZED
+  triggeredAt     DateTime @default(now()) @map("triggered_at") @db.Timestamptz(6)
+
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  warehouse Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@map("stock_alerts")
+  @@schema("inventory")
+}

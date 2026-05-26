@@ -1,0 +1,135 @@
+model Department {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tenantId           String   @map("tenant_id") @db.Uuid
+  branchId           String   @map("branch_id") @db.Uuid
+  parentDepartmentId String?  @map("parent_department_id") @db.Uuid
+  code               String   @db.VarChar(120)
+  name               String   @db.VarChar(255)
+  description        String?
+  color              String?  @db.VarChar(40)
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant              Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch              Branch                   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  parent              Department?              @relation("DepartmentTree", fields: [parentDepartmentId], references: [id], onDelete: SetNull)
+  children            Department[]             @relation("DepartmentTree")
+  employeePositions   EmployeePosition[]
+  rooms               Room[]
+  employeeAssignments EmployeeRoomAssignment[]
+
+  encounters Encounter[]
+  warehouses Warehouse[]
+
+  @@unique([tenantId, branchId, code])
+  @@map("departments")
+  @@schema("hr")
+}
+
+model Specialty {
+  id                String   @id @default(uuid()) @db.Uuid
+  code              String   @unique @db.VarChar(120)
+  name              String   @db.VarChar(255)
+  internationalCode String?  @map("international_code") @db.VarChar(80)
+  isSystem          Boolean  @default(false) @map("is_system")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  employeePositions EmployeePosition[]
+  roomSpecialties   RoomSpecialty[]
+  roomAssignments   EmployeeRoomAssignment[]
+
+  clinicalTemplates ClinicalTemplate[]
+
+  @@map("specialties")
+  @@schema("hr")
+}
+
+model Position {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String?  @map("tenant_id") @db.Uuid
+  code           String   @db.VarChar(120)
+  name           String   @db.VarChar(255)
+  description    String?
+  isMedicalStaff Boolean  @default(true) @map("is_medical_staff")
+  isSystem       Boolean  @default(false) @map("is_system")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant            Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employeePositions EmployeePosition[]
+
+  @@unique([tenantId, code])
+  @@map("positions")
+  @@schema("hr")
+}
+
+model Employee {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  userId         String?   @unique @map("user_id") @db.Uuid
+  employeeNumber String    @map("employee_number") @db.VarChar(120)
+  firstName      String    @map("first_name") @db.VarChar(120)
+  lastName       String    @map("last_name") @db.VarChar(120)
+  middleName     String?   @map("middle_name") @db.VarChar(120)
+  birthDate      DateTime? @map("birth_date") @db.Date
+  gender         String?   @db.VarChar(40)
+  phone          String?   @db.VarChar(60)
+  email          String?   @db.VarChar(255)
+  hireDate       DateTime  @map("hire_date") @db.Date
+  dismissalDate  DateTime? @map("dismissal_date") @db.Date
+  employmentType String    @default("FULL_TIME") @map("employment_type") @db.VarChar(60)
+  photoFileId    String?   @map("photo_file_id") @db.Uuid
+  status         String    @default("ACTIVE") @db.VarChar(40)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant          Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user            User?                    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  positions       EmployeePosition[]
+  roomAssignments EmployeeRoomAssignment[]
+  appointments    Appointment[]
+
+  waitingLists       WaitingList[]
+  availabilityCaches AvailabilityCache[]
+
+  performedInvoiceItems InvoiceItem[]
+
+  episodesOfCare             EpisodeOfCare[]
+  encounters                 Encounter[]
+  prescriptionItemsPerformed PrescriptionItem[]
+
+  payrollRules        PayrollRule[]
+  payrollCalculations PayrollCalculation[]
+
+  @@unique([tenantId, employeeNumber])
+  @@map("employees")
+  @@schema("hr")
+}
+
+model EmployeePosition {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  employeeId   String    @map("employee_id") @db.Uuid
+  branchId     String    @map("branch_id") @db.Uuid
+  departmentId String    @map("department_id") @db.Uuid
+  positionId   String    @map("position_id") @db.Uuid
+  specialtyId  String?   @map("specialty_id") @db.Uuid
+  rate         Decimal   @default(1.0) @db.Decimal(5, 2)
+  workRate     String    @default("1.0") @map("work_rate") @db.VarChar(40)
+  isPrimary    Boolean   @default(true) @map("is_primary")
+  activeFrom   DateTime  @default(now()) @map("active_from") @db.Timestamptz(6)
+  activeTo     DateTime? @map("active_to") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  branch     Branch     @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  position   Position   @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  specialty  Specialty? @relation(fields: [specialtyId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, employeeId])
+  @@map("employee_positions")
+  @@schema("hr")
+}

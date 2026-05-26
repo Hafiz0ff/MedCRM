@@ -13,6 +13,15 @@ function resolveTarget(config: ConfigService, route: GatewayRouteConfig): string
       config.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001')
     );
   }
+  if (route.targetEnv === 'SCHEDULING_SERVICE_URL') {
+    return config.get<string>('SCHEDULING_SERVICE_URL', 'http://localhost:3003');
+  }
+  if (route.targetEnv === 'SCHEDULING_SERVICE_INTERNAL_URL') {
+    return (
+      config.get<string>('SCHEDULING_SERVICE_INTERNAL_URL') ??
+      config.get<string>('SCHEDULING_SERVICE_URL', 'http://localhost:3003')
+    );
+  }
 
   return config.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001');
 }

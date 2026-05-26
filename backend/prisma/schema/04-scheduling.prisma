@@ -1,0 +1,485 @@
+model Appointment {
+  id                 String    @id @default(uuid()) @db.Uuid
+  tenantId           String    @map("tenant_id") @db.Uuid
+  branchId           String    @map("branch_id") @db.Uuid
+  patientId          String    @map("patient_id") @db.Uuid
+  employeeId         String    @map("employee_id") @db.Uuid
+  serviceId          String?   @map("service_id") @db.Uuid
+  appointmentNumber  String    @map("appointment_number") @db.VarChar(120)
+  bookingSource      String    @map("booking_source") @db.VarChar(60)
+  appointmentType    String    @map("appointment_type") @db.VarChar(60)
+  status             String    @default("SCHEDULED") @db.VarChar(40)
+  priority           String    @default("NORMAL") @db.VarChar(40)
+  startAt            DateTime  @map("start_at") @db.Timestamptz(6)
+  endAt              DateTime  @map("end_at") @db.Timestamptz(6)
+  durationMinutes    Int       @map("duration_minutes")
+  notes              String?
+  cancellationReason String?   @map("cancellation_reason")
+  confirmedAt        DateTime? @map("confirmed_at") @db.Timestamptz(6)
+  checkedInAt        DateTime? @map("checked_in_at") @db.Timestamptz(6)
+  completedAt        DateTime? @map("completed_at") @db.Timestamptz(6)
+  cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  createdBy          String?   @map("created_by") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant        Tenant                     @relation(fields: [tenantId], references: [id])
+  branch        Branch                     @relation(fields: [branchId], references: [id])
+  patient       Patient                    @relation(fields: [patientId], references: [id])
+  service       Service?                   @relation(fields: [serviceId], references: [id])
+  employee      Employee                   @relation(fields: [employeeId], references: [id])
+  creator       User?                      @relation("AppointmentCreatedBy", fields: [createdBy], references: [id])
+  statusHistory AppointmentStatusHistory[]
+  resources     AppointmentResource[]
+
+  recurrenceRule AppointmentRecurrenceRule?
+  notifications  AppointmentNotification[]
+
+  visitStates AppointmentVisitState[]
+  visitQueues VisitQueue[]
+  invoices    Invoice[]
+
+  encounters            Encounter[]
+  notificationsQueue    NotificationsQueue[]
+  inventoryConsumptions InventoryConsumption[]
+
+  @@unique([tenantId, appointmentNumber])
+  @@index([tenantId, branchId, startAt, endAt])
+  @@index([tenantId, employeeId, startAt, endAt])
+  @@map("appointments")
+  @@schema("scheduling")
+}
+
+model AppointmentStatusHistory {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  appointmentId String   @map("appointment_id") @db.Uuid
+  oldStatus     String?  @map("old_status") @db.VarChar(40)
+  newStatus     String   @map("new_status") @db.VarChar(40)
+  changedBy     String?  @map("changed_by") @db.Uuid
+  reason        String?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+
+  @@index([tenantId, appointmentId, createdAt])
+  @@map("appointment_status_history")
+  @@schema("scheduling")
+}
+
+model AppointmentResource {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  appointmentId String   @map("appointment_id") @db.Uuid
+  resourceType  String   @map("resource_type") @db.VarChar(40)
+  resourceId    String   @map("resource_id") @db.Uuid
+  reservedFrom  DateTime @map("reserved_from") @db.Timestamptz(6)
+  reservedTo    DateTime @map("reserved_to") @db.Timestamptz(6)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+
+  @@index([tenantId, resourceType, resourceId, reservedFrom, reservedTo])
+  @@map("appointment_resources")
+  @@schema("scheduling")
+}
+
+model AppointmentReservation {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  slotKey    String   @map("slot_key") @db.VarChar(255)
+  reservedBy String?  @map("reserved_by") @db.VarChar(255)
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, slotKey])
+  @@map("appointment_reservations")
+  @@schema("scheduling")
+}
+
+model RoomType {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String?  @map("tenant_id") @db.Uuid
+  code      String   @db.VarChar(120)
+  name      String   @db.VarChar(255)
+  color     String?  @db.VarChar(40)
+  isSystem  Boolean  @default(false) @map("is_system")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rooms  Room[]
+
+  @@unique([tenantId, code])
+  @@map("room_types")
+  @@schema("scheduling")
+}
+
+model Room {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  branchId     String   @map("branch_id") @db.Uuid
+  departmentId String?  @map("department_id") @db.Uuid
+  roomTypeId   String   @map("room_type_id") @db.Uuid
+  code         String   @db.VarChar(120)
+  name         String   @db.VarChar(255)
+  floor        Int?
+  capacity     Int      @default(1)
+  description  String?
+  scheduleJson Json?    @map("schedule_json")
+  status       String   @default("ACTIVE") @db.VarChar(40)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant         Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch         Branch                   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  department     Department?              @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  roomType       RoomType                 @relation(fields: [roomTypeId], references: [id])
+  specialties    RoomSpecialty[]
+  equipment      Equipment[]
+  roomEquipment  RoomEquipment[]
+  assignments    EmployeeRoomAssignment[]
+  medicalDevices MedicalDevice[]
+  warehouses     Warehouse[]
+
+  @@unique([tenantId, branchId, code])
+  @@map("rooms")
+  @@schema("scheduling")
+}
+
+model RoomSpecialty {
+  id          String @id @default(uuid()) @db.Uuid
+  roomId      String @map("room_id") @db.Uuid
+  specialtyId String @map("specialty_id") @db.Uuid
+
+  room      Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  specialty Specialty @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, specialtyId])
+  @@map("room_specialties")
+  @@schema("scheduling")
+}
+
+model EquipmentCategory {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String?  @map("tenant_id") @db.Uuid
+  code      String   @db.VarChar(120)
+  name      String   @db.VarChar(255)
+  isSystem  Boolean  @default(false) @map("is_system")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant    Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  equipment Equipment[]
+
+  @@unique([tenantId, code])
+  @@map("equipment_categories")
+  @@schema("scheduling")
+}
+
+model Equipment {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  branchId         String    @map("branch_id") @db.Uuid
+  roomId           String?   @map("room_id") @db.Uuid
+  categoryId       String    @map("category_id") @db.Uuid
+  inventoryNumber  String    @map("inventory_number") @db.VarChar(120)
+  serialNumber     String?   @map("serial_number") @db.VarChar(120)
+  name             String    @db.VarChar(255)
+  manufacturer     String?   @db.VarChar(255)
+  model            String?   @db.VarChar(255)
+  purchaseDate     DateTime? @map("purchase_date") @db.Date
+  maintenanceDate  DateTime? @map("maintenance_date") @db.Date
+  calibrationDate  DateTime? @map("calibration_date") @db.Date
+  status           String    @default("ACTIVE") @db.VarChar(40)
+  isSharedResource Boolean   @default(false) @map("is_shared_resource")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant         Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch         Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  room           Room?             @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  category       EquipmentCategory @relation(fields: [categoryId], references: [id])
+  roomEquipments RoomEquipment[]
+
+  @@unique([tenantId, inventoryNumber])
+  @@map("equipment")
+  @@schema("scheduling")
+}
+
+model RoomEquipment {
+  id          String    @id @default(uuid()) @db.Uuid
+  roomId      String    @map("room_id") @db.Uuid
+  equipmentId String    @map("equipment_id") @db.Uuid
+  installedAt DateTime  @default(now()) @map("installed_at") @db.Timestamptz(6)
+  removedAt   DateTime? @map("removed_at") @db.Timestamptz(6)
+
+  room      Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@map("room_equipment")
+  @@schema("scheduling")
+}
+
+model EmployeeRoomAssignment {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  employeeId       String    @map("employee_id") @db.Uuid
+  branchId         String    @map("branch_id") @db.Uuid
+  departmentId     String?   @map("department_id") @db.Uuid
+  roomId           String    @map("room_id") @db.Uuid
+  specialtyId      String?   @map("specialty_id") @db.Uuid
+  activeFrom       DateTime  @default(now()) @map("active_from") @db.Timestamptz(6)
+  activeTo         DateTime? @map("active_to") @db.Timestamptz(6)
+  workScheduleJson Json?     @map("work_schedule_json")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee   Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  branch     Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  room       Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  specialty  Specialty?  @relation(fields: [specialtyId], references: [id], onDelete: SetNull)
+
+  @@map("employee_room_assignments")
+  @@schema("scheduling")
+}
+
+model WorkingSchedule {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  entityType     String   @map("entity_type") @db.VarChar(40) // branch, room, employee, equipment
+  entityId       String   @map("entity_id") @db.Uuid
+  weekday        Int // 1 = Monday, 7 = Sunday
+  startTime      String   @map("start_time") @db.VarChar(10) // "08:00"
+  endTime        String   @map("end_time") @db.VarChar(10) // "17:00"
+  breakStart     String?  @map("break_start") @db.VarChar(10)
+  breakEnd       String?  @map("break_end") @db.VarChar(10)
+  recurrenceRule String?  @map("recurrence_rule")
+  timezone       String   @default("Europe/Moscow") @db.VarChar(80)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, entityType, entityId])
+  @@map("working_schedules")
+  @@schema("scheduling")
+}
+
+model ScheduleException {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  entityType    String   @map("entity_type") @db.VarChar(40) // branch, room, employee, equipment
+  entityId      String   @map("entity_id") @db.Uuid
+  exceptionDate DateTime @map("exception_date") @db.Date
+  reason        String?
+  startTime     String?  @map("start_time") @db.VarChar(10)
+  endTime       String?  @map("end_time") @db.VarChar(10)
+  isDayOff      Boolean  @default(false) @map("is_day_off")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, entityType, entityId, exceptionDate])
+  @@map("schedule_exceptions")
+  @@schema("scheduling")
+}
+
+model WaitingList {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  patientId         String   @map("patient_id") @db.Uuid
+  branchId          String   @map("branch_id") @db.Uuid
+  employeeId        String?  @map("employee_id") @db.Uuid
+  preferredDateFrom DateTime @map("preferred_date_from") @db.Date
+  preferredDateTo   DateTime @map("preferred_date_to") @db.Date
+  preferredTimeFrom String?  @map("preferred_time_from") @db.VarChar(10)
+  preferredTimeTo   String?  @map("preferred_time_to") @db.VarChar(10)
+  serviceId         String?  @map("service_id") @db.Uuid
+  priority          String   @default("NORMAL") @db.VarChar(40)
+  notes             String?
+  status            String   @default("ACTIVE") @db.VarChar(40)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch   Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  patient  Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  service  Service?  @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@map("waiting_lists")
+  @@schema("scheduling")
+}
+
+model AvailabilityCache {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tenantId           String   @map("tenant_id") @db.Uuid
+  employeeId         String   @map("employee_id") @db.Uuid
+  branchId           String   @map("branch_id") @db.Uuid
+  date               DateTime @db.Date
+  availableSlotsJson Json     @map("available_slots_json")
+  recalculatedAt     DateTime @default(now()) @updatedAt @map("recalculated_at") @db.Timestamptz(6)
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch   Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, employeeId, branchId, date])
+  @@map("availability_caches")
+  @@schema("scheduling")
+}
+
+model ResourceBuffer {
+  id            String @id @default(uuid()) @db.Uuid
+  tenantId      String @map("tenant_id") @db.Uuid
+  resourceType  String @map("resource_type") @db.VarChar(40) // EMPLOYEE, ROOM, EQUIPMENT
+  resourceId    String @map("resource_id") @db.Uuid
+  beforeMinutes Int    @default(0) @map("before_minutes")
+  afterMinutes  Int    @default(0) @map("after_minutes")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, resourceType, resourceId])
+  @@map("resource_buffers")
+  @@schema("scheduling")
+}
+
+model ServiceRequiredResource {
+  id                 String @id @default(uuid()) @db.Uuid
+  tenantId           String @map("tenant_id") @db.Uuid
+  serviceId          String @map("service_id") @db.Uuid
+  resourceType       String @map("resource_type") @db.VarChar(40) // ROOM_TYPE, EQUIPMENT_CATEGORY
+  resourceCategoryId String @map("resource_category_id") @db.Uuid
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, resourceType, resourceCategoryId])
+  @@map("service_required_resources")
+  @@schema("scheduling")
+}
+
+model AppointmentRecurrenceRule {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  appointmentId  String    @unique @map("appointment_id") @db.Uuid
+  recurrenceType String    @map("recurrence_type") @db.VarChar(40) // DAILY, WEEKLY, MONTHLY
+  interval       Int       @default(1)
+  endDate        DateTime? @map("end_date") @db.Date
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@map("appointment_recurrence_rules")
+  @@schema("scheduling")
+}
+
+model AppointmentNotification {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  appointmentId    String    @map("appointment_id") @db.Uuid
+  notificationType String    @map("notification_type") @db.VarChar(60) // REMINDER_24H, REMINDER_2H, CONFIRMATION
+  channel          String    @db.VarChar(40) // TELEGRAM, WHATSAPP, SMS, EMAIL
+  status           String    @default("PENDING") @db.VarChar(40) // PENDING, SENT, DELIVERED, FAILED
+  sentAt           DateTime? @map("sent_at") @db.Timestamptz(6)
+  deliveredAt      DateTime? @map("delivered_at") @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@map("appointment_notifications")
+  @@schema("scheduling")
+}
+
+model OnlineBookingToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  patientId String   @map("patient_id") @db.Uuid
+  token     String   @unique @db.VarChar(255)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  ipAddress String?  @map("ip_address") @db.VarChar(120)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("online_booking_tokens")
+  @@schema("scheduling")
+}
+
+model ReceptionistDashboardCache {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  branchId       String   @map("branch_id") @db.Uuid
+  dashboardDate  DateTime @map("dashboard_date") @db.Date
+  dashboardJson  Json     @map("dashboard_json")
+  recalculatedAt DateTime @default(now()) @updatedAt @map("recalculated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, branchId, dashboardDate])
+  @@map("receptionist_dashboards_cache")
+  @@schema("scheduling")
+}
+
+model AppointmentVisitState {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  appointmentId   String   @map("appointment_id") @db.Uuid
+  oldState        String   @map("old_state") @db.VarChar(40)
+  newState        String   @map("new_state") @db.VarChar(40)
+  changedBy       String   @map("changed_by") @db.Uuid
+  workstationType String   @map("workstation_type") @db.VarChar(60)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [changedBy], references: [id], onDelete: Cascade)
+
+  @@map("appointment_visit_states")
+  @@schema("scheduling")
+}
+
+model VisitQueue {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  branchId          String   @map("branch_id") @db.Uuid
+  appointmentId     String   @map("appointment_id") @db.Uuid
+  queueNumber       String   @map("queue_number") @db.VarChar(40)
+  queueStatus       String   @map("queue_status") @db.VarChar(40)
+  priority          String   @default("NORMAL") @db.VarChar(40)
+  estimatedWaitTime Int      @map("estimated_wait_time")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch      Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@map("visit_queue")
+  @@schema("scheduling")
+}
+
+model IncomingCall {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  branchId        String    @map("branch_id") @db.Uuid
+  phoneNumber     String    @map("phone_number") @db.VarChar(60)
+  patientId       String?   @map("patient_id") @db.Uuid
+  operatorUserId  String?   @map("operator_user_id") @db.Uuid
+  callStartedAt   DateTime  @map("call_started_at") @db.Timestamptz(6)
+  callEndedAt     DateTime? @map("call_ended_at") @db.Timestamptz(6)
+  durationSeconds Int?      @map("duration_seconds")
+  callResult      String    @map("call_result") @db.VarChar(40)
+  recordingFileId String?   @map("recording_file_id") @db.Uuid
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch   Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  patient  Patient? @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  operator User?    @relation(fields: [operatorUserId], references: [id], onDelete: SetNull)
+
+  @@map("incoming_calls")
+  @@schema("scheduling")
+}

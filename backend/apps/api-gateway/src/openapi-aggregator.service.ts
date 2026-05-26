@@ -21,41 +21,74 @@ export class OpenApiAggregatorService {
         this.config.get<string>('AUTH_SERVICE_INTERNAL_URL') ??
         this.config.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001');
 
-      const response = await fetch(`${authServiceUrl}/docs-json`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch auth-service OpenAPI spec: ${response.statusText}`);
+      const schedulingServiceUrl =
+        this.config.get<string>('SCHEDULING_SERVICE_INTERNAL_URL') ??
+        this.config.get<string>('SCHEDULING_SERVICE_URL', 'http://localhost:3003');
+
+      const [authRes, schedulingRes] = await Promise.allSettled([
+        fetch(`${authServiceUrl}/docs-json`),
+        fetch(`${schedulingServiceUrl}/docs-json`),
+      ]);
+
+      let authSpec: any = { paths: {}, components: {} };
+      if (authRes.status === 'fulfilled' && authRes.value.ok) {
+        authSpec = await authRes.value.json();
+      } else {
+        this.logger.warn('Failed to fetch auth-service OpenAPI spec');
       }
-      const rawSpec = await response.json();
+
+      let schedulingSpec: any = { paths: {}, components: {} };
+      if (schedulingRes.status === 'fulfilled' && schedulingRes.value.ok) {
+        schedulingSpec = await schedulingRes.value.json();
+      } else {
+        this.logger.warn('Failed to fetch scheduling-service OpenAPI spec');
+      }
 
       const aggregatedPaths: any = {};
       const allPrefixRoutes = [...publicRoutes, ...compatibilityRoutes];
 
-      if (rawSpec.paths) {
-        for (const [path, pathItem] of Object.entries(rawSpec.paths)) {
-          let rewritten = false;
-          // Sort routes so that longer upstreamPrefix matches are checked first
-          const sortedRoutes = [...allPrefixRoutes].sort(
-            (a, b) => b.upstreamPrefix.length - a.upstreamPrefix.length,
-          );
+      const mergeSpecs = (spec: any) => {
+        if (spec.paths) {
+          for (const [path, pathItem] of Object.entries(spec.paths)) {
+            let rewritten = false;
+            // Sort routes so that longer upstreamPrefix matches are checked first
+            const sortedRoutes = [...allPrefixRoutes].sort(
+              (a, b) => b.upstreamPrefix.length - a.upstreamPrefix.length,
+            );
 
-          for (const route of sortedRoutes) {
-            if (path === route.upstreamPrefix || path.startsWith(route.upstreamPrefix + '/')) {
-              const suffix = path.slice(route.upstreamPrefix.length);
-              const newPath = `${route.gatewayPrefix}${suffix}`;
-              aggregatedPaths[newPath] = pathItem;
-              rewritten = true;
-              break;
+            for (const route of sortedRoutes) {
+              if (path === route.upstreamPrefix || path.startsWith(route.upstreamPrefix + '/')) {
+                const suffix = path.slice(route.upstreamPrefix.length);
+                const newPath = `${route.gatewayPrefix}${suffix}`;
+                aggregatedPaths[newPath] = pathItem;
+                rewritten = true;
+                break;
+              }
+            }
+
+            if (!rewritten) {
+              aggregatedPaths[path] = pathItem;
             }
           }
-
-          if (!rewritten) {
-            aggregatedPaths[path] = pathItem;
-          }
         }
-      }
+      };
+
+      mergeSpecs(authSpec);
+      mergeSpecs(schedulingSpec);
+
+      const mergedComponents = {
+        schemas: {
+          ...(authSpec.components?.schemas ?? {}),
+          ...(schedulingSpec.components?.schemas ?? {}),
+        },
+        securitySchemes: {
+          ...(authSpec.components?.securitySchemes ?? {}),
+          ...(schedulingSpec.components?.securitySchemes ?? {}),
+        },
+      };
 
       this.cachedSchema = {
-        openapi: rawSpec.openapi || '3.0.0',
+        openapi: authSpec.openapi || schedulingSpec.openapi || '3.0.0',
         info: {
           title: 'MedCRM Aggregated API Gateway Documentation',
           description:
@@ -69,7 +102,7 @@ export class OpenApiAggregatorService {
           },
         ],
         paths: aggregatedPaths,
-        components: rawSpec.components || {},
+        components: mergedComponents,
       };
 
       this.lastFetchedAt = now;

@@ -1,8 +1,11 @@
 import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
 import { CurrentUser } from '@core/security/current-user.decorator';
+import { JwtAuthGuard } from '@core/security/jwt-auth.guard';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
+import { ModuleEnabledGuard } from '@core/security/module-enabled.guard';
 import { RequireModule } from '@core/security/modules.decorator';
 import { RequirePermissions } from '@core/security/permissions.decorator';
+import { RbacGuard } from '@core/security/rbac.guard';
 import {
   Body,
   Controller,
@@ -16,9 +19,6 @@ import {
   UsePipes,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ModuleEnabledGuard } from '../auth/guards/module-enabled.guard';
-import { RbacGuard } from '../auth/guards/rbac.guard';
 import {
   AppointmentListQuery,
   CreateAppointmentDto,

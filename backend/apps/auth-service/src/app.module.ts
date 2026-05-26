@@ -1,6 +1,7 @@
 import { AuditModule } from '@core/audit/audit.module';
 import { RedisModule } from '@core/cache/redis.module';
 import { PrismaModule } from '@core/database/prisma.module';
+import { EventBusModule } from '@core/eventbus/eventbus.module';
 import { EventsModule } from '@core/events/events.module';
 import { RateLimitGuard } from '@core/security/rate-limit.guard';
 import { TenancyModule } from '@core/tenancy/tenancy.module';
@@ -30,6 +31,7 @@ import { SystemAdminModule } from './system-admin/system-admin.module';
     TenancyModule,
     AuditModule,
     EventsModule,
+    EventBusModule,
     AuthModule,
     PatientCrmModule,
     SmartSchedulingModule,

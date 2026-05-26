@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ТЗ №10. Enterprise Readiness & Mobile — MedCRM</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #101828;
+      --muted: #667085;
+      --line: #d9e1ea;
+      --surface: #ffffff;
+      --soft: #f6f8fb;
+      --brand: #079685;
+      --brand-dark: #04786b;
+      --brand-soft: #e7f8f5;
+      --blue: #2563eb;
+      --amber: #b45309;
+      --red: #b42318;
+      --green: #15803d;
+      --violet: #6d28d9;
+      --shadow: 0 16px 40px rgba(16, 24, 40, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #eef3f7; color: var(--ink); font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; line-height: 1.55; }
+    .page { width: min(1180px, calc(100% - 40px)); margin: 32px auto; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+    header.cover { padding: 56px 56px 40px; background: linear-gradient(135deg, rgba(180, 83, 9, 0.10), rgba(7, 150, 133, 0.16)), #fbfdff; border-bottom: 1px solid var(--line); }
+    main { padding: 36px 56px 56px; }
+    h1, h2, h3, h4 { margin: 0; line-height: 1.18; }
+    h1 { max-width: 880px; font-size: 42px; font-weight: 760; }
+    h2 { margin-top: 48px; padding-top: 26px; border-top: 1px solid var(--line); font-size: 26px; }
+    h3 { margin-top: 28px; font-size: 19px; }
+    h4 { margin-top: 18px; font-size: 16px; color: #344054; }
+    p { margin: 10px 0 0; }
+    ul, ol { margin: 10px 0 0; padding-left: 22px; }
+    li + li { margin-top: 6px; }
+    table { width: 100%; margin-top: 14px; border-collapse: collapse; font-size: 14px; }
+    th, td { vertical-align: top; padding: 12px 14px; border: 1px solid var(--line); text-align: left; }
+    th { background: #f3f7fa; font-weight: 700; }
+    code { padding: 2px 5px; border-radius: 5px; background: #edf2f7; color: #243244; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.92em; }
+    pre { margin-top: 12px; padding: 16px 18px; background: #0b1220; color: #e6edf3; border-radius: 10px; overflow-x: auto; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; line-height: 1.55; }
+    pre code { background: transparent; color: inherit; padding: 0; }
+    .meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
+    .meta div, .note, .decision, .warning, .danger, .card { border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.85); padding: 14px 16px; }
+    .meta span, .eyebrow { display: block; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .meta strong { display: block; margin-top: 4px; font-size: 15px; }
+    .lead { max-width: 820px; margin-top: 18px; color: #344054; font-size: 18px; }
+    .toc { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; margin-top: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+    .toc a { color: var(--brand-dark); text-decoration: none; font-weight: 600; }
+    .toc a:hover { text-decoration: underline; }
+    .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 16px; }
+    .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 16px; }
+    .four { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+    .card { padding: 18px; }
+    .card h3 { margin-top: 0; }
+    .note { background: #f8fbff; border-color: #c7d8f0; }
+    .decision { background: #ecfdf5; border-color: #a7f3d0; }
+    .warning { background: #fff7ed; border-color: #fed7aa; }
+    .danger { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
+    .small { color: var(--muted); font-size: 13px; }
+    .stage { border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: 10px; padding: 16px 18px; margin-top: 14px; background: #fbfeff; }
+    .stage h3 { margin-top: 0; }
+    .stage .stage-meta { display: inline-block; margin-right: 10px; padding: 2px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-dark); font-size: 12px; font-weight: 700; }
+    .kpi { border-radius: 12px; padding: 18px; border: 1px solid var(--line); background: linear-gradient(180deg, #ffffff, #f7fafc); }
+    .kpi .label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .kpi .value { display: block; margin-top: 6px; font-size: 26px; font-weight: 760; }
+    .kpi .hint { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .check { padding-left: 0; list-style: none; }
+    .check li { position: relative; padding: 6px 0 6px 26px; border-bottom: 1px dashed #e5e7eb; }
+    .check li:before { content: ""; position: absolute; left: 0; top: 11px; width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid var(--brand); background: #fff; }
+    .check li:last-child { border-bottom: 0; }
+    .file-tree { margin-top: 12px; padding: 16px 20px; background: #0b1220; color: #e6edf3; border-radius: 10px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; line-height: 1.7; overflow-x: auto; }
+    .file-tree b { color: #7dd3fc; font-weight: 700; }
+    .phone {
+      width: 200px;
+      border: 8px solid #111827;
+      border-radius: 24px;
+      overflow: hidden;
+      background: #fff;
+      display: inline-block;
+      vertical-align: top;
+      margin: 0 12px 0 0;
+    }
+    .phone .head { background: var(--brand-dark); color: #fff; padding: 12px; }
+    .phone .head .title { font-weight: 700; font-size: 14px; }
+    .phone .head .sub { font-size: 11px; opacity: 0.9; }
+    .phone .body { padding: 10px; font-size: 12px; }
+    .phone .row { padding: 8px; border-bottom: 1px solid var(--line); }
+    .phone .row:last-child { border-bottom: 0; }
+    .phone .row b { display:block; font-size: 12px; }
+    .phone .row span { font-size: 11px; color: var(--muted); }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .pill.blue { background: #eff6ff; color: #1e40af; }
+    .pill.amber { background: #fffbeb; color: #92400e; }
+    .pill.green { background: #f0fdf4; color: #166534; }
+    @media (max-width: 860px) {
+      .page { width: 100%; margin: 0; border-width: 0; }
+      header.cover, main { padding: 28px 20px; }
+      h1 { font-size: 30px; }
+      .meta, .two, .three, .four, .toc { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: #fff; }
+      .page { width: 100%; margin: 0; border: 0; box-shadow: none; }
+      header.cover, main { padding: 24px 32px; }
+      pre { background: #f4f4f5; color: #111827; }
+    }
+  </style>
+</head>
+<body>
+  <article class="page">
+    <header class="cover">
+      <span class="eyebrow">MedCRM · ТЗ №10 · Enterprise Readiness & Mobile</span>
+      <h1>K8s, multi-region, SSO, white-label, биллинг SaaS и mobile apps</h1>
+      <p class="lead">
+        Финальный шаг: превратить MedCRM в продукт, который продают сетям клиник и частным врачам, ставят в трёх
+        странах с локальной резиденцией данных, кастомизируют под бренд клиники, биллят как SaaS и используют с
+        мобильных устройств. Helm-chart-per-service, multi-region routing, SSO (SAML / OIDC) для корпоративных
+        клиник, white-label custom-domain, marketplace модулей и подписочный биллинг, native-приложения для врача и
+        пациента (Expo), e-signature и видеоконсультации (LiveKit).
+      </p>
+      <section class="meta">
+        <div><span>Версия</span><strong>1.0</strong></div>
+        <div><span>Дата</span><strong>25 мая 2026</strong></div>
+        <div><span>Проект</span><strong>xiewan1230-maker/MedCRM</strong></div>
+        <div><span>Фокус</span><strong>Enterprise SaaS + mobile</strong></div>
+      </section>
+    </header>
+
+    <main>
+      <nav class="toc">
+        <a href="#purpose">1. Назначение</a>
+        <a href="#as-is">2. Состояние «как есть»</a>
+        <a href="#goals">3. Цели и Out of Scope</a>
+        <a href="#k8s">4. Helm + Kubernetes</a>
+        <a href="#multiregion">5. Multi-region и резидентность</a>
+        <a href="#sso">6. SSO / SAML / OIDC</a>
+        <a href="#whitelabel">7. White-label и custom-domain</a>
+        <a href="#billing">8. SaaS-биллинг подписки</a>
+        <a href="#marketplace">9. Marketplace модулей</a>
+        <a href="#mobile-patient">10. Mobile: пациент</a>
+        <a href="#mobile-doctor">11. Mobile: врач</a>
+        <a href="#offline">12. Offline-first sync</a>
+        <a href="#telehealth">13. Telehealth (LiveKit)</a>
+        <a href="#esign">14. E-signature УКЭП</a>
+        <a href="#observability">15. Production observability и SLA</a>
+        <a href="#dr">16. DR, backup, runbooks</a>
+        <a href="#files">17. Структура файлов</a>
+        <a href="#plan">18. Этапы работ</a>
+        <a href="#acceptance">19. Acceptance</a>
+        <a href="#metrics">20. Метрики и риски</a>
+      </nav>
+
+      <section id="purpose">
+        <h2>1. Назначение</h2>
+        <p>
+          После ТЗ №1–9 MedCRM — рабочая, безопасная и осмысленная МИС. Но чтобы продаваться сетям клиник, частным
+          врачам и быть «настоящим SaaS-продуктом», нужно закрыть последний пласт: enterprise-зрелость (K8s, SSO,
+          white-label, биллинг), географическое масштабирование (multi-region РФ/РТ/УЗ/EU с резиденцией данных) и
+          мобильные клиенты для пациентов и врачей.
+        </p>
+        <p>
+          Это сразу превращает MedCRM из «B2B software для клиники» в «SaaS-платформу для медицинской отрасли»:
+          подписка, marketplace модулей, мобильные приложения, видеоконсультации и подпись документов УКЭП — всё, что
+          корпоративный покупатель ждёт по умолчанию.
+        </p>
+        <div class="decision">
+          <span class="eyebrow">Принцип</span>
+          <strong>«Production-grade с первого дня, без переписывания»</strong>
+          <p class="small">Helm-чарты и K8s — на базе ТЗ №6 модульного split; mobile — поверх portal/EMR API; биллинг — отдельный модуль; всё опционально, ничто не ломает legacy-инсталляции.</p>
+        </div>
+      </section>
+
+      <section id="as-is">
+        <h2>2. Состояние «как есть»</h2>
+        <table>
+          <thead><tr><th>Слой</th><th>Сейчас</th><th>Целевое</th></tr></thead>
+          <tbody>
+            <tr><td>Deploy</td><td>docker compose only.</td><td>Helm-chart-per-service, Kubernetes.</td></tr>
+            <tr><td>Регионы</td><td>Один.</td><td>RU / TJ / UZ / EU с резиденцией.</td></tr>
+            <tr><td>SSO</td><td>Нет.</td><td>SAML2 + OIDC (Okta, Azure AD, Keycloak).</td></tr>
+            <tr><td>White-label</td><td>Бренд жёстко.</td><td>Custom domain, theme tokens, logo per tenant.</td></tr>
+            <tr><td>Биллинг</td><td>Нет.</td><td>SaaS-подписка, usage-meter, в РФ — через Tinkoff/Сбер, EU — Stripe.</td></tr>
+            <tr><td>Marketplace модулей</td><td>Нет.</td><td>Tenant покупает только нужное.</td></tr>
+            <tr><td>Mobile patient</td><td>Только web portal.</td><td>Expo native iOS/Android.</td></tr>
+            <tr><td>Mobile doctor</td><td>Нет.</td><td>Expo native iOS/Android.</td></tr>
+            <tr><td>Telehealth</td><td>Нет.</td><td>LiveKit + appointment.kind=TELEMEDICINE.</td></tr>
+            <tr><td>УКЭП</td><td>WebAuthn только локально.</td><td>КриптоПро / СигнАль для юридически-значимой подписи РФ.</td></tr>
+            <tr><td>SLA</td><td>Нет формальных.</td><td>99.9% standard, 99.95% enterprise.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="goals">
+        <h2>3. Цели и Out of Scope</h2>
+        <div class="two">
+          <div class="card">
+            <h3>Цели</h3>
+            <ul>
+              <li>Helm-чарты для всех сервисов (ТЗ №6); один umbrella chart <code>medcrm</code>.</li>
+              <li>K8s-ready: liveness/readiness probes, graceful shutdown, secrets via ExternalSecrets, HPA.</li>
+              <li>Multi-region routing: edge-домен → ближайший region; sticky session.</li>
+              <li>Data residency: tenant attribute <code>region</code>, выбирается при онбординге; перемещение между регионами — отдельный flow.</li>
+              <li>SSO: SAML2 + OIDC, поддержка Keycloak, Azure AD, Google Workspace, Okta.</li>
+              <li>SCIM 2.0 для user provisioning.</li>
+              <li>White-label: custom domain (через CNAME), TLS managed (Let's Encrypt / Caddy), theme tokens (ТЗ №2) per tenant, logo, email-from.</li>
+              <li>SaaS-биллинг: subscription plans, usage-metered overages, prorating, invoice/receipt automation; провайдеры РФ + Stripe для EU.</li>
+              <li>Marketplace модулей: тенант включает / отключает модули; per-module pricing; preview-trial.</li>
+              <li>Native iOS + Android приложения для пациента (Expo).</li>
+              <li>Native iOS + Android приложения для врача (Expo) с offline-first sync.</li>
+              <li>Telehealth: видеоприём через LiveKit, ICE-config, recording (opt-in), chat + screen-sharing.</li>
+              <li>УКЭП-подпись для legal-документов в РФ.</li>
+              <li>SLA-mode: 99.9% standard, 99.95% enterprise; HA-deployment; PITR backup.</li>
+              <li>DR: full backup + restore drill quarterly; cross-region failover documented.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Out of Scope</h3>
+            <ul>
+              <li>Полный SOC 2 / HIPAA audit — отдельная программа.</li>
+              <li>Public app store releases с медицинской сертификацией (это другая дисциплина) — выпускаем как «бизнес-tool», не как SaMD.</li>
+              <li>Hardware integration (медицинские приборы напрямую) — отдельный модуль.</li>
+              <li>Wearables (Apple Health/Google Fit) — фаза 2.</li>
+              <li>White-label мобильных приложений (per-brand binary) — отдельная программа.</li>
+              <li>Полная offline-операция backend (only mobile offline) — другая задача.</li>
+              <li>Перевод на multi-tenant БД-кластер с physical isolation — enterprise-by-request only.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="k8s">
+        <h2>4. Helm + Kubernetes</h2>
+
+        <h3>4.1. Структура</h3>
+        <pre><code>infrastructure/helm/
+├─ charts/
+│  ├─ medcrm/                              ← umbrella chart
+│  │  ├─ Chart.yaml
+│  │  ├─ values.yaml
+│  │  ├─ values-prod-ru.yaml
+│  │  ├─ values-prod-tj.yaml
+│  │  └─ templates/
+│  ├─ api-gateway/
+│  ├─ auth-service/
+│  ├─ scheduling-service/
+│  ├─ emr-service/
+│  ├─ finance-service/
+│  ├─ communications-service/
+│  ├─ inventory-service/
+│  ├─ integrations-service/
+│  ├─ analytics-service/
+│  ├─ worker/
+│  ├─ ml-worker/
+│  └─ portal/
+└─ overlays/                               ← Kustomize overlays
+   ├─ local/
+   ├─ staging/
+   └─ prod/</code></pre>
+
+        <h3>4.2. Стандартные элементы каждого chart</h3>
+        <ul>
+          <li>Deployment с rolling update (<code>maxSurge: 1, maxUnavailable: 0</code>).</li>
+          <li>Service (ClusterIP, headless для StatefulSet).</li>
+          <li>HPA на CPU + custom-metrics (queue depth для workers).</li>
+          <li>PodDisruptionBudget <code>minAvailable: 1</code>.</li>
+          <li>Liveness/Readiness: <code>/health/live</code>, <code>/health/ready</code> endpoints в каждом сервисе.</li>
+          <li>Graceful shutdown через <code>preStop</code> + sigterm handler в Nest.</li>
+          <li>NetworkPolicy: разрешён трафик только между нужными сервисами.</li>
+          <li>SecurityContext: runAsNonRoot, readOnlyRootFilesystem.</li>
+        </ul>
+
+        <h3>4.3. Stateful компоненты</h3>
+        <ul>
+          <li>Postgres → managed (RDS / Cloud SQL / Yandex managed) предпочтительно; альтернатива — оператор (CloudNative-PG / Zalando).</li>
+          <li>Redis → managed или Redis Operator.</li>
+          <li>MinIO → managed или K8s-operator.</li>
+          <li>ClickHouse → Altinity Operator.</li>
+          <li>NATS → NATS Operator.</li>
+          <li>Orthanc → StatefulSet с PVC.</li>
+        </ul>
+
+        <h3>4.4. Secrets и config</h3>
+        <ul>
+          <li>External Secrets Operator → AWS Secrets Manager / Vault / Doppler.</li>
+          <li>Никаких plain-text secrets в YAML.</li>
+          <li>Config через ConfigMap + env; feature flags через GitOps (Argo CD).</li>
+        </ul>
+
+        <h3>4.5. CI/CD</h3>
+        <ul>
+          <li>GitHub Actions (из ТЗ №1) собирает docker images, pushes в registry, обновляет Helm-values via PR.</li>
+          <li>Argo CD синхронизирует кластер с git-repo (GitOps).</li>
+          <li>Progressive delivery: Flagger / Argo Rollouts с canary 10% → 50% → 100% и автоматическим rollback по metrics.</li>
+        </ul>
+      </section>
+
+      <section id="multiregion">
+        <h2>5. Multi-region и резидентность данных</h2>
+
+        <h3>5.1. Регионы</h3>
+        <table>
+          <thead><tr><th>Регион</th><th>Tenant scope</th><th>DC / cloud</th></tr></thead>
+          <tbody>
+            <tr><td>RU</td><td>Российские клиники, ФЗ-152.</td><td>Yandex.Cloud / VK Cloud / Selectel</td></tr>
+            <tr><td>TJ</td><td>Клиники Таджикистана.</td><td>Местный DC или VPS</td></tr>
+            <tr><td>UZ</td><td>Клиники Узбекистана.</td><td>UCloud / IT Park</td></tr>
+            <tr><td>EU</td><td>Клиники EU + интернационал.</td><td>Hetzner / AWS Frankfurt</td></tr>
+          </tbody>
+        </table>
+
+        <h3>5.2. Routing</h3>
+        <ul>
+          <li>Global DNS (Cloudflare / NS1) с GeoSteering: по IP → ближайший region.</li>
+          <li>Tenant имеет <code>region</code>: при логине gateway проверяет — если запрос пришёл в неправильный region, делает redirect.</li>
+          <li>Custom-domain белой клиники (см. секцию 7) указывает на правильный edge.</li>
+        </ul>
+
+        <h3>5.3. Data residency</h3>
+        <ul>
+          <li>Каждый region — независимый stack (Postgres, ClickHouse, MinIO).</li>
+          <li>Tenant данные не пересекают границы региона.</li>
+          <li>Платформа-level данные (subscription, billing) — отдельный «platform-control» регион (например, EU).</li>
+          <li>Tenant migration между регионами — отдельный flow с экспорт-импорт и downtime ≤ 1h.</li>
+        </ul>
+
+        <h3>5.4. Cross-region observability</h3>
+        <ul>
+          <li>Логи / метрики аггрегируются в single observability stack (Grafana Cloud / Loki / Tempo).</li>
+          <li>На-операционные дашборды — региональные; платформенные — global.</li>
+        </ul>
+      </section>
+
+      <section id="sso">
+        <h2>6. SSO / SAML / OIDC</h2>
+        <ul>
+          <li>Поддержка <strong>SAML2</strong> (для корпоративных клиник c Active Directory).</li>
+          <li>Поддержка <strong>OIDC</strong> (для Okta, Google Workspace, Azure AD).</li>
+          <li>Per-tenant конфигурация: tenant-admin загружает SAML metadata XML / прописывает OIDC issuer + client_id.</li>
+          <li>JIT (just-in-time) provisioning: при первом логине user-создаётся в tenant.</li>
+          <li><strong>SCIM 2.0</strong>: provider пушит users в MedCRM (create/update/disable).</li>
+          <li>Role-mapping: SAML/OIDC groups → MedCRM roles.</li>
+          <li>2FA от SSO-провайдера принимается как валидная (skip MedCRM 2FA).</li>
+          <li>SAML signed assertions + AudienceRestriction + valid-until.</li>
+        </ul>
+      </section>
+
+      <section id="whitelabel">
+        <h2>7. White-label и custom-domain</h2>
+
+        <h3>7.1. Domain</h3>
+        <ul>
+          <li>Tenant настраивает CNAME <code>app.clinic.com</code> → <code>cname.medcrm.app</code>.</li>
+          <li>Платформа авто-получает TLS-сертификат через Caddy / cert-manager.</li>
+          <li>Trafic ingress определяет tenant по Host header.</li>
+        </ul>
+
+        <h3>7.2. Branding</h3>
+        <ul>
+          <li>Per-tenant theme override через CSS-variables (база — ТЗ №2): brand color, accent, logo URL, fonts.</li>
+          <li>Tenant загружает logo (SVG/PNG), favicon, OG-image.</li>
+          <li>Email-from и template-header брендируются: «Иванова клиника» вместо «MedCRM».</li>
+          <li>SMS-sender ID — per tenant (с провайдером).</li>
+          <li>Patient Portal (ТЗ №5) — белая клиника видит только своё имя.</li>
+        </ul>
+
+        <h3>7.3. Limit</h3>
+        <ul>
+          <li>White-label — только enterprise-тариф.</li>
+          <li>Mobile apps — white-label binaries — отдельный платный сервис (out-of-scope).</li>
+        </ul>
+      </section>
+
+      <section id="billing">
+        <h2>8. SaaS-биллинг подписки</h2>
+
+        <h3>8.1. Модель</h3>
+        <table>
+          <thead><tr><th>Plan</th><th>Цена/мес</th><th>Лимиты</th><th>Включено</th></tr></thead>
+          <tbody>
+            <tr><td>Free trial</td><td>0 ₽ (14 дней)</td><td>1 врач, 100 пациентов</td><td>auth, scheduling, emr-basic</td></tr>
+            <tr><td>Solo</td><td>2 500 ₽</td><td>1 врач, ∞</td><td>+ patient-portal, payments</td></tr>
+            <tr><td>Clinic</td><td>9 900 ₽</td><td>10 врачей</td><td>+ communications, inventory</td></tr>
+            <tr><td>Network</td><td>29 900 ₽</td><td>50 врачей, 5 филиалов</td><td>+ analytics, integrations</td></tr>
+            <tr><td>Enterprise</td><td>от 79 900 ₽</td><td>∞</td><td>+ SSO, white-label, SLA, dedicated support</td></tr>
+          </tbody>
+        </table>
+
+        <h3>8.2. Usage-metered</h3>
+        <ul>
+          <li>SMS-сообщения по факту (markup от cost провайдера).</li>
+          <li>WhatsApp conversations.</li>
+          <li>Документы и PDF-генерация (если &gt; квоты).</li>
+          <li>DICOM storage в Гб·мес.</li>
+          <li>Telehealth-минуты.</li>
+          <li>Учёт в <code>TenantUsageMetric</code> (event-sourced).</li>
+        </ul>
+
+        <h3>8.3. Технология</h3>
+        <ul>
+          <li>Биллинг-модуль внутри <code>billing-service</code> (на базе <code>auth-service</code>).</li>
+          <li>Stripe Billing для EU/глобально.</li>
+          <li>Tinkoff Касса / Сбер Бизнес для РФ.</li>
+          <li>Локальные для РТ/УЗ (через ТЗ №8).</li>
+          <li>Provrating, downgrade-rules, dunning-emails, payment-retry.</li>
+          <li>Customer-portal: tenant-admin видит invoices, переключает plan, обновляет card.</li>
+        </ul>
+
+        <h3>8.4. Грейс-периоды и блокировка</h3>
+        <ul>
+          <li>Просрочка &gt; 3 дней → warning email.</li>
+          <li>Просрочка &gt; 14 дней → read-only mode (запись на приём не блокируется, но новые ffeatures недоступны).</li>
+          <li>Просрочка &gt; 30 дней → полная блокировка с экспортом данных.</li>
+          <li>Уведомление за 60 / 30 / 14 / 7 дней.</li>
+        </ul>
+      </section>
+
+      <section id="marketplace">
+        <h2>9. Marketplace модулей</h2>
+        <ul>
+          <li>Каждая большая фича — toggle-модуль: <code>patient-portal</code>, <code>analytics</code>, <code>integrations.helix</code>, <code>integrations.atol</code>, <code>telehealth</code>, etc.</li>
+          <li>Tenant включает / отключает в admin-UI → меняется <code>TenantModule</code> (модель уже есть).</li>
+          <li>Часть модулей платная (доп-плата к плану), часть включена.</li>
+          <li>Trial 14 дней при включении.</li>
+          <li>UI marketplace показывает: описание, цены, скриншоты, отзывы.</li>
+          <li>Feature-flag отвечает за рендеринг UI и доступ к API.</li>
+        </ul>
+      </section>
+
+      <section id="mobile-patient">
+        <h2>10. Mobile: пациент</h2>
+
+        <h3>10.1. Stack</h3>
+        <ul>
+          <li><strong>Expo</strong> (React Native, managed workflow) — единый codebase iOS + Android.</li>
+          <li>Переиспользует API из <code>patient-portal</code> (ТЗ №5).</li>
+          <li>Auth: phone-OTP, кэширование session token в secure-keychain.</li>
+          <li>Push: Firebase Cloud Messaging + APNS, native channels.</li>
+          <li>Biometric unlock (Face ID, fingerprint) для приложения.</li>
+        </ul>
+
+        <h3>10.2. Превью экрана</h3>
+        <div style="margin-top:14px">
+          <div class="phone">
+            <div class="head">
+              <div class="title">Главная</div>
+              <div class="sub">Клиника «Демо»</div>
+            </div>
+            <div class="body">
+              <div class="row"><b>Завтра 15:30</b><span>Терапевт · Иванов А.И.</span><span class="pill amber">Через 18 ч</span></div>
+              <div class="row"><b>К оплате 1 200 ₽</b><span>За визит 12 апреля</span></div>
+              <div class="row"><b>Записаться</b><span>Выберите специалиста</span></div>
+              <div class="row"><b>Документы</b><span>3 новых</span></div>
+              <div class="row"><b>Профиль и согласия</b></div>
+            </div>
+          </div>
+          <div class="phone">
+            <div class="head">
+              <div class="title">Видеоприём</div>
+              <div class="sub">Иванов А.И.</div>
+            </div>
+            <div class="body" style="background:#0b1220; color:#fff; min-height: 180px;">
+              <div style="text-align:center; padding-top: 60px">📹 Подключение…</div>
+            </div>
+          </div>
+        </div>
+
+        <h3>10.3. Фичи</h3>
+        <ul>
+          <li>Логин по телефону + biometric для повторных открытий.</li>
+          <li>Лента визитов (upcoming + history).</li>
+          <li>Онлайн-запись (тот же flow что и portal).</li>
+          <li>Документы (выписка, рецепт, направления, чеки) с возможностью save в Files.</li>
+          <li>Оплата онлайн (Apple Pay / Google Pay support).</li>
+          <li>Уведомления push (включая critical-lab оповещения).</li>
+          <li>Telehealth: видеовизит из приложения.</li>
+          <li>QR-чекин в холле клиники.</li>
+          <li>Аптеки: показать рецепт по QR.</li>
+          <li>Многоязычность (ru/tj/en/uz).</li>
+        </ul>
+
+        <h3>10.4. Store deployment</h3>
+        <ul>
+          <li>EAS Build для CI.</li>
+          <li>TestFlight + Google Play Internal Testing.</li>
+          <li>App Store + Google Play release.</li>
+          <li>Privacy manifests (Apple), Data safety form (Android).</li>
+          <li>OTA-updates через EAS Update для не-native изменений.</li>
+        </ul>
+      </section>
+
+      <section id="mobile-doctor">
+        <h2>11. Mobile: врач</h2>
+        <ul>
+          <li>Тот же Expo stack, отдельное приложение «MedCRM Doctor».</li>
+          <li>Логин: SSO (если tenant с SSO), иначе email + password + 2FA.</li>
+          <li><strong>Главная</strong>: расписание сегодня, текущий пациент, заметки, нерешённые задачи.</li>
+          <li><strong>Карта пациента</strong> (read-only большинство, write только vitals/notes/diagnoses): анамнез, диагнозы, аллергии, последние анализы, vitals trend.</li>
+          <li><strong>EMR-запись</strong> на лету: голосовые заметки (с локальным транскриптом, опционально), быстрый ввод диагноза, рецепт по pre-set.</li>
+          <li><strong>Offline-first</strong>: расписание на день, текущие пациенты, последние encounters — доступны без сети; при reconnect — sync.</li>
+          <li><strong>Подпись encounter</strong> через WebAuthn / biometric.</li>
+          <li><strong>Чат с регистратурой</strong> внутри клиники.</li>
+          <li><strong>Telehealth</strong>: видеовизит из приложения, видит расписание видеоприёмов.</li>
+          <li>Push: новый pacient в очереди, изменение расписания, urgent message.</li>
+        </ul>
+      </section>
+
+      <section id="offline">
+        <h2>12. Offline-first sync</h2>
+
+        <p>На мобильном приложении врача: данные доступны без сети, изменения накапливаются и синхронизируются. Паттерн взят из репозитория <code>xiewan1230-maker/SaaS</code>, где этот подход уже отработан.</p>
+
+        <h3>12.1. Stack</h3>
+        <ul>
+          <li>Локальный store — SQLite через <code>op-sqlite</code> или <code>expo-sqlite</code>.</li>
+          <li>Replication: GraphQL/REST с <code>since</code>-cursor; на сервере у каждой сущности есть <code>updatedAt</code> и <code>version</code>.</li>
+          <li>Outbox-клиент: изменения хранятся локально с idempotency-key, отправляются при reconnect.</li>
+          <li>Conflict resolution: server-wins по умолчанию; для encounter notes — manual merge prompt.</li>
+        </ul>
+
+        <h3>12.2. Sync engine</h3>
+        <pre><code>// client/sync-engine.ts (Expo)
+async function syncCycle(): Promise&lt;void&gt; {
+  const lastSync = await store.getLastSyncCursor();
+  // 1. Pull
+  const incoming = await api.pull({ since: lastSync });
+  await store.applyIncoming(incoming);
+  // 2. Push outbox
+  const outbox = await store.getOutboxBatch(50);
+  if (outbox.length) {
+    const result = await api.push(outbox);
+    await store.markPushed(result.acked);
+    if (result.conflicts.length) await ui.showConflicts(result.conflicts);
+  }
+  await store.setLastSyncCursor(incoming.cursor);
+}</code></pre>
+
+        <h3>12.3. Что хранится offline</h3>
+        <ul>
+          <li>Расписание текущего дня + следующего дня.</li>
+          <li>Пациенты с записями на эти дни.</li>
+          <li>Anamnesis / последние 5 encounters / актуальные allergies / vitals.</li>
+          <li>Шаблоны протоколов (из ТЗ №7).</li>
+          <li>МНН-поисковик (для назначений).</li>
+        </ul>
+
+        <h3>12.4. Безопасность offline-данных</h3>
+        <ul>
+          <li>SQLite-database зашифрован через SQLCipher с key, derived from device-keychain (защищён biometric).</li>
+          <li>Авторазлогин при потере device-binding.</li>
+          <li>Кэш PHI чистится при logout / по запросу с сервера.</li>
+        </ul>
+      </section>
+
+      <section id="telehealth">
+        <h2>13. Telehealth (LiveKit)</h2>
+        <ul>
+          <li><strong>LiveKit Cloud</strong> или self-hosted для медиа-трафика.</li>
+          <li>Видео + аудио + screen-sharing + chat.</li>
+          <li>Per-appointment room с access-token (LiveKit JWT с TTL = appointment.duration + 30 min).</li>
+          <li>Server-side rooms открываются при <code>appointment.kind = TELEMEDICINE</code> за 10 мин до старта.</li>
+          <li>Запись (opt-in пациента) → загружается в MinIO с tenant-scoped bucket; ссылка в EMR.</li>
+          <li>Quality-monitor: bitrate, packet loss; auto-reconnect.</li>
+          <li>Native iOS / Android intel: ICE-config с TURN для NAT.</li>
+          <li>Согласие пациента на telemed (legal template) → отдельный consent (ТЗ №3).</li>
+          <li>Регулирование РФ/РТ/УЗ — telemed разрешён в рамках первичной консультации с ограничениями; правовая база per region.</li>
+        </ul>
+      </section>
+
+      <section id="esign">
+        <h2>14. E-signature УКЭП (Россия)</h2>
+        <ul>
+          <li>Базовая подпись encounter и легальных документов — WebAuthn (ТЗ №3) для внутреннего trust.</li>
+          <li>Для юридической значимости в РФ (рецепты, акты, отчёты в ОМС): <strong>УКЭП</strong> (квалифицированная электронная подпись) через <strong>КриптоПро</strong> или <strong>СигнАль</strong>.</li>
+          <li>Архитектура: <code>integrations-service</code> adapter «sign.kriptopro»; адаптер получает payload, отдаёт в УКЭП-сервис врача (через локальный плагин CADESCOM), возвращает PKCS#7 / CAdES-XLong-T.</li>
+          <li>Архивирование подписанных документов в S3 + хранение метаданных подписи.</li>
+          <li>Аналог в УЗ: <strong>E-IMZO</strong> — отдельный adapter с тем же интерфейсом.</li>
+          <li>Доверенная третья сторона (ДТС) для проверки UEC в РФ — опционально.</li>
+        </ul>
+      </section>
+
+      <section id="observability">
+        <h2>15. Production observability и SLA</h2>
+
+        <h3>15.1. Стэк</h3>
+        <ul>
+          <li>Logs: Loki / OpenObserve / CloudWatch.</li>
+          <li>Metrics: Prometheus + Grafana.</li>
+          <li>Traces: Tempo / Jaeger / SigNoz (ТЗ №6).</li>
+          <li>Synthetic monitoring: Checkly / в-house Playwright periodic prober.</li>
+          <li>Error tracking: Sentry (front + back).</li>
+          <li>On-call: PagerDuty / Opsgenie / Telegram bot для small clinics.</li>
+        </ul>
+
+        <h3>15.2. SLA</h3>
+        <table>
+          <thead><tr><th>Tier</th><th>Uptime</th><th>Response</th><th>Resolution</th></tr></thead>
+          <tbody>
+            <tr><td>Standard (Solo/Clinic)</td><td>99.9% (≤ 8.76h downtime / год)</td><td>P1 — 4 рабочих часа</td><td>Best effort</td></tr>
+            <tr><td>Network</td><td>99.9%</td><td>P1 — 2 рабочих часа</td><td>P1 ≤ 24h</td></tr>
+            <tr><td>Enterprise</td><td>99.95% (≤ 4.38h)</td><td>P1 — 30 минут, 24/7</td><td>P1 ≤ 8h, P2 ≤ 24h</td></tr>
+          </tbody>
+        </table>
+
+        <h3>15.3. Definition</h3>
+        <ul>
+          <li>Uptime = success rate of <code>GET /health/live</code> на api-gateway за минуту → calculated monthly.</li>
+          <li>Plans downtime (announced ≥ 7 days) — не входит в SLA.</li>
+          <li>Региональные failures — отдельный region SLA.</li>
+        </ul>
+      </section>
+
+      <section id="dr">
+        <h2>16. DR, backup, runbooks</h2>
+        <ul>
+          <li><strong>Postgres PITR</strong>: WAL-G / pgBackRest, retention 30 дней; RTO ≤ 1h, RPO ≤ 5 минут.</li>
+          <li><strong>ClickHouse backup</strong>: BACKUP DATABASE → S3 ежедневно; restore drill quarterly.</li>
+          <li><strong>MinIO</strong>: cross-region replication для документов и DICOM.</li>
+          <li><strong>NATS</strong>: stream retention 30 дней; cross-region mirror.</li>
+          <li><strong>Runbooks</strong>: восстановление tenant, rollback deploy, region failover.</li>
+          <li><strong>Chaos engineering</strong>: ежеквартально — Chaos Mesh с задачами «kill pod», «network partition».</li>
+          <li><strong>Tenant export</strong>: GDPR / 152-ФЗ subject-rights — full export of tenant data → ZIP + FHIR-bundle.</li>
+        </ul>
+      </section>
+
+      <section id="files">
+        <h2>17. Структура файлов</h2>
+        <div class="file-tree">
+infrastructure/
+├─ helm/
+│  ├─ charts/
+│  │  ├─ medcrm/                            ← umbrella
+│  │  ├─ &lt;service&gt;/                          ← per service
+│  └─ overlays/
+├─ argocd/
+│  ├─ root-app.yaml
+│  ├─ apps/
+│  └─ projects/
+├─ terraform/
+│  ├─ regions/
+│  │  ├─ ru/
+│  │  ├─ tj/
+│  │  ├─ uz/
+│  │  └─ eu/
+│  └─ shared/
+└─ runbooks/
+   ├─ postgres-restore.md
+   ├─ region-failover.md
+   └─ tenant-migration.md
+
+backend/apps/billing-service/src/
+├─ subscription/
+│  ├─ subscription.controller.ts
+│  ├─ subscription.service.ts
+│  └─ plan-catalog.ts
+├─ usage/
+│  ├─ usage.controller.ts
+│  ├─ usage-meter.service.ts
+│  └─ overage.calculator.ts
+├─ invoice/
+│  ├─ invoice.controller.ts
+│  └─ invoice-builder.service.ts
+└─ providers/
+   ├─ stripe.provider.ts
+   ├─ tinkoff.provider.ts
+   └─ sber.provider.ts
+
+backend/apps/sso-service/src/                ← может жить внутри auth-service
+├─ saml/
+│  ├─ saml.controller.ts
+│  └─ saml.service.ts
+├─ oidc/
+│  ├─ oidc.controller.ts
+│  └─ oidc.service.ts
+└─ scim/
+   ├─ scim.controller.ts
+   └─ scim.service.ts
+
+mobile-patient/                              ← Expo app
+├─ app.json
+├─ app/
+│  ├─ (auth)/
+│  ├─ (cabinet)/
+│  └─ _layout.tsx
+├─ src/
+│  ├─ api/
+│  ├─ store/
+│  ├─ push/
+│  └─ telehealth/
+└─ eas.json
+
+mobile-doctor/                               ← Expo app
+├─ app/
+├─ src/
+│  ├─ api/
+│  ├─ sync-engine/
+│  ├─ store/                                 ← SQLite encrypted
+│  └─ telehealth/
+└─ eas.json
+        </div>
+      </section>
+
+      <section id="plan">
+        <h2>18. Этапы работ</h2>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 1 · ~1.5 недели</span>
+          <h3>Этап 1. Helm + K8s base</h3>
+          <ul>
+            <li>Helm-charts для всех сервисов из ТЗ №6.</li>
+            <li>Liveness/readiness/graceful-shutdown в каждом NestJS-app.</li>
+            <li>HPA, PDB, NetworkPolicy.</li>
+            <li>External Secrets Operator.</li>
+            <li>Argo CD setup в staging.</li>
+            <li>PR <code>chore(infra): helm charts + argo-cd</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 2 · ~1.5 недели</span>
+          <h3>Этап 2. Multi-region + observability</h3>
+          <ul>
+            <li>Terraform для RU и EU регионов.</li>
+            <li>Global routing (Cloudflare GeoSteering).</li>
+            <li>Tenant.region + auth redirect.</li>
+            <li>Prometheus / Grafana / Loki / Tempo стек.</li>
+            <li>Sentry для frontend и backend.</li>
+            <li>PR <code>feat(infra): multi-region + observability</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 3 · ~1.5 недели</span>
+          <h3>Этап 3. SSO + SCIM + White-label</h3>
+          <ul>
+            <li>SAML2 + OIDC сервисы.</li>
+            <li>SCIM 2.0 endpoint.</li>
+            <li>Per-tenant SSO config UI.</li>
+            <li>Custom domain (cert-manager + Caddy ingress).</li>
+            <li>Theme tokens per tenant + logo upload.</li>
+            <li>Email-from + SMS-sender брендинг.</li>
+            <li>PR <code>feat(auth): sso + scim + white-label</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 4 · ~1.5 недели</span>
+          <h3>Этап 4. SaaS-биллинг + marketplace модулей</h3>
+          <ul>
+            <li>Plans + usage-metering.</li>
+            <li>Stripe + Tinkoff/Сбер adapters.</li>
+            <li>Subscription lifecycle (trial/active/grace/blocked).</li>
+            <li>Customer-portal UI.</li>
+            <li>Marketplace UI для tenant.</li>
+            <li>Feature-flag wiring на каждый модуль.</li>
+            <li>PR <code>feat(billing): subscriptions + marketplace</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 5 · ~2 недели</span>
+          <h3>Этап 5. Mobile patient (Expo)</h3>
+          <ul>
+            <li>Bootstrap Expo app, reuse portal API.</li>
+            <li>Phone OTP + biometric unlock.</li>
+            <li>Главная, запись, документы, оплата, push.</li>
+            <li>Apple Pay / Google Pay через provider.</li>
+            <li>EAS build + TestFlight + Google Play Internal.</li>
+            <li>i18n ru/tj/en/uz.</li>
+            <li>PR <code>feat(mobile): patient app v1</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 6 · ~2 недели</span>
+          <h3>Этап 6. Mobile doctor (Expo) + offline-sync</h3>
+          <ul>
+            <li>Bootstrap doctor app.</li>
+            <li>SSO + 2FA + biometric.</li>
+            <li>Расписание дня, карта пациента, encounter editor (минимально).</li>
+            <li>Sync-engine offline-first (SQLite encrypted).</li>
+            <li>Подпись encounter через biometric.</li>
+            <li>Push о новых пациентах в очереди.</li>
+            <li>PR <code>feat(mobile): doctor app v1 with offline</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 7 · ~1.5 недели</span>
+          <h3>Этап 7. Telehealth (LiveKit) + УКЭП</h3>
+          <ul>
+            <li>LiveKit deploy / cloud config.</li>
+            <li>Room provisioning в scheduling-service.</li>
+            <li>Видеоприём UI на web + mobile.</li>
+            <li>Recording (opt-in) + сохранение в MinIO.</li>
+            <li>Consent на telemed.</li>
+            <li>УКЭП adapter (КриптоПро / СигнАль) для legal-документов РФ.</li>
+            <li>E-IMZO adapter для УЗ.</li>
+            <li>PR <code>feat(enterprise): telehealth + ukep e-sign</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 8 · ~1 неделя</span>
+          <h3>Этап 8. SLA + DR + runbooks + GA</h3>
+          <ul>
+            <li>SLA definition + customer agreement template.</li>
+            <li>Backups + PITR + restore drill.</li>
+            <li>Runbooks (region failover, tenant migration, restore).</li>
+            <li>Chaos test (kill pod, network partition).</li>
+            <li>Public docs portal: developer + customer admin.</li>
+            <li>Pricing page + marketing site update.</li>
+            <li>PR <code>chore(ga): sla + dr + runbooks + docs</code>.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="acceptance">
+        <h2>19. Acceptance criteria</h2>
+        <ul class="check">
+          <li>Все сервисы запускаются в Kubernetes через Helm; Argo CD управляет staging и prod.</li>
+          <li>Multi-region setup: RU и EU регионы работают независимо; tenant.region маршрутизирует трафик.</li>
+          <li>SAML2 и OIDC интеграция работает с Keycloak, Azure AD, Google Workspace (≥ 1 успешная customer-pilot).</li>
+          <li>SCIM 2.0 endpoint принимает user-provisioning.</li>
+          <li>Custom domain с TLS работает; theme per tenant.</li>
+          <li>SaaS-биллинг: 5 планов, trial, usage-metering, prorating, dunning emails.</li>
+          <li>Stripe (EU) и Tinkoff/Сбер (РФ) — заданы как payment providers; subscription lifecycle работает.</li>
+          <li>Marketplace UI позволяет включать/отключать модули с feature-flag effect.</li>
+          <li>Mobile patient app собрана и публикуется в TestFlight + Google Play Internal.</li>
+          <li>Mobile doctor app собрана с offline-first sync (SQLite encrypted).</li>
+          <li>Push-уведомления (APNS + FCM) работают.</li>
+          <li>Telehealth: видеоприём end-to-end на web и mobile; запись (opt-in) сохраняется.</li>
+          <li>УКЭП adapter (КриптоПро) подписывает legal-документы; подпись валидируется.</li>
+          <li>E-IMZO adapter для УЗ — рабочий минимум.</li>
+          <li>SLA-документ опубликован; uptime ≥ 99.9% за 90 дней.</li>
+          <li>Backup + restore drill проведён; runbooks написаны и протестированы.</li>
+          <li>Chaos test (kill pod + network partition) не приводит к data-loss.</li>
+          <li>Документация: developer docs, customer admin docs, runbooks.</li>
+        </ul>
+      </section>
+
+      <section id="metrics">
+        <h2>20. Метрики и риски</h2>
+
+        <div class="four">
+          <div class="kpi"><span class="label">Uptime</span><span class="value">≥ 99.9%</span><span class="hint">api-gateway monthly</span></div>
+          <div class="kpi"><span class="label">Регионов</span><span class="value">4</span><span class="hint">RU / TJ / UZ / EU</span></div>
+          <div class="kpi"><span class="label">RTO</span><span class="value">≤ 1 час</span><span class="hint">postgres restore</span></div>
+          <div class="kpi"><span class="label">RPO</span><span class="value">≤ 5 мин</span><span class="hint">postgres WAL</span></div>
+          <div class="kpi"><span class="label">Deploy rate</span><span class="value">≥ 10/нед</span><span class="hint">за счёт canary</span></div>
+          <div class="kpi"><span class="label">Mobile DAU</span><span class="value">target ≥ 60%</span><span class="hint">% от portal users</span></div>
+          <div class="kpi"><span class="label">SSO adoption</span><span class="value">≥ 30%</span><span class="hint">enterprise tenants</span></div>
+          <div class="kpi"><span class="label">Telehealth share</span><span class="value">10–15%</span><span class="hint">% от записей</span></div>
+        </div>
+
+        <table>
+          <thead><tr><th>Риск</th><th>Митигация</th></tr></thead>
+          <tbody>
+            <tr><td>K8s operational debt — нужны люди.</td><td>Managed clusters (EKS / GKE / Yandex) где возможно; documentation + runbooks; on-call rotation.</td></tr>
+            <tr><td>Multi-region — двойная стоимость инфры.</td><td>Tier правильно: standard tenants всех stranas → один регион «своей страны»; enterprise — full region failover.</td></tr>
+            <tr><td>SSO ломается, customers не могут войти.</td><td>Break-glass admin login (email + 2FA + audit-tagged); SSO health-monitor.</td></tr>
+            <tr><td>White-label DNS / TLS — сложный flow.</td><td>Caddy / cert-manager с готовыми Helm charts; UI пошаговый wizard с verification.</td></tr>
+            <tr><td>SaaS-биллинг — много edge-cases.</td><td>Используем Stripe Billing для EU (он покрывает 90%); локальные провайдеры — упрощённая модель (manual invoice для enterprise).</td></tr>
+            <tr><td>Mobile app store rejection.</td><td>Privacy manifests, data-safety form, professional review pre-submission; контент-policy чек медицинский.</td></tr>
+            <tr><td>Offline-sync conflicts.</td><td>Server-wins + UI-resolve для важных полей; не позволяем offline-create для финансовых операций (only read).</td></tr>
+            <tr><td>LiveKit-network issues (NAT, мобильные сети).</td><td>TURN-серверы в каждом регионе; auto-reconnect; fallback на аудио.</td></tr>
+            <tr><td>УКЭП — десктопный плагин CADESCOM, mobile нет.</td><td>Mobile УКЭП — отдельный долгий проект (MEPS/Bifit/E-IMZO mobile SDK); на старте — только desktop web.</td></tr>
+            <tr><td>Регуляторное: telemed разрешён не для всех случаев.</td><td>Подсказка врачу о ограничениях; согласие пациента; контент-disclaimer per region.</td></tr>
+            <tr><td>SLA-claims без mature monitoring.</td><td>Не выдаём enterprise-SLA до 90 дней стабильной observability + chaos test passed.</td></tr>
+            <tr><td>Tenant migration между регионами — рискованная операция.</td><td>Maintenance-window flow; точка возврата (snapshot before); dry-run.</td></tr>
+            <tr><td>Стоимость support для Enterprise.</td><td>Tier-based: Standard — community; Network — business hours; Enterprise — 24/7 dedicated CSM.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="decision">
+          <span class="eyebrow">Definition of Done</span>
+          <strong>MedCRM работает в K8s в ≥ 2 регионах, поддерживает SSO/SCIM, white-label custom-domain, SaaS-биллинг с marketplace модулей. Mobile-приложения пациента и врача (с offline-first) опубликованы в TestFlight / Google Play. Telehealth (LiveKit) работает. УКЭП-подпись для РФ — рабочая. SLA 99.9% выдерживается, DR-runbooks протестированы. Документация полная.</strong>
+        </div>
+      </section>
+
+      <section>
+        <h2>Приложение А. Связанные документы</h2>
+        <ul>
+          <li>ТЗ №1 DevOps Foundation — CI/CD, на основе которой строится GitOps / Argo CD.</li>
+          <li>ТЗ №2 Design System — token-driven theme переиспользуется для mobile и white-label.</li>
+          <li>ТЗ №3 Security — RLS, audit, KMS уже в продакшене; УКЭП и SSO дополняют.</li>
+          <li>ТЗ №4 Async Workflows — workers в K8s, billing reminders, telehealth-jobs.</li>
+          <li>ТЗ №5 Patient Portal — mobile app переиспользует API.</li>
+          <li>ТЗ №6 Modular Split — каждый сервис в отдельный Helm chart.</li>
+          <li>ТЗ №7 EMR — mobile doctor app пишет в emr-service; УКЭП-подпись.</li>
+          <li>ТЗ №8 Integrations — region-аware adapters, фискальные кассы.</li>
+          <li>ТЗ №9 Analytics — multi-region DWH, executive digest mobile push.</li>
+        </ul>
+      </section>
+
+      <footer style="margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px;">
+        Документ завершает roadmap MedCRM. Связанные ТЗ: №1–9.
+      </footer>
+    </main>
+  </article>
+</body>
+</html>

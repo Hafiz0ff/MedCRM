@@ -1,0 +1,263 @@
+model PatientCrmMetric {
+  id                 String    @id @default(uuid()) @db.Uuid
+  tenantId           String    @map("tenant_id") @db.Uuid
+  patientId          String    @unique @map("patient_id") @db.Uuid
+  totalVisits        Int       @default(0) @map("total_visits")
+  totalRevenue       Decimal   @default(0.0) @map("total_revenue") @db.Decimal(12, 2)
+  ltv                Decimal   @default(0.0) @db.Decimal(12, 2)
+  averageCheck       Decimal   @default(0.0) @map("average_check") @db.Decimal(12, 2)
+  missedAppointments Int       @default(0) @map("missed_appointments")
+  cancellations      Int       @default(0)
+  lastVisitAt        DateTime? @map("last_visit_at") @db.Timestamptz(6)
+  lastContactAt      DateTime? @map("last_contact_at") @db.Timestamptz(6)
+  retentionScore     Int       @default(100) @map("retention_score")
+  loyaltyPoints      Int       @default(0) @map("loyalty_points")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("patient_crm_metrics")
+  @@schema("analytics")
+}
+
+model CrmTag {
+  id          String       @id @default(uuid()) @db.Uuid
+  tenantId    String       @map("tenant_id") @db.Uuid
+  code        String       @db.VarChar(120)
+  name        String       @db.VarChar(255)
+  color       String?      @db.VarChar(40)
+  isSystem    Boolean      @default(false) @map("is_system")
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  patientTags PatientTag[]
+
+  @@unique([tenantId, code])
+  @@map("crm_tags")
+  @@schema("analytics")
+}
+
+model IntegrationMetric {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  providerId  String?  @map("provider_id") @db.Uuid
+  metricCode  String   @map("metric_code") @db.VarChar(80)
+  metricValue Decimal  @map("metric_value") @db.Decimal(12, 4)
+  measuredAt  DateTime @default(now()) @map("measured_at") @db.Timestamptz(6)
+
+  tenant   Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  provider IntegrationProvider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+
+  @@map("integration_metrics")
+  @@schema("analytics")
+}
+
+model DwFactAppointment {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  branchId          String   @map("branch_id") @db.Uuid
+  employeeId        String   @map("employee_id") @db.Uuid
+  patientId         String   @map("patient_id") @db.Uuid
+  serviceId         String?  @map("service_id") @db.Uuid
+  appointmentStatus String   @map("appointment_status") @db.VarChar(40)
+  bookingSource     String   @map("booking_source") @db.VarChar(60)
+  durationMinutes   Int      @map("duration_minutes")
+  noShowFlag        Boolean  @default(false) @map("no_show_flag")
+  completedFlag     Boolean  @default(false) @map("completed_flag")
+  createdDate       DateTime @map("created_date") @db.Timestamptz(6)
+  appointmentDate   DateTime @map("appointment_date") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("dw_fact_appointments")
+  @@schema("analytics")
+}
+
+model DwFactPayment {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  branchId       String   @map("branch_id") @db.Uuid
+  invoiceId      String   @map("invoice_id") @db.Uuid
+  patientId      String   @map("patient_id") @db.Uuid
+  paymentMethod  String   @map("payment_method") @db.VarChar(40)
+  amount         Decimal  @map("amount") @db.Decimal(12, 4)
+  discountAmount Decimal  @map("discount_amount") @db.Decimal(12, 4)
+  materialCost   Decimal  @map("material_cost") @db.Decimal(12, 4)
+  paymentDate    DateTime @map("payment_date") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("dw_fact_payments")
+  @@schema("analytics")
+}
+
+model DwFactMarketing {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  patientId        String    @map("patient_id") @db.Uuid
+  leadSource       String?   @map("lead_source") @db.VarChar(120)
+  utmSource        String?   @map("utm_source") @db.VarChar(120)
+  utmCampaign      String?   @map("utm_campaign") @db.VarChar(120)
+  acquisitionCost  Decimal   @default(0.00) @map("acquisition_cost") @db.Decimal(12, 4)
+  firstVisitDate   DateTime? @map("first_visit_date") @db.Timestamptz(6)
+  firstPaymentDate DateTime? @map("first_payment_date") @db.Timestamptz(6)
+  ltv              Decimal   @default(0.00) @map("ltv") @db.Decimal(12, 4)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("dw_fact_marketing")
+  @@schema("analytics")
+}
+
+model FinancialDailyAggregate {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  branchId        String?  @map("branch_id") @db.Uuid
+  aggregationDate DateTime @map("aggregation_date") @db.Date
+  totalRevenue    Decimal  @map("total_revenue") @db.Decimal(12, 4)
+  totalProfit     Decimal  @map("total_profit") @db.Decimal(12, 4)
+  totalExpenses   Decimal  @map("total_expenses") @db.Decimal(12, 4)
+  totalRefunds    Decimal  @map("total_refunds") @db.Decimal(12, 4)
+  averageCheck    Decimal  @map("average_check") @db.Decimal(12, 4)
+  outstandingDebt Decimal  @map("outstanding_debt") @db.Decimal(12, 4)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, branchId, aggregationDate])
+  @@map("financial_daily_aggregates")
+  @@schema("analytics")
+}
+
+model MarketingFunnelMetric {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  channelSource     String   @map("channel_source") @db.VarChar(120)
+  campaignName      String?  @map("campaign_name") @db.VarChar(120)
+  leadsCount        Int      @default(0) @map("leads_count")
+  appointmentsCount Int      @default(0) @map("appointments_count")
+  visitsCount       Int      @default(0) @map("visits_count")
+  paymentsCount     Int      @default(0) @map("payments_count")
+  totalRevenue      Decimal  @default(0.00) @map("total_revenue") @db.Decimal(12, 4)
+  cac               Decimal  @default(0.00) @map("cac") @db.Decimal(12, 4)
+  roi               Decimal  @default(0.00) @map("roi") @db.Decimal(12, 4)
+  measuredAt        DateTime @default(now()) @map("measured_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("marketing_funnel_metrics")
+  @@schema("analytics")
+}
+
+model RoomUtilizationMetric {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tenantId           String   @map("tenant_id") @db.Uuid
+  roomId             String   @map("room_id") @db.Uuid
+  employeeId         String   @map("employee_id") @db.Uuid
+  utilizationPercent Decimal  @map("utilization_percent") @db.Decimal(6, 2)
+  occupiedMinutes    Int      @map("occupied_minutes")
+  availableMinutes   Int      @map("available_minutes")
+  measuredDate       DateTime @map("measured_date") @db.Date
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, roomId, employeeId, measuredDate])
+  @@map("room_utilization_metrics")
+  @@schema("analytics")
+}
+
+model NoShowMetric {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  employeeId       String?  @map("employee_id") @db.Uuid
+  branchId         String?  @map("branch_id") @db.Uuid
+  noShowRate       Decimal  @map("no_show_rate") @db.Decimal(6, 2)
+  cancellationRate Decimal  @map("cancellation_rate") @db.Decimal(6, 2)
+  measuredDate     DateTime @map("measured_date") @db.Date
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("no_show_metrics")
+  @@schema("analytics")
+}
+
+model RetentionMetric {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @map("tenant_id") @db.Uuid
+  patientSegment      String   @map("patient_segment") @db.VarChar(120)
+  retentionPeriodDays Int      @map("retention_period_days")
+  retentionRate       Decimal  @map("retention_rate") @db.Decimal(6, 2)
+  repeatVisits        Int      @map("repeat_visits")
+  measuredAt          DateTime @default(now()) @map("measured_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("retention_metrics")
+  @@schema("analytics")
+}
+
+model DoctorKpiMetric {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  employeeId      String   @map("employee_id") @db.Uuid
+  branchId        String?  @map("branch_id") @db.Uuid
+  totalVisits     Int      @default(0) @map("total_visits")
+  totalRevenue    Decimal  @default(0.00) @map("total_revenue") @db.Decimal(12, 4)
+  utilizationRate Decimal  @default(0.00) @map("utilization_rate") @db.Decimal(6, 2)
+  retentionRate   Decimal  @default(0.00) @map("retention_rate") @db.Decimal(6, 2)
+  noShowRate      Decimal  @default(0.00) @map("no_show_rate") @db.Decimal(6, 2)
+  averageCheck    Decimal  @default(0.00) @map("average_check") @db.Decimal(12, 4)
+  npsScore        Decimal? @map("nps_score") @db.Decimal(4, 2)
+  measuredAt      DateTime @default(now()) @map("measured_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("doctor_kpi_metrics")
+  @@schema("analytics")
+}
+
+model ScheduledReport {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  reportName     String   @map("report_name") @db.VarChar(255)
+  reportType     String   @map("report_type") @db.VarChar(80)
+  exportFormat   String   @map("export_format") @db.VarChar(40)
+  recipientsJson Json     @map("recipients_json")
+  cronExpression String   @map("cron_expression") @db.VarChar(80)
+  filtersJson    Json     @map("filters_json")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant  Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reports GeneratedReport[]
+
+  @@map("scheduled_reports")
+  @@schema("analytics")
+}
+
+model GeneratedReport {
+  id                String    @id @default(uuid()) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  scheduledReportId String?   @map("scheduled_report_id") @db.Uuid
+  fileId            String?   @map("file_id") @db.Uuid
+  generationStatus  String    @map("generation_status") @db.VarChar(40)
+  generatedAt       DateTime  @default(now()) @map("generated_at") @db.Timestamptz(6)
+  deliveredAt       DateTime? @map("delivered_at") @db.Timestamptz(6)
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scheduledReport ScheduledReport? @relation(fields: [scheduledReportId], references: [id], onDelete: SetNull)
+
+  @@map("generated_reports")
+  @@schema("analytics")
+}
+
+model RealtimeMetricCache {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  metricCode  String   @map("metric_code") @db.VarChar(80)
+  metricValue String   @map("metric_value") @db.VarChar(255)
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, metricCode])
+  @@map("realtime_metrics_cache")
+  @@schema("analytics")
+}

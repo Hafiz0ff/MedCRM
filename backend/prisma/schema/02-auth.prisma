@@ -1,0 +1,181 @@
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  email        String    @db.VarChar(255)
+  phone        String?   @db.VarChar(60)
+  passwordHash String    @map("password_hash")
+  firstName    String    @map("first_name") @db.VarChar(120)
+  lastName     String    @map("last_name") @db.VarChar(120)
+  language     String    @default("ru") @db.VarChar(10)
+  status       String    @default("active") @db.VarChar(40)
+  isSuperAdmin Boolean   @default(false) @map("is_super_admin")
+  lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant              Tenant                 @relation(fields: [tenantId], references: [id])
+  branchRoles         UserBranchRole[]
+  sessions            UserSession[]
+  auditLogs           AuditLog[]
+  managedPatients     Patient[]              @relation("PatientAssignedManager")
+  createdAppointments Appointment[]          @relation("AppointmentCreatedBy")
+  twoFactorSettings   User2faSettings?
+  employee            Employee?
+  patientNotes        PatientNote[]
+  signedDocuments     PatientLegalDocument[]
+  credentials         UserCredential[]
+
+  changedVisitStates AppointmentVisitState[]
+  handledCalls       IncomingCall[]
+  createdInvoices    Invoice[]
+
+  signedEncounters     Encounter[]
+  digitalSignatures    DigitalSignature[]
+  medicalFilesUploaded MedicalFile[]
+
+  cashierShifts                 CashierShift[]
+  paymentsReceived              Payment[]
+  refundsApproved               Refund[]                 @relation("RefundsApproved")
+  refundsPerformed              Refund[]                 @relation("RefundsPerformed")
+  walletTransactionsPerformed   WalletTransaction[]
+  payrollCalculationsCalculated PayrollCalculation[]
+  assignedConversations         Conversation[]           @relation("ConversationsAssigned")
+  conversationAssignmentsDone   ConversationAssignment[] @relation("AssignmentsMadeBy")
+  conversationAssignmentsRecd   ConversationAssignment[] @relation("AssignmentsReceived")
+  communicationCampaigns        CommunicationCampaign[]
+  createdLabOrders              LabOrder[]
+  filesUploaded                 File[]
+
+  createdPurchaseOrders PurchaseOrder[]
+  requestedTransfers    InventoryTransfer[]
+  approvedTransfers     InventoryTransfer[]    @relation("ApprovedTransfers")
+  performedTransactions InventoryTransaction[]
+  startedAudits         InventoryAudit[]
+  completedAudits       InventoryAudit[]       @relation("CompletedAudits")
+
+  @@unique([tenantId, email])
+  @@map("users")
+  @@schema("auth")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String?  @map("tenant_id") @db.Uuid
+  code        String   @db.VarChar(120)
+  name        String   @db.VarChar(255)
+  description String?
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant      Tenant?          @relation(fields: [tenantId], references: [id])
+  permissions RolePermission[]
+  userRoles   UserBranchRole[]
+
+  @@unique([tenantId, code])
+  @@map("roles")
+  @@schema("auth")
+}
+
+model Permission {
+  id          String  @id @default(uuid()) @db.Uuid
+  moduleId    String? @map("module_id") @db.Uuid
+  moduleCode  String  @map("module_code") @db.VarChar(120)
+  code        String  @unique @db.VarChar(160)
+  name        String  @db.VarChar(255)
+  description String?
+
+  module SystemModule?    @relation(fields: [moduleId], references: [id])
+  roles  RolePermission[]
+
+  @@map("permissions")
+  @@schema("auth")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+  @@schema("auth")
+}
+
+model UserBranchRole {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  branchId   String    @map("branch_id") @db.Uuid
+  roleId     String    @map("role_id") @db.Uuid
+  isPrimary  Boolean   @default(false) @map("is_primary")
+  activeFrom DateTime  @default(now()) @map("active_from") @db.Timestamptz(6)
+  activeTo   DateTime? @map("active_to") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user   User   @relation(fields: [userId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@index([tenantId, userId, branchId])
+  @@map("user_branch_roles")
+  @@schema("auth")
+}
+
+model UserSession {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  refreshTokenHash String    @map("refresh_token_hash")
+  ipAddress        String?   @map("ip_address") @db.Inet
+  userAgent        String?   @map("user_agent")
+  deviceName       String?   @map("device_name") @db.VarChar(255)
+  tokenFingerprint String    @map("token_fingerprint") @db.VarChar(255)
+  lastActivityAt   DateTime  @default(now()) @map("last_activity_at") @db.Timestamptz(6)
+  expiresAt        DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  mfaSatisfiedAt   DateTime? @map("mfa_satisfied_at") @db.Timestamptz(6)
+  revokedReason    String?   @map("revoked_reason") @db.VarChar(255)
+
+  user   User   @relation(fields: [userId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, userId])
+  @@map("user_sessions")
+  @@schema("auth")
+}
+
+model User2faSettings {
+  userId          String   @id @map("user_id") @db.Uuid
+  isEnabled       Boolean  @default(false) @map("is_enabled")
+  secretHash      String   @map("secret_hash")
+  backupCodes     Json     @default("[]") @map("backup_codes")
+  preferredMethod String   @default("TOTP") @map("preferred_method") @db.VarChar(40)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_2fa_settings")
+  @@schema("auth")
+}
+
+model UserCredential {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  credentialId String    @unique @map("credential_id")
+  publicKey    Bytes     @map("public_key")
+  counter      Int       @default(0)
+  transports   String[]  @map("transports")
+  deviceName   String?   @map("device_name")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastUsedAt   DateTime? @map("last_used_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_credentials")
+  @@schema("auth")
+}

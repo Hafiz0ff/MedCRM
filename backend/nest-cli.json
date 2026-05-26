@@ -4,7 +4,7 @@
   "sourceRoot": "apps/api-gateway/src",
   "compilerOptions": {
     "deleteOutDir": false,
-    "webpack": true,
+    "webpack": false,
     "tsConfigPath": "tsconfig.build.json"
   },
   "monorepo": true,
@@ -33,6 +33,15 @@
       "root": "apps/worker",
       "entryFile": "main",
       "sourceRoot": "apps/worker/src",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.build.json"
+      }
+    },
+    "scheduling-service": {
+      "type": "application",
+      "root": "apps/scheduling-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/scheduling-service/src",
       "compilerOptions": {
         "tsConfigPath": "tsconfig.build.json"
       }

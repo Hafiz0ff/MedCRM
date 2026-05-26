@@ -1,0 +1,360 @@
+model MedicalRecord {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @map("tenant_id") @db.Uuid
+  patientId             String   @unique @map("patient_id") @db.Uuid
+  medicalRecordNumber   String   @map("medical_record_number") @db.VarChar(120)
+  bloodType             String?  @map("blood_type") @db.VarChar(20)
+  allergiesJson         Json?    @map("allergies_json")
+  chronicConditionsJson Json?    @map("chronic_conditions_json")
+  emergencyContactsJson Json?    @map("emergency_contacts_json")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, medicalRecordNumber])
+  @@map("medical_records")
+  @@schema("emr")
+}
+
+model EpisodeOfCare {
+  id                  String    @id @default(uuid()) @db.Uuid
+  tenantId            String    @map("tenant_id") @db.Uuid
+  patientId           String    @map("patient_id") @db.Uuid
+  branchId            String    @map("branch_id") @db.Uuid
+  responsibleDoctorId String    @map("responsible_doctor_id") @db.Uuid
+  episodeType         String    @map("episode_type") @db.VarChar(80)
+  title               String    @db.VarChar(255)
+  startDate           DateTime  @map("start_date") @db.Timestamptz(6)
+  endDate             DateTime? @map("end_date") @db.Timestamptz(6)
+  status              String    @default("ACTIVE") @db.VarChar(40) // ACTIVE, CLOSED, SUSPENDED
+  clinicalSummary     String?   @map("clinical_summary")
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient    Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  branch     Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  doctor     Employee    @relation(fields: [responsibleDoctorId], references: [id], onDelete: Cascade)
+  encounters Encounter[]
+
+  @@map("episodes_of_care")
+  @@schema("emr")
+}
+
+model Encounter {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  patientId        String    @map("patient_id") @db.Uuid
+  appointmentId    String?   @map("appointment_id") @db.Uuid
+  episodeId        String?   @map("episode_id") @db.Uuid
+  doctorEmployeeId String    @map("doctor_employee_id") @db.Uuid
+  departmentId     String?   @map("department_id") @db.Uuid
+  encounterType    String    @map("encounter_type") @db.VarChar(60)
+  startedAt        DateTime  @map("started_at") @db.Timestamptz(6)
+  completedAt      DateTime? @map("completed_at") @db.Timestamptz(6)
+  status           String    @default("DRAFT") @db.VarChar(40) // DRAFT, IN_PROGRESS, SIGNED, AMENDED
+  signedAt         DateTime? @map("signed_at") @db.Timestamptz(6)
+  signedBy         String?   @map("signed_by") @db.Uuid
+  currentVersion   Int       @default(1) @map("current_version")
+  isLocked         Boolean   @default(false) @map("is_locked")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient               Patient                @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment           Appointment?           @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  episode               EpisodeOfCare?         @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+  doctor                Employee               @relation(fields: [doctorEmployeeId], references: [id], onDelete: Cascade)
+  department            Department?            @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  signedByUser          User?                  @relation(fields: [signedBy], references: [id], onDelete: SetNull)
+  compositions          ClinicalComposition[]
+  diagnoses             EncounterDiagnosis[]
+  prescriptions         Prescription[]
+  labOrders             LabOrder[]
+  procedureOrders       ProcedureOrder[]
+  versions              EncounterVersion[]
+  signatures            DigitalSignature[]
+  medicalFiles          MedicalFile[]
+  labResults            LabResult[]
+  observations          ClinicalObservation[]
+  files                 File[]
+  deviceMeasurements    DeviceMeasurement[]
+  inventoryConsumptions InventoryConsumption[]
+
+  @@map("encounters")
+  @@schema("emr")
+}
+
+model ClinicalComposition {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  encounterId     String   @map("encounter_id") @db.Uuid
+  templateId      String?  @map("template_id") @db.Uuid
+  compositionType String   @map("composition_type") @db.VarChar(60)
+  title           String   @db.VarChar(255)
+  version         Int      @default(1)
+  status          String   @db.VarChar(40)
+  signedHash      String?  @map("signed_hash") @db.VarChar(255)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  encounter Encounter         @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  template  ClinicalTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  sections  ClinicalSection[]
+
+  @@map("clinical_compositions")
+  @@schema("emr")
+}
+
+model ClinicalSection {
+  id            String @id @default(uuid()) @db.Uuid
+  tenantId      String @map("tenant_id") @db.Uuid
+  compositionId String @map("composition_id") @db.Uuid
+  sectionCode   String @map("section_code") @db.VarChar(120)
+  sectionName   String @map("section_name") @db.VarChar(255)
+  sortOrder     Int    @map("sort_order")
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  composition ClinicalComposition @relation(fields: [compositionId], references: [id], onDelete: Cascade)
+  elements    ClinicalElement[]
+
+  @@map("clinical_sections")
+  @@schema("emr")
+}
+
+model ClinicalElement {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  sectionId       String   @map("section_id") @db.Uuid
+  fieldCode       String   @map("field_code") @db.VarChar(120)
+  fieldType       String   @map("field_type") @db.VarChar(60) // text, number, select, dental_chart, etc.
+  fieldValueJson  Json     @map("field_value_json")
+  unit            String?  @db.VarChar(40)
+  terminologyCode String?  @map("terminology_code") @db.VarChar(120)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  section ClinicalSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@map("clinical_elements")
+  @@schema("emr")
+}
+
+model ClinicalTemplate {
+  id           String  @id @default(uuid()) @db.Uuid
+  tenantId     String  @map("tenant_id") @db.Uuid
+  specialtyId  String? @map("specialty_id") @db.Uuid
+  code         String  @db.VarChar(120)
+  name         String  @db.VarChar(255)
+  version      Int
+  isSystem     Boolean @default(false) @map("is_system")
+  isActive     Boolean @default(true) @map("is_active")
+  schemaJson   Json    @map("schema_json")
+  uiSchemaJson Json    @map("ui_schema_json")
+  createdBy    String? @map("created_by") @db.Uuid
+
+  tenant       Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  specialty    Specialty?            @relation(fields: [specialtyId], references: [id], onDelete: SetNull)
+  compositions ClinicalComposition[]
+
+  @@unique([tenantId, code, version])
+  @@map("clinical_templates")
+  @@schema("emr")
+}
+
+model DiagnosisDictionary {
+  id         String  @id @default(uuid()) @db.Uuid
+  code       String  @unique @db.VarChar(80)
+  codeSystem String  @map("code_system") @db.VarChar(60) // ICD-10, ICD-11
+  nameRu     String  @map("name_ru") @db.VarChar(500)
+  nameTj     String? @map("name_tj") @db.VarChar(500)
+  nameEn     String? @map("name_en") @db.VarChar(500)
+  parentCode String? @map("parent_code") @db.VarChar(80)
+  isActive   Boolean @default(true) @map("is_active")
+
+  @@map("diagnosis_dictionary")
+  @@schema("emr")
+}
+
+model EncounterDiagnosis {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  encounterId   String   @map("encounter_id") @db.Uuid
+  diagnosisCode String   @map("diagnosis_code") @db.VarChar(80)
+  diagnosisType String   @map("diagnosis_type") @db.VarChar(40) // PRELIMINARY, CLINICAL, FINAL, DIFFERENTIAL
+  isPrimary     Boolean  @default(false) @map("is_primary")
+  notes         String?
+  createdBy     String   @map("created_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  encounter Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+
+  @@map("encounter_diagnoses")
+  @@schema("emr")
+}
+
+model Prescription {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  encounterId      String   @map("encounter_id") @db.Uuid
+  diagnosisId      String?  @map("diagnosis_id") @db.Uuid
+  prescriptionType String   @map("prescription_type") @db.VarChar(40) // MEDICATION, LAB_ORDER, etc.
+  status           String   @default("ACTIVE") @db.VarChar(40)
+  notes            String?
+  createdBy        String   @map("created_by") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  encounter Encounter          @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  items     PrescriptionItem[]
+
+  @@map("prescriptions")
+  @@schema("emr")
+}
+
+model PrescriptionItem {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @map("tenant_id") @db.Uuid
+  prescriptionId      String   @map("prescription_id") @db.Uuid
+  itemCode            String   @map("item_code") @db.VarChar(120)
+  itemName            String   @map("item_name") @db.VarChar(255)
+  dosage              String?  @db.VarChar(120)
+  frequency           String?  @db.VarChar(120)
+  duration            String?  @db.VarChar(120)
+  route               String?  @db.VarChar(120) // oral, IV, etc.
+  quantity            Decimal? @db.Decimal(10, 2)
+  instructions        String?
+  linkedServiceId     String?  @map("linked_service_id") @db.Uuid
+  performerEmployeeId String?  @map("performer_employee_id") @db.Uuid
+
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  prescription  Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  linkedService Service?     @relation(fields: [linkedServiceId], references: [id], onDelete: SetNull)
+  performer     Employee?    @relation(fields: [performerEmployeeId], references: [id], onDelete: SetNull)
+
+  @@map("prescription_items")
+  @@schema("emr")
+}
+
+model LabOrder {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  patientId       String    @map("patient_id") @db.Uuid
+  encounterId     String    @map("encounter_id") @db.Uuid
+  providerId      String?   @map("provider_id") @db.Uuid
+  externalOrderId String?   @map("external_order_id") @db.VarChar(120)
+  orderStatus     String    @default("CREATED") @map("order_status") @db.VarChar(40) // CREATED, SENT, ACCEPTED, IN_PROGRESS, COMPLETED, FAILED, CANCELLED
+  priority        String    @default("NORMAL") @db.VarChar(40) // NORMAL, URGENT, STAT
+  orderedBy       String    @map("ordered_by") @db.Uuid
+  orderedAt       DateTime  @default(now()) @map("ordered_at") @db.Timestamptz(6)
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient   Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  encounter Encounter           @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  provider  LaboratoryProvider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  creator   User                @relation(fields: [orderedBy], references: [id], onDelete: Cascade)
+  items     LabOrderItem[]
+  results   LabResult[]
+
+  @@map("lab_orders")
+  @@schema("emr")
+}
+
+model ProcedureOrder {
+  id                     String  @id @default(uuid()) @db.Uuid
+  tenantId               String  @map("tenant_id") @db.Uuid
+  encounterId            String  @map("encounter_id") @db.Uuid
+  procedureCode          String  @map("procedure_code") @db.VarChar(120)
+  roomRequirements       String? @map("room_requirements")
+  equipmentRequirements  String? @map("equipment_requirements")
+  scheduledAppointmentId String? @map("scheduled_appointment_id") @db.Uuid
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  encounter Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+
+  @@map("procedure_orders")
+  @@schema("emr")
+}
+
+model MedicalFile {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  patientId       String   @map("patient_id") @db.Uuid
+  encounterId     String?  @map("encounter_id") @db.Uuid
+  fileType        String   @map("file_type") @db.VarChar(60)
+  storageProvider String   @map("storage_provider") @db.VarChar(60)
+  filePath        String   @map("file_path") @db.VarChar(500)
+  mimeType        String   @map("mime_type") @db.VarChar(120)
+  uploadedBy      String   @map("uploaded_by") @db.Uuid
+  uploadedAt      DateTime @default(now()) @map("uploaded_at") @db.Timestamptz(6)
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient   Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  encounter Encounter? @relation(fields: [encounterId], references: [id], onDelete: SetNull)
+  uploader  User       @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@map("medical_files")
+  @@schema("emr")
+}
+
+model DigitalSignature {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  encounterId       String   @map("encounter_id") @db.Uuid
+  signedByUserId    String   @map("signed_by_user_id") @db.Uuid
+  certificateSerial String?  @map("certificate_serial") @db.VarChar(255)
+  signatureHash     String   @map("signature_hash") @db.VarChar(255)
+  signedPayloadHash String   @map("signed_payload_hash") @db.VarChar(255)
+  signatureProvider String   @map("signature_provider") @db.VarChar(60)
+  signedAt          DateTime @map("signed_at") @db.Timestamptz(6)
+
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  encounter    Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  signedByUser User      @relation(fields: [signedByUserId], references: [id], onDelete: Cascade)
+
+  @@map("digital_signatures")
+  @@schema("emr")
+}
+
+model EncounterVersion {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  encounterId     String   @map("encounter_id") @db.Uuid
+  versionNumber   Int      @map("version_number")
+  snapshotJson    Json     @map("snapshot_json")
+  amendmentReason String   @map("amendment_reason")
+  createdBy       String   @map("created_by") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  encounter Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+
+  @@map("encounter_versions")
+  @@schema("emr")
+}
+
+model ClinicalObservation {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  patientId        String   @map("patient_id") @db.Uuid
+  encounterId      String?  @map("encounter_id") @db.Uuid
+  observationCode  String   @map("observation_code") @db.VarChar(80) // LOINC or local test code
+  observationName  String   @map("observation_name") @db.VarChar(255)
+  value            String   @db.VarChar(255)
+  unit             String?  @db.VarChar(40)
+  referenceRange   String?  @map("reference_range") @db.VarChar(120)
+  abnormalFlag     String?  @map("abnormal_flag") @db.VarChar(40) // N (normal), H (high), L (low), etc.
+  sourceProviderId String?  @map("source_provider_id") @db.Uuid
+  labResultId      String?  @map("lab_result_id") @db.Uuid
+  observedAt       DateTime @default(now()) @map("observed_at") @db.Timestamptz(6)
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient   Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  encounter Encounter? @relation(fields: [encounterId], references: [id], onDelete: SetNull)
+  labResult LabResult? @relation(fields: [labResultId], references: [id], onDelete: SetNull)
+
+  @@map("clinical_observations")
+  @@schema("emr")
+}

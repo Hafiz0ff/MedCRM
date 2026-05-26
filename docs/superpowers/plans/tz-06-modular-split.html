@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ТЗ №6. Modular Split & Domain Boundaries — MedCRM</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #101828;
+      --muted: #667085;
+      --line: #d9e1ea;
+      --surface: #ffffff;
+      --soft: #f6f8fb;
+      --brand: #079685;
+      --brand-dark: #04786b;
+      --brand-soft: #e7f8f5;
+      --blue: #2563eb;
+      --amber: #b45309;
+      --red: #b42318;
+      --green: #15803d;
+      --violet: #6d28d9;
+      --shadow: 0 16px 40px rgba(16, 24, 40, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #eef3f7; color: var(--ink); font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; line-height: 1.55; }
+    .page { width: min(1180px, calc(100% - 40px)); margin: 32px auto; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+    header.cover { padding: 56px 56px 40px; background: linear-gradient(135deg, rgba(109, 40, 217, 0.10), rgba(7, 150, 133, 0.14)), #fbfdff; border-bottom: 1px solid var(--line); }
+    main { padding: 36px 56px 56px; }
+    h1, h2, h3, h4 { margin: 0; line-height: 1.18; }
+    h1 { max-width: 880px; font-size: 42px; font-weight: 760; }
+    h2 { margin-top: 48px; padding-top: 26px; border-top: 1px solid var(--line); font-size: 26px; }
+    h3 { margin-top: 28px; font-size: 19px; }
+    h4 { margin-top: 18px; font-size: 16px; color: #344054; }
+    p { margin: 10px 0 0; }
+    ul, ol { margin: 10px 0 0; padding-left: 22px; }
+    li + li { margin-top: 6px; }
+    table { width: 100%; margin-top: 14px; border-collapse: collapse; font-size: 14px; }
+    th, td { vertical-align: top; padding: 12px 14px; border: 1px solid var(--line); text-align: left; }
+    th { background: #f3f7fa; font-weight: 700; }
+    code { padding: 2px 5px; border-radius: 5px; background: #edf2f7; color: #243244; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.92em; }
+    pre { margin-top: 12px; padding: 16px 18px; background: #0b1220; color: #e6edf3; border-radius: 10px; overflow-x: auto; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; line-height: 1.55; }
+    pre code { background: transparent; color: inherit; padding: 0; }
+    .meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
+    .meta div, .note, .decision, .warning, .danger, .card { border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.85); padding: 14px 16px; }
+    .meta span, .eyebrow { display: block; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .meta strong { display: block; margin-top: 4px; font-size: 15px; }
+    .lead { max-width: 820px; margin-top: 18px; color: #344054; font-size: 18px; }
+    .toc { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; margin-top: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+    .toc a { color: var(--brand-dark); text-decoration: none; font-weight: 600; }
+    .toc a:hover { text-decoration: underline; }
+    .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 16px; }
+    .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 16px; }
+    .four { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+    .card { padding: 18px; }
+    .card h3 { margin-top: 0; }
+    .note { background: #f8fbff; border-color: #c7d8f0; }
+    .decision { background: #ecfdf5; border-color: #a7f3d0; }
+    .warning { background: #fff7ed; border-color: #fed7aa; }
+    .danger { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
+    .small { color: var(--muted); font-size: 13px; }
+    .stage { border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: 10px; padding: 16px 18px; margin-top: 14px; background: #fbfeff; }
+    .stage h3 { margin-top: 0; }
+    .stage .stage-meta { display: inline-block; margin-right: 10px; padding: 2px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-dark); font-size: 12px; font-weight: 700; }
+    .kpi { border-radius: 12px; padding: 18px; border: 1px solid var(--line); background: linear-gradient(180deg, #ffffff, #f7fafc); }
+    .kpi .label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .kpi .value { display: block; margin-top: 6px; font-size: 26px; font-weight: 760; }
+    .kpi .hint { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .check { padding-left: 0; list-style: none; }
+    .check li { position: relative; padding: 6px 0 6px 26px; border-bottom: 1px dashed #e5e7eb; }
+    .check li:before { content: ""; position: absolute; left: 0; top: 11px; width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid var(--brand); background: #fff; }
+    .check li:last-child { border-bottom: 0; }
+    .file-tree { margin-top: 12px; padding: 16px 20px; background: #0b1220; color: #e6edf3; border-radius: 10px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; line-height: 1.7; overflow-x: auto; }
+    .file-tree b { color: #7dd3fc; font-weight: 700; }
+    .file-tree i { color: #a5b4fc; font-style: normal; }
+    .file-tree em { color: #fcd34d; font-style: normal; }
+    .service-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+    .service { border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: 10px; padding: 14px 16px; background: #fbfeff; }
+    .service h4 { margin: 0 0 4px; font-size: 16px; }
+    .service .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-dark); font-size: 11px; font-weight: 700; margin-right: 6px; }
+    @media (max-width: 860px) {
+      .page { width: 100%; margin: 0; border-width: 0; }
+      header.cover, main { padding: 28px 20px; }
+      h1 { font-size: 30px; }
+      .meta, .two, .three, .four, .toc, .service-grid { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: #fff; }
+      .page { width: 100%; margin: 0; border: 0; box-shadow: none; }
+      header.cover, main { padding: 24px 32px; }
+      pre { background: #f4f4f5; color: #111827; }
+    }
+  </style>
+</head>
+<body>
+  <article class="page">
+    <header class="cover">
+      <span class="eyebrow">MedCRM · ТЗ №6 · Modular Split & Domain Boundaries</span>
+      <h1>Разделение auth-service и Prisma-схемы на доменные сервисы</h1>
+      <p class="lead">
+        Перевести MedCRM с архитектурного состояния «модульный монолит на бумаге» в реальный модульный монолит с
+        ясными границами и опциональным выносом доменов в самостоятельные сервисы. Разрезать
+        <code>schema.prisma</code> (3076 строк, 147 моделей) на per-domain схемы, вытащить из
+        <code>auth-service</code> отдельные NestJS-приложения по бизнес-доменам, ввести event bus (NATS / Redis
+        Streams), типизированные внутренние контракты и подготовить почву под Kubernetes (ТЗ №10).
+      </p>
+      <section class="meta">
+        <div><span>Версия</span><strong>1.0</strong></div>
+        <div><span>Дата</span><strong>25 мая 2026</strong></div>
+        <div><span>Проект</span><strong>xiewan1230-maker/MedCRM</strong></div>
+        <div><span>Фокус</span><strong>Architecture, domain split, event bus</strong></div>
+      </section>
+    </header>
+
+    <main>
+      <nav class="toc">
+        <a href="#purpose">1. Назначение</a>
+        <a href="#as-is">2. Состояние «как есть»</a>
+        <a href="#goals">3. Цели и Out of Scope</a>
+        <a href="#principles">4. Принципы разделения</a>
+        <a href="#domains">5. Доменная карта</a>
+        <a href="#prisma">6. Prisma multi-file split</a>
+        <a href="#services">7. Сервисы и контракты</a>
+        <a href="#eventbus">8. Event bus</a>
+        <a href="#transactions">9. Транзакционные границы</a>
+        <a href="#observability">10. Distributed observability</a>
+        <a href="#files">11. Структура файлов</a>
+        <a href="#plan">12. Этапы работ</a>
+        <a href="#acceptance">13. Acceptance</a>
+        <a href="#metrics">14. Метрики и риски</a>
+      </nav>
+
+      <section id="purpose">
+        <h2>1. Назначение</h2>
+        <p>
+          README MedCRM заявляет «modular monolith with service-ready boundaries». Реально:
+          все 11 доменов и 147 Prisma-моделей живут внутри одного приложения <code>auth-service</code>,
+          <code>schema.prisma</code> — 3076 строк в одном файле, между модулями нет ни выделенного event bus, ни
+          типизированных внутренних контрактов. Это не блокирует MVP, но блокирует:
+        </p>
+        <ul>
+          <li>Командное масштабирование: 2+ команды одновременно не могут спокойно мерджить large changes.</li>
+          <li>Performance: тяжёлый KPI-расчёт глобально замедляет registry-ответы.</li>
+          <li>Деплой: любое изменение требует выкатки всего auth-service.</li>
+          <li>K8s: один большой service не позволяет независимо масштабировать «коммуникации» (легко CPU-bound) и «EMR» (память-bound).</li>
+        </ul>
+        <p>
+          Цель ТЗ №6 — выполнить «правильный» Conway-разрез: вытащить из <code>auth-service</code> чёткие NestJS-под-приложения,
+          вынести их Prisma-фрагменты в отдельные файлы (Prisma multi-file schemas), добавить event bus и типизированные
+          контракты. Это <strong>не</strong> микросервисы ради микросервисов: остаёмся модульным монолитом с
+          возможностью «отсадить» сервис в отдельный pod по мере необходимости.
+        </p>
+        <div class="decision">
+          <span class="eyebrow">Принцип</span>
+          <strong>«Сначала чёткие границы внутри одного процесса. Микросервис — только когда appears реальный sizing-кейс»</strong>
+          <p class="small">Преждевременный микросервис ≈ распределённый монолит, что хуже монолита по всем осям.</p>
+        </div>
+      </section>
+
+      <section id="as-is">
+        <h2>2. Состояние «как есть»</h2>
+        <table>
+          <thead><tr><th>Слой</th><th>Сейчас</th><th>Проблема</th></tr></thead>
+          <tbody>
+            <tr><td>Prisma schema</td><td>Один файл <code>backend/prisma/schema.prisma</code>, 3076 строк, 147 моделей.</td><td>Конфликты в одном файле, сложный merge, IDE-навигация деградирует.</td></tr>
+            <tr><td>NestJS-апп</td><td>Только <code>auth-service</code> + <code>api-gateway</code>. Бизнес-домены смешаны в <code>apps/auth-service/src/{patients, scheduling, finance, ...}</code>.</td><td>Любой релиз — это релиз всего; одна ошибка в communications роняет auth.</td></tr>
+            <tr><td>Internal contracts</td><td>Сервисы вызывают друг друга через прямые class-injections.</td><td>Циклы зависимостей; невозможно отсадить домен без рефактора.</td></tr>
+            <tr><td>Event bus</td><td>Нет.</td><td>Все side effects делаются в том же транзакционном scope. Долгие операции блокируют API.</td></tr>
+            <tr><td>Transactions</td><td>Внутри одного Prisma client.</td><td>Тренд — выйти за границы домена через transactional outbox (ТЗ №4 готовит почву).</td></tr>
+            <tr><td>Observability</td><td>Логи в stdout, нет distributed traces.</td><td>Когда сервисы разъедутся, отладка станет адом без OpenTelemetry.</td></tr>
+            <tr><td>Deploy</td><td>Один Docker-image (<code>infrastructure/docker/Dockerfile</code>) с APP_NAME аргументом.</td><td>Заготовка отличная — нужно ей воспользоваться.</td></tr>
+            <tr><td>API gateway</td><td>Минимальный proxy с rate-limit.</td><td>Готов принять multiple upstreams.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="goals">
+        <h2>3. Цели и Out of Scope</h2>
+        <div class="two">
+          <div class="card">
+            <h3>Цели</h3>
+            <ul>
+              <li>Разрезать <code>schema.prisma</code> на per-domain файлы (Prisma multi-file schemas, GA в 6.x).</li>
+              <li>Сделать 7 доменных NestJS-приложений в <code>backend/apps/</code>: <code>auth</code>, <code>scheduling</code>, <code>emr</code>, <code>finance</code>, <code>communications</code>, <code>inventory</code>, <code>analytics</code>; плюс уже существующие <code>api-gateway</code> и <code>worker</code> (ТЗ №4).</li>
+              <li>Доменные модули в каждом app: <code>integrations</code> и <code>operations</code> могут жить внутри ближайшего app, отдельно — на будущее.</li>
+              <li>Ввести event bus (NATS JetStream, fallback Redis Streams) для inter-domain событий.</li>
+              <li>Типизированные внутренние контракты: shared types через <code>backend/contracts/&lt;domain&gt;.contract.ts</code>; runtime — gRPC или Nest-microservices.</li>
+              <li>OpenTelemetry distributed tracing сквозь все сервисы.</li>
+              <li>Centralized config / feature flags / service registry.</li>
+              <li>Keep developer-experience: localdev = <code>docker compose up</code> работает one-command.</li>
+              <li>Готовность к K8s: каждый сервис — отдельный Helm-chart (ТЗ №10).</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Out of Scope</h3>
+            <ul>
+              <li>Полный переход к event-sourcing / CQRS по всей системе — частично (где оправдано: appointments, encounters).</li>
+              <li>Замена Prisma на другой ORM — не делаем.</li>
+              <li>Перенос на gRPC всех публичных API — только internal/internal.</li>
+              <li>Polyglot stack — оставляем Node/Nest везде.</li>
+              <li>Kubernetes deploy — отдельное ТЗ №10.</li>
+              <li>Изменение публичных REST-контрактов фронтенда — нет breaking changes.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="principles">
+        <h2>4. Принципы разделения</h2>
+        <ul>
+          <li><strong>Single owner per aggregate</strong>: каждая Prisma-модель принадлежит одному домену; домен — единственный, кто пишет в её таблицы.</li>
+          <li><strong>Read-models — копии, не общие таблицы</strong>: если analytics нужен appointment — он получает его через event и хранит свой проекционный read-model. Никаких прямых SELECT в чужой домен.</li>
+          <li><strong>Async-by-default</strong>: side effects между доменами — события. Синхронные вызовы — только когда нужна consistency или ответ.</li>
+          <li><strong>Eventual consistency как явный контракт</strong>: documented latency budgets (например, «scheduling → analytics ≤ 10 сек»).</li>
+          <li><strong>Backward compatibility</strong>: события и API имеют версии (<code>v1.appointment.created</code>); breaking — только через новый topic.</li>
+          <li><strong>Один Postgres сервер, разные schemas</strong>: пока всё в одном Postgres, но логически в отдельных <code>schema</code>-неймспейсах (<code>auth</code>, <code>scheduling</code>, <code>emr</code>, ...). По мере необходимости — split DB.</li>
+        </ul>
+      </section>
+
+      <section id="domains">
+        <h2>5. Доменная карта</h2>
+
+        <div class="service-grid">
+          <div class="service">
+            <h4>auth-service</h4>
+            <span class="pill">platform</span><span class="pill">REST</span>
+            <p class="small">Tenants, Users, Roles, Permissions, Sessions, 2FA, WebAuthn. Tenancy и RLS-контекст. После ТЗ №3 уже почти изолирован.</p>
+            <p class="small"><strong>Aggregates:</strong> Tenant, User, Role, UserSession, User2faSettings, UserCredential.</p>
+          </div>
+          <div class="service">
+            <h4>scheduling-service</h4>
+            <span class="pill">domain</span><span class="pill">REST + events</span>
+            <p class="small">Appointments, ResourceCalendar, Rooms, Equipment, Doctors-availability, Waitlist, Online booking-engine.</p>
+            <p class="small"><strong>Aggregates:</strong> Appointment, AppointmentStatusHistory, AppointmentReservation, AppointmentRecurrenceRule, ResourceCalendar, Room, Equipment.</p>
+          </div>
+          <div class="service">
+            <h4>emr-service</h4>
+            <span class="pill">domain</span><span class="pill">REST + events</span>
+            <p class="small">Encounter, MedicalRecord, Diagnosis, Prescription, ServiceOrder, LabResults import, Vitals, шаблоны протоколов.</p>
+            <p class="small"><strong>Aggregates:</strong> Encounter, MedicalRecord, EncounterDiagnosis, EncounterDocument, Prescription, ServiceOrder.</p>
+          </div>
+          <div class="service">
+            <h4>finance-service</h4>
+            <span class="pill">domain</span><span class="pill">REST + events</span>
+            <p class="small">Invoices, Payments, PaymentAllocations, Receipts, CashierShifts, Refunds, Debts, Wallets, фискальная касса.</p>
+            <p class="small"><strong>Aggregates:</strong> Invoice, InvoiceItem, Payment, PaymentAllocation, PaymentGateway, PatientWallet, PatientDebt, CashierShift, Receipt.</p>
+          </div>
+          <div class="service">
+            <h4>communications-service</h4>
+            <span class="pill">domain</span><span class="pill">REST + events</span>
+            <p class="small">Conversations, Messages, Templates, NotificationRules, Channels, Chatbot flows. Producer для <code>worker</code> воркера.</p>
+            <p class="small"><strong>Aggregates:</strong> Conversation, Message, CommunicationChannel, MessageTemplate, NotificationsQueue, ChatbotFlow.</p>
+          </div>
+          <div class="service">
+            <h4>inventory-service</h4>
+            <span class="pill">domain</span><span class="pill">REST + events</span>
+            <p class="small">Warehouses, Stock movements, Item catalog, Suppliers, Purchase orders, batch/expiry tracking, write-offs.</p>
+            <p class="small"><strong>Aggregates:</strong> Warehouse, Item, StockMovement, Supplier, PurchaseOrder, StockBatch.</p>
+          </div>
+          <div class="service">
+            <h4>analytics-service</h4>
+            <span class="pill">domain</span><span class="pill">REST + read-models</span>
+            <p class="small">KPI агрегаты, dashboards-API, marketing attribution, retention. Хранит проекции из events.</p>
+            <p class="small"><strong>Aggregates:</strong> DwFactAppointment, DwFactPayment, DoctorKpiMetric, FinancialDailyAggregate, MarketingFunnelMetric, PatientCrmMetric.</p>
+          </div>
+          <div class="service">
+            <h4>api-gateway</h4>
+            <span class="pill">edge</span><span class="pill">existing</span>
+            <p class="small">Маршрутизация по path/host, rate-limit (ТЗ №3), CORS, auth-context propagation, request-id.</p>
+          </div>
+        </div>
+
+        <div class="note">
+          <span class="eyebrow">Особые модули</span>
+          <strong>integrations-service и operations-router</strong>
+          <p class="small"><code>integrations</code> (HL7/FHIR/DICOM/LIS/ОМС — ТЗ №8) — на старте живёт внутри nearest app, в фазе 3 выносится. <code>operations</code> (live-queue, kanban-приёма) — read-model + Socket.IO, может остаться в <code>scheduling</code>.</p>
+        </div>
+      </section>
+
+      <section id="prisma">
+        <h2>6. Prisma multi-file split</h2>
+
+        <h3>6.1. Структура</h3>
+        <pre><code>backend/prisma/
+  schema.prisma                  ← generator + datasource only
+  schemas/
+    01-platform.prisma           ← Tenant, Branch, TenantModule, Settings, AuditLog
+    02-auth.prisma               ← User, Role, Permission, UserSession, User2faSettings, UserCredential
+    03-patients.prisma           ← Patient, PatientContact, PatientAddress, PatientTag, PatientNote, PatientLegalDocument
+    04-scheduling.prisma         ← Appointment*, ResourceCalendar, Room, Equipment
+    05-emr.prisma                ← Encounter*, MedicalRecord, Diagnosis, Prescription, ServiceOrder
+    06-finance.prisma            ← Invoice*, Payment*, PaymentGateway, PatientWallet, PatientDebt, CashierShift, Receipt
+    07-communications.prisma     ← Conversation, Message, MessageTemplate, NotificationRule*, ChatbotFlow
+    08-inventory.prisma          ← Warehouse, Item, StockMovement, Supplier, PurchaseOrder, StockBatch
+    09-hr.prisma                 ← Employee*, EmployeePosition, Department
+    10-marketing.prisma          ← CommunicationCampaign, MarketingFunnelMetric, PatientCrmMetric
+    11-analytics.prisma          ← DwFact*, DoctorKpiMetric, FinancialDailyAggregate, AnalyticsSnapshot
+    12-integrations.prisma       ← IntegrationProvider, IntegrationOutbox, ExternalIdMap
+    13-billing.prisma            ← TenantSubscription, TenantUsageMetric, SubscriptionPlan</code></pre>
+
+        <p>Prisma 6 поддерживает multi-file schemas через preview-feature <code>prismaSchemaFolder</code> либо <code>schemas</code>-конфигурацию. Это <strong>один</strong> Prisma Client, просто разбитый на файлы для удобства разработки.</p>
+
+        <h3>6.2. Postgres schemas</h3>
+        <p>В дополнение к разделению файлов выделяем Postgres <em>schemas</em> per domain — это даёт ещё один уровень изоляции (RLS из ТЗ №3 работает per-table, schemas даёт «доменное пространство имён»):</p>
+        <pre><code>-- 20260801100000_postgres_schemas.sql
+CREATE SCHEMA IF NOT EXISTS auth;
+CREATE SCHEMA IF NOT EXISTS scheduling;
+CREATE SCHEMA IF NOT EXISTS emr;
+CREATE SCHEMA IF NOT EXISTS finance;
+CREATE SCHEMA IF NOT EXISTS communications;
+CREATE SCHEMA IF NOT EXISTS inventory;
+CREATE SCHEMA IF NOT EXISTS analytics;
+
+-- В моделях Prisma добавляем @@schema("scheduling")
+-- Пример:
+model Appointment {
+  // ...
+  @@schema("scheduling")
+  @@map("appointments")
+}</code></pre>
+
+        <h3>6.3. Совместимость с RLS (ТЗ №3)</h3>
+        <p>Все политики RLS остаются на per-table уровне; <code>tenant_id</code>-фильтр работает одинаково. <code>current_tenant_id()</code> и <code>current_user_id()</code> — общие helpers в схеме <code>public</code>, доступные из любой.</p>
+
+        <h3>6.4. Миграция данных</h3>
+        <p>Переход в Postgres schemas — это <em>rename</em> таблиц <code>ALTER TABLE ... SET SCHEMA ...</code>. Один аккуратный pipeline:</p>
+        <ol>
+          <li>Создать новые schemas.</li>
+          <li>В одной транзакции на staging — <code>ALTER TABLE</code> для каждой таблицы.</li>
+          <li>Прогнать integration-тесты.</li>
+          <li>Применить в prod в maintenance-окно (~5 минут).</li>
+        </ol>
+      </section>
+
+      <section id="services">
+        <h2>7. Сервисы и контракты</h2>
+
+        <h3>7.1. Стратегия выделения</h3>
+        <p>Каждый сервис — отдельный NestJS-app в <code>backend/apps/&lt;name&gt;-service</code> с своим <code>main.ts</code>. Все они компилируются из одного monorepo, делят:</p>
+        <ul>
+          <li><code>backend/core/*</code> — общая инфраструктура (tenancy, audit, queue, communications-shared).</li>
+          <li><code>backend/contracts/*</code> — типизированные интерфейсы для inter-service вызовов и событий.</li>
+          <li><code>backend/prisma/*</code> — единый Prisma Client.</li>
+        </ul>
+
+        <h3>7.2. Контракты</h3>
+        <p>Каждый сервис экспортирует:</p>
+        <ul>
+          <li><strong>REST API</strong> (через api-gateway) — публичный.</li>
+          <li><strong>Internal RPC контракт</strong> (Nest-microservices с TCP или gRPC) — для inter-service синхронных вызовов.</li>
+          <li><strong>Event contract</strong> — список топиков, payload-схема (Zod), versioning.</li>
+        </ul>
+
+        <pre><code>// backend/contracts/scheduling.contract.ts
+export interface SchedulingService {
+  createAppointment(input: CreateAppointmentInput): Promise&lt;Appointment&gt;;
+  cancelAppointment(id: string, reason: string): Promise&lt;void&gt;;
+  getAvailableSlots(input: GetSlotsInput): Promise&lt;Slot[]&gt;;
+}
+
+export const SchedulingEvents = {
+  'v1.appointment.created':  z.object({ tenantId: z.string(), appointmentId: z.string(), patientId: z.string(), doctorId: z.string(), startAt: z.string(), endAt: z.string() }),
+  'v1.appointment.cancelled': z.object({ tenantId: z.string(), appointmentId: z.string(), reason: z.string() }),
+  'v1.appointment.completed': z.object({ tenantId: z.string(), appointmentId: z.string(), endedAt: z.string() }),
+} as const;</code></pre>
+
+        <h3>7.3. Internal RPC</h3>
+        <p>Опции:</p>
+        <table>
+          <thead><tr><th>Вариант</th><th>Pros</th><th>Cons</th></tr></thead>
+          <tbody>
+            <tr><td>Nest TCP microservices</td><td>Минимум кода, embedded в Nest, хорошо для inproc + extracted.</td><td>Менее зрелый ecosystem, нет cross-language.</td></tr>
+            <tr><td>gRPC</td><td>Industry-standard, streaming, типизация через .proto.</td><td>Больше boilerplate, .proto файлы.</td></tr>
+            <tr><td>HTTP/REST internal</td><td>Совместимо с любой инфрой.</td><td>Verbose, медленнее, нет streaming.</td></tr>
+          </tbody>
+        </table>
+        <div class="decision">
+          <span class="eyebrow">Решение</span>
+          <strong>Nest microservices с TCP-transport для inter-service синхронных вызовов; gRPC — на будущее, когда появятся не-TS клиенты.</strong>
+        </div>
+
+        <h3>7.4. Service discovery</h3>
+        <ul>
+          <li>Локально и в docker compose: hardcoded names через <code>SERVICES_*_URL</code> env.</li>
+          <li>В K8s (ТЗ №10): Kubernetes DNS (<code>scheduling-service.default.svc.cluster.local</code>).</li>
+          <li>Centralized config через <code>backend/core/config</code> с Zod-валидацией.</li>
+        </ul>
+      </section>
+
+      <section id="eventbus">
+        <h2>8. Event bus</h2>
+
+        <h3>8.1. Выбор технологии</h3>
+        <table>
+          <thead><tr><th>Опция</th><th>Pros</th><th>Cons</th></tr></thead>
+          <tbody>
+            <tr><td>NATS JetStream</td><td>Лёгкий, persistent streams, replay, native ack.</td><td>Меньше людей в команде знакомы.</td></tr>
+            <tr><td>Redis Streams</td><td>Redis уже в стеке.</td><td>Memory-bound, ограниченная durability.</td></tr>
+            <tr><td>Kafka / Redpanda</td><td>Enterprise-grade, лучший для high-throughput.</td><td>Тяжелее в эксплуатации, избыточен на этом этапе.</td></tr>
+            <tr><td>RabbitMQ</td><td>Знаком многим.</td><td>Не event-log, мысль про replay сложнее.</td></tr>
+          </tbody>
+        </table>
+        <div class="decision">
+          <span class="eyebrow">Решение</span>
+          <strong>NATS JetStream</strong> — баланс простоты и зрелости. Redis Streams — fallback в localdev и для совсем легковесных событий.</p>
+        </div>
+
+        <h3>8.2. Producer и outbox</h3>
+        <p>Используем готовый outbox из ТЗ №4 (<code>IntegrationOutbox</code>). Расширяем для domain events:</p>
+        <ul>
+          <li>Domain-операция в транзакции пишет событие в <code>domain_outbox</code>.</li>
+          <li>Outbox-relay (worker, ТЗ №4) читает unprocessed и публикует в NATS.</li>
+          <li>NATS гарантирует at-least-once + ordering per <code>aggregate_id</code> (subject suffix).</li>
+        </ul>
+
+        <h3>8.3. Consumer</h3>
+        <pre><code>// backend/apps/analytics-service/src/consumers/appointment.consumer.ts
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { NatsConsumer } from 'src/core/eventbus';
+
+@Injectable()
+export class AppointmentConsumer implements OnModuleInit {
+  constructor(private readonly nats: NatsConsumer, private readonly readModel: AnalyticsReadModel) {}
+
+  async onModuleInit() {
+    await this.nats.subscribe('scheduling.v1.appointment.*', {
+      durable: 'analytics-appointment-consumer',
+      handle: async (msg) =&gt; {
+        switch (msg.subject) {
+          case 'scheduling.v1.appointment.created':   return this.readModel.onCreated(msg.data);
+          case 'scheduling.v1.appointment.cancelled': return this.readModel.onCancelled(msg.data);
+          case 'scheduling.v1.appointment.completed': return this.readModel.onCompleted(msg.data);
+        }
+      },
+    });
+  }
+}</code></pre>
+
+        <h3>8.4. Subject naming</h3>
+        <pre><code>&lt;domain&gt;.&lt;version&gt;.&lt;aggregate&gt;.&lt;action&gt;
+  scheduling.v1.appointment.created
+  emr.v1.encounter.signed
+  finance.v1.invoice.paid
+  finance.v1.payment.refunded
+  communications.v1.message.delivered
+  inventory.v1.stock.depleted</code></pre>
+
+        <h3>8.5. Schema registry</h3>
+        <p>Zod-схемы событий лежат в <code>backend/contracts/events/&lt;domain&gt;.ts</code>; CI-чек ломает PR, если меняется payload без bump-версии.</p>
+
+        <h3>8.6. Replay и debug</h3>
+        <ul>
+          <li>JetStream хранит события 30 дней по умолчанию (configurable).</li>
+          <li>NATS box CLI (<code>nats sub</code>) — для разработки.</li>
+          <li>Bull Board (из ТЗ №4) — для DLQ outbox-relay.</li>
+        </ul>
+      </section>
+
+      <section id="transactions">
+        <h2>9. Транзакционные границы</h2>
+        <ul>
+          <li><strong>В пределах одного домена</strong>: классические Prisma-транзакции (<code>prisma.$transaction</code>).</li>
+          <li><strong>Между доменами</strong>: Saga-pattern через события + idempotency.</li>
+          <li><strong>Финансовая аккуратность</strong>: создание Payment в finance + изменение Appointment.status в scheduling — два события: <code>finance.v1.payment.captured</code> → consumer в scheduling обновляет appointment.</li>
+          <li><strong>Compensation</strong>: на случай отмены — <code>finance.v1.payment.refunded</code> возвращает scheduling в исходный slot (если в окне отмены).</li>
+          <li><strong>Idempotency key</strong>: каждое событие имеет <code>eventId</code>; consumer хранит processed eventIds в собственной таблице 30 дней.</li>
+        </ul>
+
+        <div class="warning">
+          <span class="eyebrow">Compatibility note</span>
+          <strong>Не все операции выгодно превращать в saga.</strong>
+          <p class="small">На MVP-уровне 80% операций живут в одном домене и используют локальные транзакции. Saga нужны там, где есть реальный cross-domain effect.</p>
+        </div>
+      </section>
+
+      <section id="observability">
+        <h2>10. Distributed observability</h2>
+
+        <h3>10.1. OpenTelemetry</h3>
+        <ul>
+          <li>Auto-instrumentation для NestJS (HTTP/REST), Prisma, BullMQ, NATS.</li>
+          <li>Context propagation: header <code>traceparent</code> через api-gateway → service → event → consumer.</li>
+          <li>Backend traces: Jaeger / Tempo / SigNoz (по выбору). Локально — Jaeger в docker compose.</li>
+        </ul>
+
+        <h3>10.2. Метрики</h3>
+        <ul>
+          <li>Prometheus exporter в каждом service.</li>
+          <li>RED-метрики (Rate, Errors, Duration) per endpoint.</li>
+          <li>Бизнес-метрики per домен: appointments_per_hour, invoices_paid, no_show_count.</li>
+        </ul>
+
+        <h3>10.3. Логи</h3>
+        <ul>
+          <li>Structured JSON, поле <code>service</code>, <code>traceId</code>, <code>tenantId</code>, <code>userId</code>.</li>
+          <li>Loki / CloudWatch / OpenObserve для агрегации.</li>
+          <li>Корреляция: один traceId связывает gateway → scheduling → analytics consumer.</li>
+        </ul>
+
+        <h3>10.4. Алёрты</h3>
+        <ul>
+          <li>Service down → P1.</li>
+          <li>Error rate &gt; 1% за 5 мин → P2.</li>
+          <li>Event lag &gt; 30 сек → P2.</li>
+          <li>DLQ size &gt; 0 → P1.</li>
+        </ul>
+      </section>
+
+      <section id="files">
+        <h2>11. Структура файлов</h2>
+        <div class="file-tree">
+backend/
+├─ apps/
+│  ├─ api-gateway/                         ← existing, расширяется (routes to N services)
+│  ├─ auth-service/                        ← теперь только auth/rbac/tenancy/sessions
+│  ├─ <b>scheduling-service/</b>                  ← NEW
+│  ├─ <b>emr-service/</b>                         ← NEW
+│  ├─ <b>finance-service/</b>                     ← NEW
+│  ├─ <b>communications-service/</b>              ← NEW
+│  ├─ <b>inventory-service/</b>                   ← NEW
+│  ├─ <b>analytics-service/</b>                   ← NEW
+│  └─ worker/                              ← ТЗ №4
+├─ <b>contracts/</b>
+│  ├─ shared/
+│  │  ├─ tenant.contract.ts
+│  │  └─ pagination.contract.ts
+│  ├─ auth/
+│  │  ├─ auth.rpc.ts
+│  │  └─ events.ts
+│  ├─ scheduling/
+│  │  ├─ scheduling.rpc.ts
+│  │  └─ events.ts
+│  ├─ emr/...
+│  ├─ finance/...
+│  ├─ communications/...
+│  ├─ inventory/...
+│  ├─ analytics/...
+│  └─ schemas/                             ← Zod схемы payload'ов событий
+├─ <b>core/</b>
+│  ├─ eventbus/
+│  │  ├─ nats.publisher.ts
+│  │  ├─ nats.consumer.ts
+│  │  ├─ event-envelope.ts                 ← traceId, eventId, version
+│  │  └─ idempotency.service.ts
+│  ├─ rpc/
+│  │  ├─ nest-microservices.config.ts
+│  │  └─ client-factory.ts
+│  ├─ telemetry/
+│  │  ├─ otel.bootstrap.ts
+│  │  └─ metrics.module.ts
+│  ├─ tenancy/...                          ← из ТЗ №3
+│  ├─ audit/...
+│  └─ outbox/...                           ← расширен для domain events
+├─ <b>prisma/</b>
+│  ├─ schema.prisma                        ← only generator + datasource
+│  └─ schemas/
+│     ├─ 01-platform.prisma
+│     ├─ 02-auth.prisma
+│     ├─ 03-patients.prisma
+│     ├─ 04-scheduling.prisma
+│     ├─ 05-emr.prisma
+│     ├─ 06-finance.prisma
+│     ├─ 07-communications.prisma
+│     ├─ 08-inventory.prisma
+│     ├─ 09-hr.prisma
+│     ├─ 10-marketing.prisma
+│     ├─ 11-analytics.prisma
+│     ├─ 12-integrations.prisma
+│     └─ 13-billing.prisma
+└─ infrastructure/
+   ├─ docker/Dockerfile                    ← существующий APP_NAME-build
+   ├─ docker/compose.yml                   ← добавляются сервисы
+   └─ nats/jetstream.yaml                  ← stream config
+
+frontend/
+└─ (без изменений — все запросы по-прежнему через api-gateway)
+        </div>
+      </section>
+
+      <section id="plan">
+        <h2>12. Этапы работ</h2>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 1 · ~1.5 недели</span>
+          <h3>Этап 1. Prisma multi-file split + Postgres schemas</h3>
+          <ul>
+            <li>Разрезать <code>schema.prisma</code> на 13 файлов в <code>schemas/</code>; включить <code>prismaSchemaFolder</code>.</li>
+            <li>Добавить <code>@@schema("...")</code> к каждой модели.</li>
+            <li>Миграция <code>postgres_schemas</code>: создать schemas, перенести таблицы через <code>SET SCHEMA</code>.</li>
+            <li>Прогнать все интеграционные тесты; убедиться, что RLS-политики (ТЗ №3) всё ещё применяются.</li>
+            <li>PR <code>refactor(prisma): multi-file schemas + postgres namespaces</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 2 · ~1 неделя</span>
+          <h3>Этап 2. Contracts + Event bus + Outbox extension</h3>
+          <ul>
+            <li>Создать <code>backend/contracts/&lt;domain&gt;/</code> с RPC и event-Zod-схемами.</li>
+            <li>NATS JetStream сервис в docker compose; streams configuration в <code>infrastructure/nats/</code>.</li>
+            <li><code>core/eventbus</code>: publisher, consumer, envelope, idempotency.</li>
+            <li>Расширить <code>core/outbox</code> для domain events (publishes to NATS).</li>
+            <li>Smoke: тестовое событие из auth-service публикуется и принимается тестовым consumer.</li>
+            <li>PR <code>feat(core): nats jetstream eventbus + contracts</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 3 · ~1.5 недели</span>
+          <h3>Этап 3. Выделение scheduling-service</h3>
+          <ul>
+            <li>Создать <code>backend/apps/scheduling-service/</code> со своим <code>main.ts</code> и <code>app.module.ts</code>.</li>
+            <li>Перенести из <code>auth-service/src/scheduling/</code> и <code>operations/</code> (где про appointments).</li>
+            <li>Контракт RPC + publish событий: <code>appointment.created|cancelled|completed|rescheduled</code>.</li>
+            <li>API gateway маршрутизирует <code>/api/v1/appointments/*</code> и связанное на <code>scheduling-service</code>.</li>
+            <li>Внутри auth-service оставить stubs (deprecation banner).</li>
+            <li>PR <code>refactor(arch): extract scheduling-service</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 4 · ~1.5 недели</span>
+          <h3>Этап 4. Выделение emr-service и finance-service</h3>
+          <ul>
+            <li>EMR: Encounter, MedicalRecord, Prescription, ServiceOrder.</li>
+            <li>Finance: Invoice, Payment, Receipt, CashierShift, debt, wallet.</li>
+            <li>Кросс-доменные события: <code>encounter.signed → finance.invoice.draft.created</code>, <code>payment.captured → scheduling.appointment.confirmed</code>.</li>
+            <li>Compensations: refund при cancel.</li>
+            <li>PR-серия <code>refactor(arch): extract emr-service / finance-service</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 5 · ~1 неделя</span>
+          <h3>Этап 5. Выделение communications + inventory</h3>
+          <ul>
+            <li>Communications: templates, rules, channels CRUD; реальный send через <code>worker</code> (ТЗ №4).</li>
+            <li>Inventory: catalog, stock movements, warehouses.</li>
+            <li>События stock.depleted → emr-service может предупреждать врача о нехватке расходника.</li>
+            <li>PR <code>refactor(arch): extract communications + inventory</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 6 · ~1 неделя</span>
+          <h3>Этап 6. Выделение analytics-service + read-models</h3>
+          <ul>
+            <li>Analytics — pure read-model service.</li>
+            <li>Consumers: appointment, payment, encounter, communication, stock.</li>
+            <li>Read-models: <code>DwFact*</code>, <code>DoctorKpiMetric</code>, <code>FinancialDailyAggregate</code>.</li>
+            <li>API <code>/api/v1/analytics/*</code>.</li>
+            <li>Backfill из исторических данных (одноразовый скрипт).</li>
+            <li>PR <code>refactor(arch): extract analytics-service with read-models</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 7 · ~1 неделя</span>
+          <h3>Этап 7. Observability + docs + cleanup</h3>
+          <ul>
+            <li>OpenTelemetry в каждом service; Jaeger в docker compose.</li>
+            <li>Prometheus exporter + Grafana дашборд per service.</li>
+            <li>Удаление deprecated stubs из <code>auth-service</code>.</li>
+            <li>Документация: <code>docs/architecture/modular-monolith.md</code>, диаграммы C4, sequence-диаграммы для ключевых saga.</li>
+            <li>Performance testing: cross-service latency budgets.</li>
+            <li>PR <code>chore(observability): otel + jaeger + docs</code>.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="acceptance">
+        <h2>13. Acceptance criteria</h2>
+        <ul class="check">
+          <li><code>schema.prisma</code> разделён на ≥ 13 файлов в <code>schemas/</code>; единый Prisma Client; миграции работают.</li>
+          <li>Каждая модель имеет <code>@@schema("...")</code>; Postgres-namespaces созданы и используются.</li>
+          <li>RLS-политики (ТЗ №3) продолжают работать после переноса в namespaces.</li>
+          <li>Backend разделён на ≥ 7 доменных приложений + api-gateway + worker; каждый запускается отдельным контейнером.</li>
+          <li>API-gateway маршрутизирует на разные upstreams; снаружи без breaking changes.</li>
+          <li>Event bus (NATS JetStream) работает; ≥ 15 топиков; payload-валидация через Zod.</li>
+          <li>Contracts module экспортирует типы и схемы; CI проверяет совместимость версий.</li>
+          <li>Outbox-pattern публикует события из всех write-операций.</li>
+          <li>Idempotency consumer гарантирует at-most-once effect.</li>
+          <li>Saga для refund / cancel работает end-to-end.</li>
+          <li>OpenTelemetry: один traceId сквозь gateway → service → event → consumer.</li>
+          <li>Prometheus метрики у каждого service; RED-дашборд в Grafana.</li>
+          <li>Cross-service P95 latency ≤ 50 мс в localdev (без сети).</li>
+          <li>Event lag P95 ≤ 5 сек.</li>
+          <li>Документ <code>docs/architecture/modular-monolith.md</code> с C4 диаграммами опубликован.</li>
+        </ul>
+      </section>
+
+      <section id="metrics">
+        <h2>14. Метрики и риски</h2>
+
+        <div class="four">
+          <div class="kpi"><span class="label">Сервисов</span><span class="value">9</span><span class="hint">7 доменных + gateway + worker</span></div>
+          <div class="kpi"><span class="label">Prisma files</span><span class="value">13</span><span class="hint">per-domain</span></div>
+          <div class="kpi"><span class="label">Event lag P95</span><span class="value">≤ 5 s</span><span class="hint">producer → consumer</span></div>
+          <div class="kpi"><span class="label">Inter-service P95</span><span class="value">≤ 50 ms</span><span class="hint">in cluster</span></div>
+          <div class="kpi"><span class="label">Deploy time</span><span class="value">≤ 5 min</span><span class="hint">per service</span></div>
+          <div class="kpi"><span class="label">PR conflicts</span><span class="value">−70%</span><span class="hint">vs current schema.prisma</span></div>
+          <div class="kpi"><span class="label">Service uptime</span><span class="value">99.9%</span><span class="hint">независимо per service</span></div>
+          <div class="kpi"><span class="label">Trace coverage</span><span class="value">100%</span><span class="hint">критичных endpoints</span></div>
+        </div>
+
+        <table>
+          <thead><tr><th>Риск</th><th>Митигация</th></tr></thead>
+          <tbody>
+            <tr><td>Распределённый монолит: сервисы делят БД, ничего не выиграли.</td><td>Чёткий принцип «один писатель на aggregate», запрет cross-domain SELECT, code review.</td></tr>
+            <tr><td>Eventual consistency ломает UX (например, оплата прошла, а appointment ещё не confirmed).</td><td>Latency budgets с алёртами; UI оптимистично показывает результат + ws-update; saga с timeout-fallback.</td></tr>
+            <tr><td>Сложность localdev для разработчика.</td><td><code>docker compose up</code> поднимает все сервисы; one-command bootstrap; в IDE multiple-root workspace.</td></tr>
+            <tr><td>Дрейф контрактов между сервисами.</td><td>Contracts module в monorepo; CI с <code>type-check</code> on каждом сервисе; semver на топиках.</td></tr>
+            <tr><td>Перенос данных при <code>ALTER TABLE SET SCHEMA</code> — простой.</td><td>В одной транзакции; за пределами prod-busy hours; rollback-план готов.</td></tr>
+            <tr><td>NATS — новая зависимость, нужно мониторить.</td><td>Docker image + Prometheus exporter; runbook для оператора.</td></tr>
+            <tr><td>Outbox-таблица растёт.</td><td>Cleanup-worker (ТЗ №4), retention 30 дней по <code>processed_at</code>.</td></tr>
+            <tr><td>Большой refactor — много merge-conflict.</td><td>Поэтапные PR по одному домену; feature-flag для роутинга «новый/старый» эндпоинт.</td></tr>
+            <tr><td>Increased operational complexity.</td><td>Документация + runbooks + Grafana дашборды per service + alerts с jasно описанным impact.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="decision">
+          <span class="eyebrow">Definition of Done</span>
+          <strong>Prisma разрезан на 13 файлов; backend — 7 доменных сервисов + gateway + worker; event bus на NATS JetStream работает; outbox + idempotency обеспечивают at-most-once effect; OpenTelemetry traces покрывают critical-path; performance метрики в SLA. Фронтенд работает без breaking changes.</strong>
+        </div>
+      </section>
+
+      <section>
+        <h2>Приложение А. Связанные документы</h2>
+        <ul>
+          <li>ТЗ №3 Security — RLS должна продолжать работать после переноса в namespaces.</li>
+          <li>ТЗ №4 Async Workflows — outbox-relay расширяется для domain events.</li>
+          <li>ТЗ №7 EMR Clinical — потребует устоявшийся <code>emr-service</code>.</li>
+          <li>ТЗ №8 Integrations Hub — устанавливает <code>integrations-service</code> поверх этой архитектуры.</li>
+          <li>ТЗ №9 Analytics — <code>analytics-service</code> уже выделен.</li>
+          <li>ТЗ №10 Enterprise / K8s — Helm-chart-per-service строится на этой структуре.</li>
+        </ul>
+      </section>
+
+      <footer style="margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px;">
+        Документ подготовлен в рамках roadmap MedCRM. Связанные ТЗ: №3 Security, №4 Async Workflows,
+        №7 EMR Clinical, №8 Integrations, №9 Analytics, №10 Enterprise/Mobile.
+      </footer>
+    </main>
+  </article>
+</body>
+</html>

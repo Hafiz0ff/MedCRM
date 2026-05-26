@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ТЗ №7. EMR / Clinical Excellence — MedCRM</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #101828;
+      --muted: #667085;
+      --line: #d9e1ea;
+      --surface: #ffffff;
+      --soft: #f6f8fb;
+      --brand: #079685;
+      --brand-dark: #04786b;
+      --brand-soft: #e7f8f5;
+      --blue: #2563eb;
+      --amber: #b45309;
+      --red: #b42318;
+      --green: #15803d;
+      --violet: #6d28d9;
+      --shadow: 0 16px 40px rgba(16, 24, 40, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #eef3f7; color: var(--ink); font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; line-height: 1.55; }
+    .page { width: min(1180px, calc(100% - 40px)); margin: 32px auto; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+    header.cover { padding: 56px 56px 40px; background: linear-gradient(135deg, rgba(21, 128, 61, 0.10), rgba(7, 150, 133, 0.16)), #fbfdff; border-bottom: 1px solid var(--line); }
+    main { padding: 36px 56px 56px; }
+    h1, h2, h3, h4 { margin: 0; line-height: 1.18; }
+    h1 { max-width: 880px; font-size: 42px; font-weight: 760; }
+    h2 { margin-top: 48px; padding-top: 26px; border-top: 1px solid var(--line); font-size: 26px; }
+    h3 { margin-top: 28px; font-size: 19px; }
+    h4 { margin-top: 18px; font-size: 16px; color: #344054; }
+    p { margin: 10px 0 0; }
+    ul, ol { margin: 10px 0 0; padding-left: 22px; }
+    li + li { margin-top: 6px; }
+    table { width: 100%; margin-top: 14px; border-collapse: collapse; font-size: 14px; }
+    th, td { vertical-align: top; padding: 12px 14px; border: 1px solid var(--line); text-align: left; }
+    th { background: #f3f7fa; font-weight: 700; }
+    code { padding: 2px 5px; border-radius: 5px; background: #edf2f7; color: #243244; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.92em; }
+    pre { margin-top: 12px; padding: 16px 18px; background: #0b1220; color: #e6edf3; border-radius: 10px; overflow-x: auto; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; line-height: 1.55; }
+    pre code { background: transparent; color: inherit; padding: 0; }
+    .meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
+    .meta div, .note, .decision, .warning, .danger, .card { border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.85); padding: 14px 16px; }
+    .meta span, .eyebrow { display: block; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .meta strong { display: block; margin-top: 4px; font-size: 15px; }
+    .lead { max-width: 820px; margin-top: 18px; color: #344054; font-size: 18px; }
+    .toc { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; margin-top: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+    .toc a { color: var(--brand-dark); text-decoration: none; font-weight: 600; }
+    .toc a:hover { text-decoration: underline; }
+    .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 16px; }
+    .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 16px; }
+    .four { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+    .card { padding: 18px; }
+    .card h3 { margin-top: 0; }
+    .note { background: #f8fbff; border-color: #c7d8f0; }
+    .decision { background: #ecfdf5; border-color: #a7f3d0; }
+    .warning { background: #fff7ed; border-color: #fed7aa; }
+    .danger { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
+    .small { color: var(--muted); font-size: 13px; }
+    .stage { border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: 10px; padding: 16px 18px; margin-top: 14px; background: #fbfeff; }
+    .stage h3 { margin-top: 0; }
+    .stage .stage-meta { display: inline-block; margin-right: 10px; padding: 2px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-dark); font-size: 12px; font-weight: 700; }
+    .kpi { border-radius: 12px; padding: 18px; border: 1px solid var(--line); background: linear-gradient(180deg, #ffffff, #f7fafc); }
+    .kpi .label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .kpi .value { display: block; margin-top: 6px; font-size: 26px; font-weight: 760; }
+    .kpi .hint { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .check { padding-left: 0; list-style: none; }
+    .check li { position: relative; padding: 6px 0 6px 26px; border-bottom: 1px dashed #e5e7eb; }
+    .check li:before { content: ""; position: absolute; left: 0; top: 11px; width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid var(--brand); background: #fff; }
+    .check li:last-child { border-bottom: 0; }
+    .file-tree { margin-top: 12px; padding: 16px 20px; background: #0b1220; color: #e6edf3; border-radius: 10px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; line-height: 1.7; overflow-x: auto; }
+    .file-tree b { color: #7dd3fc; font-weight: 700; }
+
+    .protocol {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .protocol .head { background: #0e3b34; color: #fff; padding: 12px 16px; }
+    .protocol .head .title { font-weight: 700; }
+    .protocol .head .sub { font-size: 12px; opacity: 0.9; }
+    .protocol .section { border-top: 1px solid var(--line); padding: 12px 16px; background: #fff; font-size: 13px; }
+    .protocol .section b { display: block; color: var(--brand-dark); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; }
+    .protocol .row { display: flex; gap: 18px; }
+    .protocol .row > div { flex: 1; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .badge.amber { background: #fffbeb; color: #92400e; }
+    .badge.red { background: #fef2f2; color: #991b1b; }
+    .badge.green { background: #f0fdf4; color: #166534; }
+
+    @media (max-width: 860px) {
+      .page { width: 100%; margin: 0; border-width: 0; }
+      header.cover, main { padding: 28px 20px; }
+      h1 { font-size: 30px; }
+      .meta, .two, .three, .four, .toc { grid-template-columns: 1fr; }
+      .protocol .row { flex-direction: column; }
+    }
+    @media print {
+      body { background: #fff; }
+      .page { width: 100%; margin: 0; border: 0; box-shadow: none; }
+      header.cover, main { padding: 24px 32px; }
+      pre { background: #f4f4f5; color: #111827; }
+    }
+  </style>
+</head>
+<body>
+  <article class="page">
+    <header class="cover">
+      <span class="eyebrow">MedCRM · ТЗ №7 · EMR / Clinical Excellence</span>
+      <h1>Электронная медицинская карта с клиническим интеллектом</h1>
+      <p class="lead">
+        Превратить EMR из набора текстовых полей в полноценную клиническую систему: структурированные протоколы
+        приёма, справочники ICD-10/ICD-11/MЭС/МНН, проверка взаимодействий и аллергий, специализированные форматы
+        (одонтограмма, протоколы УЗИ, гинекология, педиатрия), импорт лабораторных результатов с пометками отклонений,
+        витал-параметры с алёртами, шаблоны рецептов и e-подпись врача, телемедицина-готовность.
+      </p>
+      <section class="meta">
+        <div><span>Версия</span><strong>1.0</strong></div>
+        <div><span>Дата</span><strong>25 мая 2026</strong></div>
+        <div><span>Проект</span><strong>xiewan1230-maker/MedCRM</strong></div>
+        <div><span>Фокус</span><strong>Clinical EMR, decision support</strong></div>
+      </section>
+    </header>
+
+    <main>
+      <nav class="toc">
+        <a href="#purpose">1. Назначение</a>
+        <a href="#as-is">2. Состояние «как есть»</a>
+        <a href="#goals">3. Цели и Out of Scope</a>
+        <a href="#concepts">4. Ключевые понятия</a>
+        <a href="#templates">5. Шаблоны протоколов</a>
+        <a href="#dicts">6. Справочники</a>
+        <a href="#cds">7. Clinical Decision Support</a>
+        <a href="#prescriptions">8. Рецепты и e-подпись</a>
+        <a href="#orders">9. Назначения и направления</a>
+        <a href="#labs">10. Лабораторные результаты</a>
+        <a href="#vitals">11. Витал-параметры</a>
+        <a href="#dental">12. Стоматология: одонтограмма</a>
+        <a href="#imaging">13. УЗИ / визуализация</a>
+        <a href="#telehealth">14. Telehealth-готовность</a>
+        <a href="#prisma">15. Изменения в Prisma</a>
+        <a href="#files">16. Структура файлов</a>
+        <a href="#plan">17. Этапы работ</a>
+        <a href="#acceptance">18. Acceptance</a>
+        <a href="#metrics">19. Метрики и риски</a>
+      </nav>
+
+      <section id="purpose">
+        <h2>1. Назначение</h2>
+        <p>
+          В текущем MedCRM существуют модели <code>Encounter</code>, <code>EncounterDiagnosis</code>,
+          <code>EncounterDocument</code>, <code>MedicalRecord</code>, <code>Prescription</code>,
+          <code>ServiceOrder</code>. Они хранят произвольный текст. Это работает на «терапевт-консультанта», но не
+          подходит для:
+        </p>
+        <ul>
+          <li>Узких специалистов (стоматолог, УЗИ, гинеколог, педиатр) с жёсткими шаблонами протокола.</li>
+          <li>Лекарственной безопасности (нет проверок drug-drug interactions и аллергий).</li>
+          <li>Аналитики (нельзя посчитать «сколько случаев ОРВИ за квартал»).</li>
+          <li>Обмена данных (FHIR-export требует структуру, а не свободный текст).</li>
+          <li>Электронной подписи документов и отчётности в надзорные органы.</li>
+        </ul>
+        <p>
+          Цель ТЗ №7 — добавить клинический интеллект, не превращая интерфейс врача в «бюрократический ад».
+          Структурировать там, где это даёт ценность (диагнозы, назначения, vitals, лаборатория, аллергии); оставить
+          свободный текст там, где он органичен (anamnesis, status localis, план лечения).
+        </p>
+        <div class="decision">
+          <span class="eyebrow">Принцип</span>
+          <strong>«Структура для безопасности и аналитики, свободный текст для рассуждения»</strong>
+          <p class="small">Каждое поле — либо явно структурировано (ICD-код, dose), либо явно «нарратив» (заметка врача). Никаких «полу-структурированных» костылей.</p>
+        </div>
+      </section>
+
+      <section id="as-is">
+        <h2>2. Состояние «как есть»</h2>
+        <table>
+          <thead><tr><th>Слой</th><th>Сейчас</th><th>Дыра</th></tr></thead>
+          <tbody>
+            <tr><td>Шаблоны</td><td><code>medical_records.template_code</code> — есть поле, но нет содержимого шаблонов.</td><td>Врач каждый раз набирает с нуля.</td></tr>
+            <tr><td>ICD</td><td><code>EncounterDiagnosis.icd_code</code> хранится строкой.</td><td>Нет справочника, нет автокомплита, нет проверки валидности кода.</td></tr>
+            <tr><td>МНН / лекарства</td><td>Нет.</td><td>Назначение пишется свободным текстом — нельзя проверить дозу/взаимодействие.</td></tr>
+            <tr><td>Аллергии</td><td>В <code>Patient</code> нет отдельной таблицы.</td><td>Известная аллергия не блокирует назначение.</td></tr>
+            <tr><td>Vitals</td><td>Нет отдельной модели.</td><td>Кровяное давление пишется в text.</td></tr>
+            <tr><td>Стоматология</td><td>Нет одонтограммы.</td><td>Невозможно работать с стоматклиникой.</td></tr>
+            <tr><td>УЗИ</td><td>Нет специальных шаблонов и нет места для DICOM-attached.</td><td>Нельзя продать клинике визуализации.</td></tr>
+            <tr><td>Подпись</td><td>Есть <code>DigitalSignature</code> для legal-документов.</td><td>Encounter не подписан врачом криптографически.</td></tr>
+            <tr><td>FHIR</td><td>Есть export.</td><td>Качество маппинга низкое из-за свободного текста.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="goals">
+        <h2>3. Цели и Out of Scope</h2>
+        <div class="two">
+          <div class="card">
+            <h3>Цели</h3>
+            <ul>
+              <li>Шаблоны протоколов с structured-fields + narrative-fields (chief complaint, anamnesis, status, plan).</li>
+              <li>Шаблоны per-специальность: терапевт, педиатр, гинеколог, стоматолог, УЗИ, дерматолог, оториноларинголог.</li>
+              <li>Справочники: ICD-10, ICD-11 (готовность), МКБ-10 RU/TJ, МНН, торговые наименования, единицы измерения, формы выпуска, ATX-классификация, аллергены.</li>
+              <li>Allergy check: при назначении препарата проверяется список известных аллергий пациента.</li>
+              <li>Drug-drug interactions: предупреждение при назначении препаратов с известными взаимодействиями.</li>
+              <li>Прескрипция через структуру (МНН + дозировка + кратность + длительность + путь введения).</li>
+              <li>E-подпись encounter и prescription (через <code>UserCredential</code> WebAuthn из ТЗ №3).</li>
+              <li>Витал-параметры с алёртами (например, давление &gt; 180/110 → красный).</li>
+              <li>Лабораторные результаты с пометками normal/abnormal/critical (после ТЗ №8 LIS).</li>
+              <li>Одонтограмма (карта зубов) с историей вмешательств.</li>
+              <li>УЗИ-протоколы со встроенным DICOM-viewer-link (DICOM хранение — в ТЗ №8).</li>
+              <li>Audit + неизменяемость подписанного encounter; «отменить подпись» возможно только через формальный процесс.</li>
+              <li>FHIR R5-маппинг для каждой структурированной сущности.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Out of Scope</h3>
+            <ul>
+              <li>Голосовой ввод и AI-резюмирование приёма — отдельное ТЗ.</li>
+              <li>NLP-извлечение из исторического свободного текста — отдельная задача.</li>
+              <li>Полная база лекарств (RxNorm / SNOMED CT) — лицензируется отдельно; начинаем с открытых источников + ATX.</li>
+              <li>Полная HL7/FHIR cross-system sync — ТЗ №8.</li>
+              <li>DICOM хранилище — ТЗ №8.</li>
+              <li>Reportable conditions / эпиднадзор — отдельное специализированное ТЗ.</li>
+              <li>Решения о терапии «AI рекомендует» — не вторгаемся в клинический процесс без отдельной валидации.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="concepts">
+        <h2>4. Ключевые понятия</h2>
+        <ul>
+          <li><strong>Encounter</strong> — один эпизод медицинской помощи (визит). Имеет статус: <code>OPEN → SIGNED → AMENDED</code>.</li>
+          <li><strong>ClinicalTemplate</strong> — описание формы протокола для специальности и типа визита.</li>
+          <li><strong>EncounterSection</strong> — секция в encounter (соответствует секции шаблона).</li>
+          <li><strong>Diagnosis</strong> — структурированный диагноз: код ICD + ICD-version + тип (primary/secondary), статус (active/resolved).</li>
+          <li><strong>Allergy</strong> — известная аллергия пациента: agent (лекарство / еда / другое), severity, дата подтверждения.</li>
+          <li><strong>VitalSign</strong> — измерение: тип (BP/HR/Temp/SpO2/...), значение, единица, момент, контекст.</li>
+          <li><strong>Prescription</strong> — рецепт: одна или несколько <code>PrescriptionItem</code> со структурой дозы.</li>
+          <li><strong>ServiceOrder</strong> — направление на исследование / процедуру.</li>
+          <li><strong>LabReport</strong> — результат лабораторного исследования: набор <code>LabResultItem</code> с reference-range.</li>
+        </ul>
+      </section>
+
+      <section id="templates">
+        <h2>5. Шаблоны протоколов</h2>
+
+        <h3>5.1. Модель</h3>
+        <pre><code>model ClinicalTemplate {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String?  @map("tenant_id") @db.Uuid    // null = system template
+  specialtyCode String   @map("specialty_code") @db.VarChar(80)
+  templateCode  String   @map("template_code") @db.VarChar(120)
+  templateName  String   @map("template_name") @db.VarChar(255)
+  version       Int      @default(1)
+  schemaJson    Json     @map("schema_json")             // структура секций и полей
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, specialtyCode, templateCode, version])
+  @@schema("emr")
+  @@map("clinical_templates")
+}
+
+model EncounterSection {
+  id            String   @id @default(uuid()) @db.Uuid
+  encounterId   String   @map("encounter_id") @db.Uuid
+  sectionKey    String   @map("section_key") @db.VarChar(120)
+  sectionTitle  String   @map("section_title") @db.VarChar(255)
+  orderIndex    Int      @map("order_index")
+  contentJson   Json?    @map("content_json")            // structured + narrative
+  contentText   String?  @map("content_text")            // rendered/plain for FTS
+
+  encounter     Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  @@schema("emr")
+  @@map("encounter_sections")
+}</code></pre>
+
+        <h3>5.2. Schema каждого шаблона</h3>
+        <pre><code>// schemaJson пример (терапевт)
+{
+  "sections": [
+    {
+      "key": "chief_complaint",
+      "title": "Жалобы",
+      "type": "narrative",
+      "required": true
+    },
+    {
+      "key": "anamnesis",
+      "title": "Анамнез",
+      "type": "narrative",
+      "required": true
+    },
+    {
+      "key": "vitals",
+      "title": "Витал-параметры",
+      "type": "vitals",
+      "fields": ["BP_SYS", "BP_DIA", "HR", "TEMP", "SPO2", "WEIGHT", "HEIGHT"]
+    },
+    {
+      "key": "physical_exam",
+      "title": "Объективный статус",
+      "type": "structured",
+      "fields": [
+        { "key": "general", "label": "Общий вид", "type": "text" },
+        { "key": "skin",    "label": "Кожа",     "type": "text" },
+        { "key": "lungs",   "label": "Дыхание",  "type": "text" }
+      ]
+    },
+    {
+      "key": "diagnoses",
+      "title": "Диагнозы",
+      "type": "diagnoses",
+      "primaryRequired": true
+    },
+    {
+      "key": "plan",
+      "title": "План лечения",
+      "type": "narrative"
+    },
+    {
+      "key": "prescriptions",
+      "title": "Назначения",
+      "type": "prescriptions"
+    },
+    {
+      "key": "orders",
+      "title": "Направления",
+      "type": "orders"
+    }
+  ]
+}</code></pre>
+
+        <h3>5.3. Превью протокола</h3>
+        <div class="protocol">
+          <div class="head">
+            <div class="title">Иванова А. И. · Терапевт · 25.05.2026, 15:30</div>
+            <div class="sub">Encounter № E-2026-001245 · ICD-10: J06.9 · Подписан</div>
+          </div>
+          <div class="section">
+            <b>Жалобы</b>
+            Боль в горле 3 дня, повышение температуры до 38.2°C, кашель сухой, общая слабость.
+          </div>
+          <div class="section">
+            <b>Витал-параметры</b>
+            <div class="row">
+              <div>BP: <strong>122/78</strong> mmHg</div>
+              <div>HR: <strong>92</strong> bpm</div>
+              <div>Temp: <strong>38.2</strong> °C <span class="badge amber">↑</span></div>
+              <div>SpO2: <strong>97</strong> %</div>
+            </div>
+          </div>
+          <div class="section">
+            <b>Диагнозы</b>
+            <div>Primary: <strong>J06.9</strong> — Острая инфекция верхних дыхательных путей неуточнённая</div>
+            <div class="small">FHIR Condition resource готов</div>
+          </div>
+          <div class="section">
+            <b>Назначения</b>
+            <div>Парацетамол 500 мг, 1 таб × 3 раза в день, 5 дней <span class="badge green">проверено</span></div>
+            <div>Полоскание раствором фурацилина 1:5000, 4 раза в день, 7 дней</div>
+            <div class="small">⚠ Известных аллергий нет. Взаимодействий не выявлено.</div>
+          </div>
+          <div class="section">
+            <b>Направления</b>
+            Общий анализ крови (ОАК) — направление № L-2026-008712
+          </div>
+        </div>
+      </section>
+
+      <section id="dicts">
+        <h2>6. Справочники</h2>
+
+        <h3>6.1. ICD-10 / ICD-11 / МКБ-10 RU</h3>
+        <ul>
+          <li>Хранение в <code>ReferenceIcdCode</code>: <code>{code, version, parentCode, title, titleRu, titleTj, titleEn, isLeaf, isActive}</code>.</li>
+          <li>Источники: ICD-10 WHO (free), МКБ-10 Минздрав РФ, ICD-11 WHO API (subscription tier — на будущее).</li>
+          <li>Импорт через seed-скрипт; обновление раз в полгода через CI.</li>
+          <li>API <code>/api/v1/dicts/icd?q=...&amp;version=10</code> с автокомплитом &lt; 100ms.</li>
+        </ul>
+
+        <h3>6.2. МНН и торговые наименования</h3>
+        <ul>
+          <li><code>ReferenceInn</code>: МНН (международное непатентованное наименование), ATX-код, формы выпуска.</li>
+          <li><code>ReferenceMedicinalProduct</code>: торговое название, производитель, дозировка, форма, страна.</li>
+          <li>Источники: открытые реестры (ГРЛС РФ, реестры РТ/УЗ, EMA для интернационального уровня); опционально RxNorm под лицензию.</li>
+          <li>Семантика: один МНН → много торговых наименований; назначение через МНН (фарм-стандарт).</li>
+        </ul>
+
+        <h3>6.3. Аллергены</h3>
+        <ul>
+          <li><code>ReferenceAllergen</code>: code (RxNorm / WHO-IPCS), category (drug/food/environment/other), title.</li>
+          <li>Drug-аллерген имеет связь с МНН и ATX.</li>
+        </ul>
+
+        <h3>6.4. Drug-drug interactions</h3>
+        <ul>
+          <li><code>ReferenceDdi</code>: пара МНН (или ATX-class) + severity (contraindicated/major/moderate/minor) + механизм + рекомендация.</li>
+          <li>Источник: открытые DDI базы (NCBI, Lexicomp lite). В будущем — лицензионная.</li>
+          <li>API <code>/api/v1/cds/ddi-check</code> принимает список МНН и возвращает список взаимодействий.</li>
+        </ul>
+
+        <h3>6.5. Единицы и формы выпуска</h3>
+        <ul>
+          <li><code>ReferenceUnit</code>: <code>mg, g, ml, IU, drop, tab, ...</code> с UCUM-кодами.</li>
+          <li><code>ReferenceDosageForm</code>: <code>tab, cap, syrup, drops, injection, ...</code></li>
+          <li><code>ReferenceRoute</code>: <code>PO, IV, IM, SC, TOP, INH, ...</code></li>
+        </ul>
+      </section>
+
+      <section id="cds">
+        <h2>7. Clinical Decision Support (CDS)</h2>
+
+        <h3>7.1. Правила</h3>
+        <ol>
+          <li><strong>Allergy alert</strong>: при добавлении PrescriptionItem проверяется match с <code>PatientAllergy</code>. Severity → блок (contraindicated), warning (major) или info (minor).</li>
+          <li><strong>Drug-drug interaction</strong>: pairwise check между всеми active-prescriptions пациента + текущим назначением.</li>
+          <li><strong>Dose check</strong>: рекомендуемая доза по возрасту, весу (для педиатрии). Если выходит за диапазон — warning.</li>
+          <li><strong>Duplicate therapy</strong>: уже есть active prescription того же МНН.</li>
+          <li><strong>Renal/hepatic</strong>: если в карте есть метка «почечная недостаточность» / «печёночная» и препарат требует адаптации дозы — alert.</li>
+          <li><strong>Pregnancy</strong>: если пациентка беременна (маркер в карте) — категория FDA-pregnancy (A/B/C/D/X) проверяется.</li>
+          <li><strong>Critical lab</strong>: если последний lab-результат содержит «critical» — alert на encounter.</li>
+        </ol>
+
+        <h3>7.2. UI alert</h3>
+        <ul>
+          <li>Banner вверху encounter с цветом severity.</li>
+          <li>Tooltip с источником данных и ссылкой на DDI-запись.</li>
+          <li>Override: врач может явно «override» с обязательным комментарием. Override логируется в audit (ТЗ №3).</li>
+          <li>Метрики per tenant: сколько override, по каким DDI — admin-dashboard.</li>
+        </ul>
+
+        <h3>7.3. Архитектура</h3>
+        <p>CDS — отдельный модуль в <code>emr-service</code> (ТЗ №6). Stateless engine с правилами; принимает <code>{patient context, prescriptions, vitals}</code>, возвращает <code>alerts[]</code>. Может быть вынесен в отдельный сервис в будущем.</p>
+      </section>
+
+      <section id="prescriptions">
+        <h2>8. Рецепты и e-подпись</h2>
+
+        <h3>8.1. Структура</h3>
+        <pre><code>model PrescriptionItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  prescriptionId  String   @map("prescription_id") @db.Uuid
+  innCode         String?  @map("inn_code") @db.VarChar(120)
+  medicinalProductId String? @map("medicinal_product_id") @db.Uuid
+  dose            Decimal  @db.Decimal(12, 4)
+  doseUnit        String   @map("dose_unit") @db.VarChar(40)
+  route           String   @db.VarChar(40)          // PO | IV | IM | SC | ...
+  frequencyPerDay Int      @map("frequency_per_day")
+  intervalHours   Int?     @map("interval_hours")
+  durationDays    Int      @map("duration_days")
+  startDate       DateTime @map("start_date") @db.Date
+  endDate         DateTime? @map("end_date") @db.Date
+  instructions    String?
+  cdsOverridden   Boolean  @default(false) @map("cds_overridden")
+  cdsOverrideReason String? @map("cds_override_reason")
+
+  prescription    Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  inn             ReferenceInn? @relation(fields: [innCode], references: [code])
+  medicinalProduct ReferenceMedicinalProduct? @relation(fields: [medicinalProductId], references: [id])
+
+  @@schema("emr")
+  @@map("prescription_items")
+}</code></pre>
+
+        <h3>8.2. E-подпись</h3>
+        <ul>
+          <li>Encounter status: <code>OPEN</code> → <code>SIGNED</code>.</li>
+          <li>Подпись — через WebAuthn (ТЗ №3): врач touch ID / YubiKey подтверждает.</li>
+          <li>Хеш контента encounter подписывается; результат сохраняется в <code>EncounterSignature</code>.</li>
+          <li>Подписанный encounter становится immutable. Изменения возможны через <code>AMENDED</code>-flow: создаётся версия с reason, original остаётся.</li>
+          <li>Prescription наследует подпись encounter.</li>
+        </ul>
+
+        <h3>8.3. PDF рецепта</h3>
+        <ul>
+          <li>Шаблон PDF (формат локальный: РФ № 107-1/у, РТ согласно МЗ РТ).</li>
+          <li>QR-код с подписанной payload (для проверки в аптеке).</li>
+          <li>Подпись и печать врача → визуальное представление подписи + криптографическая подпись валидируется.</li>
+          <li>Локализация ru/tj/uz.</li>
+          <li>Рендеринг — worker (ТЗ №4).</li>
+        </ul>
+      </section>
+
+      <section id="orders">
+        <h2>9. Назначения и направления (Service Orders)</h2>
+        <ul>
+          <li><code>ServiceOrder</code>: lab / radiology / consultation / procedure.</li>
+          <li>Структура: код услуги (из <code>Service</code>), приоритет (routine/urgent/stat), клинические показания (диагнозы), ожидаемая дата.</li>
+          <li>Lab order имеет нек-то <code>LabTestPanel</code> (например, «ОАК», «биохим. профиль»).</li>
+          <li>Radiology order связан с DICOM modality (CT / MRI / US / X-Ray).</li>
+          <li>Направления печатаются как PDF; QR-код для приёма в лаборатории.</li>
+          <li>Статус: <code>ORDERED → IN_PROGRESS → COMPLETED → REPORTED</code>.</li>
+          <li>Связь с LabReport / DicomStudy после выполнения.</li>
+        </ul>
+      </section>
+
+      <section id="labs">
+        <h2>10. Лабораторные результаты</h2>
+        <pre><code>model LabReport {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  patientId       String   @map("patient_id") @db.Uuid
+  serviceOrderId  String?  @map("service_order_id") @db.Uuid
+  labProvider     String?  @map("lab_provider") @db.VarChar(120)
+  collectedAt     DateTime? @map("collected_at") @db.Timestamptz(6)
+  reportedAt      DateTime @map("reported_at") @db.Timestamptz(6)
+  status          String   @db.VarChar(40)   // PRELIMINARY | FINAL | AMENDED
+  rawJson         Json?    @map("raw_json")  // HL7/FHIR original
+
+  items           LabResultItem[]
+
+  @@schema("emr")
+  @@map("lab_reports")
+}
+
+model LabResultItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  labReportId     String   @map("lab_report_id") @db.Uuid
+  loincCode       String?  @map("loinc_code") @db.VarChar(40)
+  analyteCode     String   @map("analyte_code") @db.VarChar(80)
+  analyteName     String   @map("analyte_name") @db.VarChar(255)
+  value           Decimal? @db.Decimal(18, 6)
+  valueText       String?  @map("value_text") @db.VarChar(255)
+  unit            String?  @db.VarChar(40)
+  refRangeLow     Decimal? @map("ref_range_low") @db.Decimal(18, 6)
+  refRangeHigh    Decimal? @map("ref_range_high") @db.Decimal(18, 6)
+  flag            String?  @db.VarChar(10)    // L | H | LL | HH | A
+  abnormality     String?  @db.VarChar(40)   // NORMAL | ABNORMAL | CRITICAL
+
+  labReport       LabReport @relation(fields: [labReportId], references: [id], onDelete: Cascade)
+
+  @@schema("emr")
+  @@map("lab_result_items")
+}</code></pre>
+        <ul>
+          <li>Импорт результатов — через ТЗ №8 (HL7 ORU^R01 или LIS-specific webhook).</li>
+          <li>Тренд-вью: график значения за время.</li>
+          <li>Алёрты: critical results → уведомление врачу (через ТЗ №4).</li>
+          <li>FHIR <code>Observation</code> ресурс — natural mapping.</li>
+        </ul>
+      </section>
+
+      <section id="vitals">
+        <h2>11. Витал-параметры</h2>
+        <pre><code>model VitalSign {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  patientId     String   @map("patient_id") @db.Uuid
+  encounterId   String?  @map("encounter_id") @db.Uuid
+  type          String   @db.VarChar(40)   // BP_SYS, BP_DIA, HR, RR, TEMP, SPO2, WEIGHT, HEIGHT, BMI, GLUCOSE, ...
+  value         Decimal  @db.Decimal(10, 3)
+  unit          String   @db.VarChar(20)
+  measuredAt    DateTime @map("measured_at") @db.Timestamptz(6)
+  context       String?  @db.VarChar(60)    // routine | post-op | triage
+  alertLevel    String?  @map("alert_level") @db.VarChar(20) // NORMAL | ELEVATED | CRITICAL
+
+  @@index([patientId, type, measuredAt])
+  @@schema("emr")
+  @@map("vital_signs")
+}</code></pre>
+        <ul>
+          <li>Алёрт-таблица per type: <code>BP_SYS &gt; 180 → CRITICAL</code>; <code>SPO2 &lt; 90 → CRITICAL</code>; ...</li>
+          <li>UI отображает значение со знаком «↑/↓» и цветом.</li>
+          <li>Графики тренда за период (Recharts из ТЗ №2).</li>
+          <li>FHIR <code>Observation</code>.</li>
+        </ul>
+      </section>
+
+      <section id="dental">
+        <h2>12. Стоматология: одонтограмма</h2>
+        <ul>
+          <li>Графическая карта зубов (FDI или Universal система), интерактивная.</li>
+          <li><code>DentalChartEntry</code>: <code>{patientId, toothCode (FDI 11..48 или mol 1..32), surface (M/D/B/L/O), procedure, status, date, encounterId}</code>.</li>
+          <li>UI: SVG-схема, hover показывает историю манипуляций; click → форма ввода (диагноз/процедура).</li>
+          <li>Печать «история стоматологического лечения» с одонтограммой как PDF.</li>
+          <li>Шаблоны процедур: лечение кариеса, эндодонтия, удаление, протезирование, имплантация.</li>
+          <li>Расширение: имплант-passport (производитель, lot, дата).</li>
+        </ul>
+      </section>
+
+      <section id="imaging">
+        <h2>13. УЗИ и визуализация</h2>
+        <ul>
+          <li>Шаблоны протоколов УЗИ: брюшная полость, малый таз, щитовидная, молочные железы, акушерство (срок беременности).</li>
+          <li>Структурированные поля: размеры органов в мм, эхогенность, контуры (выбор из списка).</li>
+          <li>Прикрепление изображений (JPEG/PNG) к протоколу; через MinIO с подписанными URL.</li>
+          <li>Ссылка на DICOM Study в PACS (ТЗ №8) — через <code>studyInstanceUid</code> и viewer-URL.</li>
+          <li>Шаблоны для радиолога: рентген, КТ (по системам), МРТ (по областям).</li>
+        </ul>
+      </section>
+
+      <section id="telehealth">
+        <h2>14. Telehealth-готовность</h2>
+        <p>Без интеграции видео-канала, но с подготовкой:</p>
+        <ul>
+          <li><code>Appointment.kind</code>: <code>IN_PERSON | TELEMEDICINE</code>.</li>
+          <li>Encounter может быть telemed; шаблон отмечает это с дисклеймером.</li>
+          <li>Подготовка к интеграции с LiveKit / Daily / Zoom Healthcare — в ТЗ №10.</li>
+          <li>Согласие на telemed — отдельный legal-template (ТЗ №3).</li>
+        </ul>
+      </section>
+
+      <section id="prisma">
+        <h2>15. Изменения в Prisma</h2>
+        <p>Новые модели (в схеме <code>emr</code>):</p>
+        <ul>
+          <li><code>ClinicalTemplate</code>, <code>EncounterSection</code>, <code>EncounterSignature</code>, <code>EncounterAmendment</code>.</li>
+          <li><code>PatientAllergy</code>, <code>PatientChronicCondition</code>, <code>PatientPregnancyState</code>.</li>
+          <li><code>VitalSign</code>, <code>VitalAlertRule</code>.</li>
+          <li><code>LabReport</code>, <code>LabResultItem</code>, <code>LabTestPanel</code>.</li>
+          <li><code>DentalChartEntry</code>, <code>DentalProcedureTemplate</code>.</li>
+          <li><code>RadiologyReport</code>, <code>RadiologyStudyLink</code>.</li>
+        </ul>
+        <p>В схеме <code>reference</code> (новый namespace):</p>
+        <ul>
+          <li><code>ReferenceIcdCode</code>, <code>ReferenceInn</code>, <code>ReferenceMedicinalProduct</code>, <code>ReferenceAllergen</code>, <code>ReferenceDdi</code>, <code>ReferenceUnit</code>, <code>ReferenceDosageForm</code>, <code>ReferenceRoute</code>, <code>ReferenceLoincCode</code>.</li>
+        </ul>
+        <p>Расширения существующих:</p>
+        <ul>
+          <li><code>Encounter.status</code>: <code>OPEN | SIGNED | AMENDED</code>; новые поля <code>signedAt</code>, <code>signedByUserId</code>.</li>
+          <li><code>PrescriptionItem</code>: жёсткая структура (см. секцию 8).</li>
+          <li><code>ServiceOrder</code>: статусы + связь с <code>LabReport</code>.</li>
+        </ul>
+      </section>
+
+      <section id="files">
+        <h2>16. Структура файлов</h2>
+        <div class="file-tree">
+backend/apps/emr-service/src/
+├─ encounter/
+│  ├─ encounter.controller.ts
+│  ├─ encounter.service.ts
+│  ├─ encounter-sign.service.ts
+│  └─ encounter-amend.service.ts
+├─ templates/
+│  ├─ templates.controller.ts
+│  ├─ templates.service.ts
+│  └─ template-engine.ts
+├─ prescriptions/
+│  ├─ prescriptions.controller.ts
+│  ├─ prescriptions.service.ts
+│  └─ prescription-pdf.service.ts
+├─ allergies/
+│  ├─ allergies.controller.ts
+│  └─ allergies.service.ts
+├─ vitals/
+│  ├─ vitals.controller.ts
+│  ├─ vitals.service.ts
+│  └─ vital-alert.rules.ts
+├─ labs/
+│  ├─ labs.controller.ts
+│  └─ labs.service.ts
+├─ dental/
+│  ├─ dental.controller.ts
+│  └─ dental.service.ts
+├─ radiology/
+│  ├─ radiology.controller.ts
+│  └─ radiology.service.ts
+├─ cds/
+│  ├─ cds.engine.ts                    ← stateless rules
+│  ├─ rules/
+│  │  ├─ allergy.rule.ts
+│  │  ├─ ddi.rule.ts
+│  │  ├─ dose.rule.ts
+│  │  ├─ duplicate-therapy.rule.ts
+│  │  ├─ renal-hepatic.rule.ts
+│  │  ├─ pregnancy.rule.ts
+│  │  └─ critical-lab.rule.ts
+│  └─ cds.controller.ts                ← /api/v1/cds/*
+└─ dicts/
+   ├─ dicts.controller.ts              ← /api/v1/dicts/*
+   ├─ icd.service.ts
+   ├─ inn.service.ts
+   ├─ medicinal-product.service.ts
+   ├─ allergen.service.ts
+   └─ ddi.service.ts
+
+backend/prisma/schemas/
+├─ 05-emr.prisma                       ← расширен
+└─ 14-reference.prisma                 ← NEW: справочники
+
+backend/seed/reference/
+├─ icd10.seed.ts                       ← ИМПОРТ из CSV
+├─ icd10-ru.seed.ts
+├─ inn.seed.ts
+├─ ddi.seed.ts
+└─ loinc.seed.ts
+
+frontend/modules/emr/
+├─ components/
+│  ├─ encounter-workspace.tsx
+│  ├─ encounter-section.tsx
+│  ├─ encounter-sign-dialog.tsx
+│  ├─ vital-panel.tsx
+│  ├─ prescription-editor.tsx
+│  ├─ allergy-list.tsx
+│  ├─ dental-chart.tsx
+│  └─ cds-banner.tsx
+└─ hooks/
+        </div>
+      </section>
+
+      <section id="plan">
+        <h2>17. Этапы работ</h2>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 1 · ~1.5 недели</span>
+          <h3>Этап 1. Справочники и seed</h3>
+          <ul>
+            <li>Создать <code>14-reference.prisma</code>; модели ICD/INN/MedicinalProduct/Allergen/DDI/Unit/Route/DosageForm/LOINC.</li>
+            <li>Импорт ICD-10 WHO + МКБ-10 RU + RU/TJ/EN названия из открытых источников.</li>
+            <li>Импорт МНН из ГРЛС РФ (открытый XML), частично — реестры РТ.</li>
+            <li>Seed DDI и Allergens (открытые источники).</li>
+            <li>API <code>/api/v1/dicts/*</code> с автокомплитом.</li>
+            <li>PR <code>feat(emr): reference dictionaries + import</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 2 · ~1.5 недели</span>
+          <h3>Этап 2. Шаблоны протоколов</h3>
+          <ul>
+            <li><code>ClinicalTemplate</code> + <code>EncounterSection</code> + schemaJson-engine.</li>
+            <li>10 системных шаблонов: терапевт, педиатр, гинеколог, оториноларинголог, дерматолог, хирург (первичный), стоматолог (первичный), УЗИ брюш. полости, УЗИ малого таза, акушерство.</li>
+            <li>UI: <code>encounter-workspace</code> с динамически рендерящимися секциями.</li>
+            <li>Tenant override шаблонов.</li>
+            <li>PR <code>feat(emr): clinical templates + workspace</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 3 · ~1 неделя</span>
+          <h3>Этап 3. Vitals + аллергии + хронические</h3>
+          <ul>
+            <li>Модели <code>VitalSign</code>, <code>PatientAllergy</code>, <code>PatientChronicCondition</code>, <code>PatientPregnancyState</code>.</li>
+            <li>UI: vital-panel с алёртами, аллергия-list в карточке пациента, маркер pregnancy.</li>
+            <li>График тренда vitals (Recharts из ТЗ №2).</li>
+            <li>PR <code>feat(emr): vitals + allergies + chronic</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 4 · ~1.5 недели</span>
+          <h3>Этап 4. Структурированные рецепты + CDS</h3>
+          <ul>
+            <li>Новая структура <code>PrescriptionItem</code> со связью на МНН.</li>
+            <li>CDS engine: правила allergy, DDI, dose, duplicate, pregnancy.</li>
+            <li>UI: prescription-editor с автокомплитом по МНН/торговому, CDS-banner с alerts.</li>
+            <li>Override flow с обязательным комментарием → audit.</li>
+            <li>PR <code>feat(emr): structured prescriptions + cds</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 5 · ~1 неделя</span>
+          <h3>Этап 5. E-подпись + amendments + PDF</h3>
+          <ul>
+            <li>E-подпись encounter через WebAuthn (ТЗ №3).</li>
+            <li>Status flow: OPEN → SIGNED → AMENDED.</li>
+            <li>PDF выписки и рецепта через worker (ТЗ №4), форматы РФ/РТ/УЗ.</li>
+            <li>QR-код проверки.</li>
+            <li>PR <code>feat(emr): signature + amendments + pdf</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 6 · ~1.5 недели</span>
+          <h3>Этап 6. Стоматология и УЗИ</h3>
+          <ul>
+            <li>Одонтограмма (SVG-component) + <code>DentalChartEntry</code>.</li>
+            <li>Шаблоны процедур стоматологии (10 базовых).</li>
+            <li>Шаблоны УЗИ (5 специальностей).</li>
+            <li>Загрузка изображений к УЗИ-протоколу.</li>
+            <li>PR <code>feat(emr): dental chart + ultrasound templates</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 7 · ~1 неделя</span>
+          <h3>Этап 7. Лабораторные results + polish</h3>
+          <ul>
+            <li>Модели <code>LabReport</code> / <code>LabResultItem</code> + UI.</li>
+            <li>Импорт через REST (заглушка до ТЗ №8 HL7).</li>
+            <li>Тренд анализов.</li>
+            <li>Critical lab → alert врачу через ТЗ №4.</li>
+            <li>FHIR-маппинг encounters и observations.</li>
+            <li>Документация <code>docs/architecture/emr.md</code>.</li>
+            <li>PR <code>feat(emr): lab reports + fhir mapping</code>.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="acceptance">
+        <h2>18. Acceptance criteria</h2>
+        <ul class="check">
+          <li>Справочники ICD-10, МНН, торговых наименований, DDI, аллергенов, единиц — импортированы; автокомплит работает &lt; 100ms.</li>
+          <li>≥ 10 системных шаблонов протоколов поставляются «из коробки», tenant может override.</li>
+          <li>Encounter имеет структурированные секции; диагнозы выбираются из ICD.</li>
+          <li>Vitals хранятся структурированно, отображаются с алёртами и трендом.</li>
+          <li>Аллергии и хронические состояния хранятся в карточке пациента.</li>
+          <li>Назначения — структурированные (МНН + dose + route + frequency + duration).</li>
+          <li>CDS работает: allergy, DDI, dose, duplicate, pregnancy. Override требует комментарий и пишется в audit.</li>
+          <li>Encounter подписывается через WebAuthn; signed = immutable.</li>
+          <li>Amendments возможны, но видны как отдельная версия с историей.</li>
+          <li>PDF выписки и рецепта — соответствуют локальным формам; QR-код валиден.</li>
+          <li>Одонтограмма работает; история процедур по зубам отображается.</li>
+          <li>УЗИ-протоколы с прикреплением изображений.</li>
+          <li>Лабораторные результаты импортируются и отображаются с reference-range.</li>
+          <li>Critical lab триггерит уведомление врачу.</li>
+          <li>FHIR-export для encounter/condition/medication/observation работает.</li>
+          <li>Audit-log включает каждое подписание, override, amendment.</li>
+        </ul>
+      </section>
+
+      <section id="metrics">
+        <h2>19. Метрики и риски</h2>
+
+        <div class="four">
+          <div class="kpi"><span class="label">Время на encounter</span><span class="value">≤ 12 мин</span><span class="hint">средний для терапевта</span></div>
+          <div class="kpi"><span class="label">Структурир. диагн.</span><span class="value">≥ 95%</span><span class="hint">% с ICD-кодом</span></div>
+          <div class="kpi"><span class="label">CDS alerts</span><span class="value">−30% override</span><span class="hint">через 6 месяцев</span></div>
+          <div class="kpi"><span class="label">Подписано encounter</span><span class="value">≥ 90%</span><span class="hint">в день визита</span></div>
+          <div class="kpi"><span class="label">DDI catches</span><span class="value">≥ 95%</span><span class="hint">major+ DDI пары</span></div>
+          <div class="kpi"><span class="label">Allergy catches</span><span class="value">100%</span><span class="hint">drug у пациента с allergy</span></div>
+          <div class="kpi"><span class="label">Lab interpret</span><span class="value">≤ 3 sec</span><span class="hint">latency норма/abnormal</span></div>
+          <div class="kpi"><span class="label">FHIR fidelity</span><span class="value">≥ 90%</span><span class="hint">маппинг полей</span></div>
+        </div>
+
+        <table>
+          <thead><tr><th>Риск</th><th>Митигация</th></tr></thead>
+          <tbody>
+            <tr><td>Шаблоны делают UI «перегруженным» — врачи саботируют.</td><td>UX-research с реальными врачами; шаблоны с автозаполнением; «narrative-fallback» секция всегда есть.</td></tr>
+            <tr><td>Лицензия RxNorm / SNOMED CT нужна, но дорого.</td><td>Стартуем с открытых: ICD, ATX, ГРЛС РФ; платная лицензия — для enterprise tier.</td></tr>
+            <tr><td>DDI базы расходятся (open vs commercial).</td><td>Используем consensus-rules (major DDI везде согласованы); minor — на усмотрение клиники.</td></tr>
+            <tr><td>Alert fatigue — врачи начинают override всё подряд.</td><td>Severity-tier (block / warn / info); только block требует комментарий; metrics override per rule, прим. над-чувствительные правила убираем.</td></tr>
+            <tr><td>Кросс-региональная семантика ICD: МКБ-10 RU не равно ICD-10 WHO.</td><td>Двойной справочник; матчер; для FHIR-export используем WHO ICD.</td></tr>
+            <tr><td>Юридическая сила e-подписи в РФ требует УКЭП или УНЭП.</td><td>Для внутренней документации — УНЭП (через WebAuthn + tenant-cert); для внешней (рецепт фарм. котроль) — интеграция с УКЭП-провайдером (КриптоПро) — отдельное мини-ТЗ.</td></tr>
+            <tr><td>Одонтограмма — сложный UI.</td><td>Использовать готовый approach SVG-charts (например, dento-chart библиотеки) как вдохновение, без external lock-in.</td></tr>
+            <tr><td>FHIR R5 ещё в принятии в РФ.</td><td>Параллельно R4 export; mapping configuration per tenant.</td></tr>
+            <tr><td>Локализация диагнозов и препаратов.</td><td>Three-tier: ru → tj → en. Для специфики УЗ — добавляем последним. Без перевода — fallback на ru.</td></tr>
+            <tr><td>Аллергия в виде свободного текста уже есть в системе.</td><td>Миграция: импорт через regex + ручная нормализация — заполнить <code>PatientAllergy</code>.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="decision">
+          <span class="eyebrow">Definition of Done</span>
+          <strong>EMR работает со структурированными диагнозами/назначениями/vitals/аллергиями, CDS перехватывает аллергии и major DDI, encounter подписывается криптографически и становится immutable, PDF рецепта валиден локально, одонтограмма и УЗИ-шаблоны готовы, FHIR-export — высокого качества. Врач тратит на encounter не больше, чем в текущем «свободном» режиме.</strong>
+        </div>
+      </section>
+
+      <section>
+        <h2>Приложение А. Связанные документы</h2>
+        <ul>
+          <li>ТЗ №3 Security — WebAuthn для подписи, RLS / audit для EMR.</li>
+          <li>ТЗ №4 Async Workflows — PDF render, critical-lab notifications.</li>
+          <li>ТЗ №6 Modular Split — <code>emr-service</code> как отдельное приложение.</li>
+          <li>ТЗ №8 Integrations Hub — HL7-import LabReport, DICOM PACS-links.</li>
+          <li>ТЗ №9 Analytics — структурированные данные → BI-дашборды.</li>
+          <li>ТЗ №10 Mobile — врач-приложение на Expo поверх emr-service.</li>
+        </ul>
+      </section>
+
+      <footer style="margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px;">
+        Документ подготовлен в рамках roadmap MedCRM. Связанные ТЗ: №3 Security, №4 Async Workflows,
+        №6 Modular Split, №8 Integrations Hub, №9 Analytics, №10 Enterprise/Mobile.
+      </footer>
+    </main>
+  </article>
+</body>
+</html>

@@ -1,0 +1,355 @@
+model Patient {
+  id                   String    @id @default(uuid()) @db.Uuid
+  tenantId             String    @map("tenant_id") @db.Uuid
+  externalId           String?   @map("external_id") @db.VarChar(160)
+  patientCode          String    @map("patient_code") @db.VarChar(120)
+  firstName            String    @map("first_name") @db.VarChar(120)
+  lastName             String    @map("last_name") @db.VarChar(120)
+  middleName           String?   @map("middle_name") @db.VarChar(120)
+  fullName             String    @map("full_name") @db.VarChar(380)
+  birthDate            DateTime? @map("birth_date") @db.Date
+  gender               String?   @db.VarChar(40)
+  language             String    @default("ru") @db.VarChar(10)
+  status               String    @default("NEW") @db.VarChar(40)
+  registrationBranchId String?   @map("registration_branch_id") @db.Uuid
+  assignedManagerId    String?   @map("assigned_manager_id") @db.Uuid
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  archivedAt           DateTime? @map("archived_at") @db.Timestamptz(6)
+  firstNameEnc         String?   @map("first_name_enc")
+  firstNameBi          String?   @map("first_name_bi") @db.VarChar(64)
+  lastNameEnc          String?   @map("last_name_enc")
+  lastNameBi           String?   @map("last_name_bi") @db.VarChar(64)
+  middleNameEnc        String?   @map("middle_name_enc")
+  middleNameBi         String?   @map("middle_name_bi") @db.VarChar(64)
+  passportNumberEnc    String?   @map("passport_number_enc")
+  passportNumberBi     String?   @map("passport_number_bi") @db.VarChar(64)
+
+  tenant             Tenant           @relation(fields: [tenantId], references: [id])
+  registrationBranch Branch?          @relation(fields: [registrationBranchId], references: [id])
+  assignedManager    User?            @relation("PatientAssignedManager", fields: [assignedManagerId], references: [id])
+  contacts           PatientContact[]
+  appointments       Appointment[]
+
+  addresses      PatientAddress[]
+  leads          PatientLead[]
+  metrics        PatientCrmMetric?
+  tags           PatientTag[]
+  familyMembers  FamilyMember[]
+  legalDocuments PatientLegalDocument[]
+  timelineEvents PatientTimelineEvent[]
+  notes          PatientNote[]
+
+  waitingLists        WaitingList[]
+  onlineBookingTokens OnlineBookingToken[]
+  portalGrants        PatientPortalGrant[]
+
+  incomingCalls IncomingCall[]
+  invoices      Invoice[]
+
+  medicalRecord  MedicalRecord?
+  episodesOfCare EpisodeOfCare[]
+  encounters     Encounter[]
+  medicalFiles   MedicalFile[]
+
+  payments           Payment[]
+  wallets            PatientWallet[]
+  debts              PatientDebt[]
+  conversations      Conversation[]
+  messages           Message[]
+  notificationsQueue NotificationsQueue[]
+  chatbotActionLogs  ChatbotActionLog[]
+  preferences        CommunicationPreference[]
+  labOrders          LabOrder[]
+  labResults         LabResult[]
+  observations       ClinicalObservation[]
+  files              File[]
+  callEvents         CallEvent[]
+  deviceMeasurements DeviceMeasurement[]
+
+  @@unique([tenantId, patientCode])
+  @@index([tenantId, fullName])
+  @@index([tenantId, registrationBranchId])
+  @@index([tenantId, firstNameBi])
+  @@index([tenantId, lastNameBi])
+  @@map("patients")
+  @@schema("patients")
+}
+
+model PatientContact {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @map("tenant_id") @db.Uuid
+  patientId           String   @map("patient_id") @db.Uuid
+  type                String   @db.VarChar(40)
+  value               String
+  normalizedValueHash String   @map("normalized_value_hash") @db.VarChar(160)
+  isPrimary           Boolean  @default(false) @map("is_primary")
+  isVerified          Boolean  @default(false) @map("is_verified")
+  comment             String?
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  valueEnc            String?  @map("value_enc")
+  valueBi             String?  @map("value_bi") @db.VarChar(64)
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([tenantId, type, normalizedValueHash])
+  @@index([tenantId, valueBi])
+  @@map("patient_contacts")
+  @@schema("patients")
+}
+
+model PatientAddress {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  patientId   String   @map("patient_id") @db.Uuid
+  country     String   @db.VarChar(120)
+  city        String   @db.VarChar(120)
+  district    String?  @db.VarChar(120)
+  addressLine String   @map("address_line")
+  postalCode  String?  @map("postal_code") @db.VarChar(40)
+  isPrimary   Boolean  @default(false) @map("is_primary")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("patient_addresses")
+  @@schema("patients")
+}
+
+model PatientLead {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  patientId      String    @map("patient_id") @db.Uuid
+  sourceType     String    @map("source_type") @db.VarChar(60)
+  sourceName     String?   @map("source_name") @db.VarChar(120)
+  campaignName   String?   @map("campaign_name") @db.VarChar(120)
+  utmSource      String?   @map("utm_source") @db.VarChar(120)
+  utmMedium      String?   @map("utm_medium") @db.VarChar(120)
+  utmCampaign    String?   @map("utm_campaign") @db.VarChar(120)
+  utmContent     String?   @map("utm_content") @db.VarChar(120)
+  utmTerm        String?   @map("utm_term") @db.VarChar(120)
+  firstContactAt DateTime  @default(now()) @map("first_contact_at") @db.Timestamptz(6)
+  conversionAt   DateTime? @map("conversion_at") @db.Timestamptz(6)
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("patient_leads")
+  @@schema("patients")
+}
+
+model PatientTag {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  patientId  String   @map("patient_id") @db.Uuid
+  tagId      String   @map("tag_id") @db.Uuid
+  assignedBy String?  @map("assigned_by") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamptz(6)
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  tag     CrmTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, tagId])
+  @@map("patient_tags")
+  @@schema("patients")
+}
+
+model FamilyGroup {
+  id                      String         @id @default(uuid()) @db.Uuid
+  tenantId                String         @map("tenant_id") @db.Uuid
+  familyName              String?        @map("family_name") @db.VarChar(255)
+  primaryContactPatientId String?        @map("primary_contact_patient_id") @db.Uuid
+  sharedBalanceEnabled    Boolean        @default(false) @map("shared_balance_enabled")
+  sharedDiscountEnabled   Boolean        @default(false) @map("shared_discount_enabled")
+  createdAt               DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  members                 FamilyMember[]
+  wallets                 FamilyWallet[]
+
+  @@map("family_groups")
+  @@schema("patients")
+}
+
+model FamilyMember {
+  id                      String  @id @default(uuid()) @db.Uuid
+  tenantId                String  @map("tenant_id") @db.Uuid
+  familyGroupId           String  @map("family_group_id") @db.Uuid
+  patientId               String  @map("patient_id") @db.Uuid
+  relationType            String  @map("relation_type") @db.VarChar(60)
+  isPrimaryContact        Boolean @default(false) @map("is_primary_contact")
+  canReceiveNotifications Boolean @default(true) @map("can_receive_notifications")
+
+  familyGroup FamilyGroup @relation(fields: [familyGroupId], references: [id], onDelete: Cascade)
+  patient     Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([familyGroupId, patientId])
+  @@map("family_members")
+  @@schema("patients")
+}
+
+model LegalDocumentType {
+  id                  String                  @id @default(uuid()) @db.Uuid
+  tenantId            String?                 @map("tenant_id") @db.Uuid
+  code                String                  @db.VarChar(120)
+  name                String                  @db.VarChar(255)
+  validityPeriodDays  Int?                    @map("validity_period_days")
+  requiresSignature   Boolean                 @default(true) @map("requires_signature")
+  isRequired          Boolean                 @default(false) @map("is_required")
+  retentionPeriodDays Int?                    @map("retention_period_days")
+  createdAt           DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  documents           PatientLegalDocument[]
+  templates           LegalDocumentTemplate[]
+
+  @@unique([tenantId, code])
+  @@map("legal_document_types")
+  @@schema("patients")
+}
+
+model PatientLegalDocument {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  patientId      String    @map("patient_id") @db.Uuid
+  documentTypeId String    @map("document_type_id") @db.Uuid
+  fileId         String?   @map("file_id") @db.Uuid
+  documentNumber String?   @map("document_number") @db.VarChar(120)
+  signedAt       DateTime  @default(now()) @map("signed_at") @db.Timestamptz(6)
+  expiresAt      DateTime? @map("expires_at") @db.Timestamptz(6)
+  retentionUntil DateTime? @map("retention_until") @db.Timestamptz(6)
+  status         String    @default("ACTIVE") @db.VarChar(40)
+  signedByUserId String?   @map("signed_by_user_id") @db.Uuid
+  branchId       String?   @map("branch_id") @db.Uuid
+
+  patient      Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  documentType LegalDocumentType @relation(fields: [documentTypeId], references: [id])
+  signedByUser User?             @relation(fields: [signedByUserId], references: [id])
+  branch       Branch?           @relation(fields: [branchId], references: [id])
+
+  @@map("patient_legal_documents")
+  @@schema("patients")
+}
+
+model LegalDocumentTemplate {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String?  @map("tenant_id") @db.Uuid
+  documentTypeId String   @map("document_type_id") @db.Uuid
+  version        String   @db.VarChar(40)
+  language       String   @default("ru") @db.VarChar(10)
+  templateFileId String?  @map("template_file_id") @db.Uuid
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  documentType LegalDocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Cascade)
+
+  @@map("legal_document_templates")
+  @@schema("patients")
+}
+
+model PatientTimelineEvent {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  patientId    String   @map("patient_id") @db.Uuid
+  branchId     String?  @map("branch_id") @db.Uuid
+  eventType    String   @map("event_type") @db.VarChar(60)
+  eventSource  String   @map("event_source") @db.VarChar(60)
+  title        String   @db.VarChar(255)
+  description  String?
+  metadataJson Json?    @map("metadata_json")
+  createdBy    String?  @map("created_by") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, patientId, createdAt])
+  @@map("patient_timeline_events")
+  @@schema("patients")
+}
+
+model PatientNote {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  patientId  String   @map("patient_id") @db.Uuid
+  note       String
+  visibility String   @default("SHARED") @db.VarChar(40)
+  createdBy  String   @map("created_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  creator User    @relation(fields: [createdBy], references: [id])
+
+  @@map("patient_notes")
+  @@schema("patients")
+}
+
+model PatientPortalAccount {
+  id              String    @id @default(uuid()) @db.Uuid
+  phoneE164       String    @unique @map("phone_e164") @db.VarChar(20)
+  phoneBi         String    @map("phone_bi") @db.VarChar(64)
+  emailE164       String?   @unique @map("email_e164") @db.VarChar(255)
+  firstName       String?   @map("first_name") @db.VarChar(120)
+  lastName        String?   @map("last_name") @db.VarChar(120)
+  birthDate       DateTime? @map("birth_date") @db.Date
+  gender          String?   @db.VarChar(16)
+  twofaEnabled    Boolean   @default(false) @map("twofa_enabled")
+  twofaSecretHash String?   @map("twofa_secret_hash")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sessions PatientPortalSession[]
+  grants   PatientPortalGrant[]
+
+  @@map("patient_portal_accounts")
+  @@schema("patients")
+}
+
+model PatientPortalGrant {
+  id         String    @id @default(uuid()) @db.Uuid
+  accountId  String    @map("account_id") @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  patientId  String    @map("patient_id") @db.Uuid
+  state      String    @default("ACTIVE") @db.VarChar(20)
+  grantedVia String?   @map("granted_via") @db.VarChar(40)
+  grantedAt  DateTime  @default(now()) @map("granted_at") @db.Timestamptz(6)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(6)
+
+  account PatientPortalAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  tenant  Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, tenantId, patientId])
+  @@index([tenantId, patientId])
+  @@map("patient_portal_grants")
+  @@schema("patients")
+}
+
+model PatientPortalSession {
+  id                String    @id @default(uuid()) @db.Uuid
+  accountId         String    @map("account_id") @db.Uuid
+  deviceFingerprint String?   @map("device_fingerprint") @db.VarChar(128)
+  ipAddress         String?   @map("ip_address") @db.Inet
+  userAgent         String?   @map("user_agent")
+  refreshHash       String    @map("refresh_hash")
+  expiresAt         DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(6)
+  lastActiveAt      DateTime  @default(now()) @map("last_active_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  account PatientPortalAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("patient_portal_sessions")
+  @@schema("patients")
+}
+
+model PatientPortalOtp {
+  id         String    @id @default(uuid()) @db.Uuid
+  phoneE164  String    @map("phone_e164") @db.VarChar(20)
+  codeHash   String    @map("code_hash")
+  attempts   Int       @default(0)
+  channel    String    @db.VarChar(20) // SMS | TELEGRAM
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([phoneE164, createdAt])
+  @@map("patient_portal_otps")
+  @@schema("patients")
+}

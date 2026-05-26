@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ТЗ №8. Integrations Hub & Compliance — MedCRM</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #101828;
+      --muted: #667085;
+      --line: #d9e1ea;
+      --surface: #ffffff;
+      --soft: #f6f8fb;
+      --brand: #079685;
+      --brand-dark: #04786b;
+      --brand-soft: #e7f8f5;
+      --blue: #2563eb;
+      --amber: #b45309;
+      --red: #b42318;
+      --green: #15803d;
+      --violet: #6d28d9;
+      --shadow: 0 16px 40px rgba(16, 24, 40, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #eef3f7; color: var(--ink); font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; line-height: 1.55; }
+    .page { width: min(1180px, calc(100% - 40px)); margin: 32px auto; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+    header.cover { padding: 56px 56px 40px; background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(7, 150, 133, 0.16)), #fbfdff; border-bottom: 1px solid var(--line); }
+    main { padding: 36px 56px 56px; }
+    h1, h2, h3, h4 { margin: 0; line-height: 1.18; }
+    h1 { max-width: 880px; font-size: 42px; font-weight: 760; }
+    h2 { margin-top: 48px; padding-top: 26px; border-top: 1px solid var(--line); font-size: 26px; }
+    h3 { margin-top: 28px; font-size: 19px; }
+    h4 { margin-top: 18px; font-size: 16px; color: #344054; }
+    p { margin: 10px 0 0; }
+    ul, ol { margin: 10px 0 0; padding-left: 22px; }
+    li + li { margin-top: 6px; }
+    table { width: 100%; margin-top: 14px; border-collapse: collapse; font-size: 14px; }
+    th, td { vertical-align: top; padding: 12px 14px; border: 1px solid var(--line); text-align: left; }
+    th { background: #f3f7fa; font-weight: 700; }
+    code { padding: 2px 5px; border-radius: 5px; background: #edf2f7; color: #243244; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.92em; }
+    pre { margin-top: 12px; padding: 16px 18px; background: #0b1220; color: #e6edf3; border-radius: 10px; overflow-x: auto; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; line-height: 1.55; }
+    pre code { background: transparent; color: inherit; padding: 0; }
+    .meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
+    .meta div, .note, .decision, .warning, .danger, .card { border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.85); padding: 14px 16px; }
+    .meta span, .eyebrow { display: block; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .meta strong { display: block; margin-top: 4px; font-size: 15px; }
+    .lead { max-width: 820px; margin-top: 18px; color: #344054; font-size: 18px; }
+    .toc { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; margin-top: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+    .toc a { color: var(--brand-dark); text-decoration: none; font-weight: 600; }
+    .toc a:hover { text-decoration: underline; }
+    .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 16px; }
+    .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 16px; }
+    .four { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+    .card { padding: 18px; }
+    .card h3 { margin-top: 0; }
+    .note { background: #f8fbff; border-color: #c7d8f0; }
+    .decision { background: #ecfdf5; border-color: #a7f3d0; }
+    .warning { background: #fff7ed; border-color: #fed7aa; }
+    .danger { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
+    .small { color: var(--muted); font-size: 13px; }
+    .stage { border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: 10px; padding: 16px 18px; margin-top: 14px; background: #fbfeff; }
+    .stage h3 { margin-top: 0; }
+    .stage .stage-meta { display: inline-block; margin-right: 10px; padding: 2px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-dark); font-size: 12px; font-weight: 700; }
+    .kpi { border-radius: 12px; padding: 18px; border: 1px solid var(--line); background: linear-gradient(180deg, #ffffff, #f7fafc); }
+    .kpi .label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .kpi .value { display: block; margin-top: 6px; font-size: 26px; font-weight: 760; }
+    .kpi .hint { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .check { padding-left: 0; list-style: none; }
+    .check li { position: relative; padding: 6px 0 6px 26px; border-bottom: 1px dashed #e5e7eb; }
+    .check li:before { content: ""; position: absolute; left: 0; top: 11px; width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid var(--brand); background: #fff; }
+    .check li:last-child { border-bottom: 0; }
+    .file-tree { margin-top: 12px; padding: 16px 20px; background: #0b1220; color: #e6edf3; border-radius: 10px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; line-height: 1.7; overflow-x: auto; }
+    .file-tree b { color: #7dd3fc; font-weight: 700; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .pill.blue { background: #eff6ff; color: #1e40af; }
+    .pill.amber { background: #fffbeb; color: #92400e; }
+    .pill.green { background: #f0fdf4; color: #166534; }
+    .pill.violet { background: #f5f3ff; color: #5b21b6; }
+    .pill.gray { background: #f3f4f6; color: #374151; }
+    @media (max-width: 860px) {
+      .page { width: 100%; margin: 0; border-width: 0; }
+      header.cover, main { padding: 28px 20px; }
+      h1 { font-size: 30px; }
+      .meta, .two, .three, .four, .toc { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: #fff; }
+      .page { width: 100%; margin: 0; border: 0; box-shadow: none; }
+      header.cover, main { padding: 24px 32px; }
+      pre { background: #f4f4f5; color: #111827; }
+    }
+  </style>
+</head>
+<body>
+  <article class="page">
+    <header class="cover">
+      <span class="eyebrow">MedCRM · ТЗ №8 · Integrations Hub & Compliance</span>
+      <h1>HL7/FHIR/DICOM, лаборатории, ОМС, фискальная касса, госуслуги</h1>
+      <p class="lead">
+        Превратить MedCRM из «острова» в часть медицинской экосистемы. Двусторонний обмен с лабораториями (HL7/LIS),
+        радиологическими станциями (DICOM PACS), кассами (Атол / Эвотор / Soliq), страховыми (ОМС / ДМС),
+        государственными сервисами идентификации (ЕСИА в РФ, eGov в УЗ, единый ID РТ), бухгалтерским ПО
+        (1С / SAP / Bitrix), маркетплейсами (DocDoc, Сберздоровье, BeWell). Реализация через
+        <code>integrations-service</code> с adapter-pattern и outbox/inbox-based reliability.
+      </p>
+      <section class="meta">
+        <div><span>Версия</span><strong>1.0</strong></div>
+        <div><span>Дата</span><strong>25 мая 2026</strong></div>
+        <div><span>Проект</span><strong>xiewan1230-maker/MedCRM</strong></div>
+        <div><span>Фокус</span><strong>External integrations, interop</strong></div>
+      </section>
+    </header>
+
+    <main>
+      <nav class="toc">
+        <a href="#purpose">1. Назначение</a>
+        <a href="#as-is">2. Состояние «как есть»</a>
+        <a href="#goals">3. Цели и Out of Scope</a>
+        <a href="#arch">4. Архитектура hub</a>
+        <a href="#fhir">5. FHIR R5</a>
+        <a href="#hl7">6. HL7 v2</a>
+        <a href="#dicom">7. DICOM / PACS</a>
+        <a href="#lis">8. Лаборатории</a>
+        <a href="#fiscal">9. Фискальная касса</a>
+        <a href="#oms">10. ОМС / ДМС</a>
+        <a href="#gosid">11. Госуслуги и ID</a>
+        <a href="#accounting">12. Бухгалтерия (1С)</a>
+        <a href="#marketplaces">13. Маркетплейсы</a>
+        <a href="#reliability">14. Reliability и observability</a>
+        <a href="#files">15. Структура файлов</a>
+        <a href="#plan">16. Этапы работ</a>
+        <a href="#acceptance">17. Acceptance</a>
+        <a href="#metrics">18. Метрики и риски</a>
+      </nav>
+
+      <section id="purpose">
+        <h2>1. Назначение</h2>
+        <p>
+          MedCRM сейчас умеет только экспортировать данные в FHIR-формате; вход — закрыт. Этого недостаточно, чтобы
+          обслуживать сети клиник, где лаборатория, радиология, страховщики и фискальная касса — отдельные системы.
+          ТЗ №8 описывает построение <strong>Integrations Hub</strong> — единого сервиса, через который MedCRM
+          двусторонне общается со всеми внешними системами.
+        </p>
+        <p>
+          Контракт hub:
+        </p>
+        <ul>
+          <li>Каждая внешняя система — отдельный adapter с одинаковым lifecycle (configure → connect → sync → reconcile → disconnect).</li>
+          <li>Все исходящие сообщения идут через outbox (ТЗ №4); входящие — через inbox с дедупликацией.</li>
+          <li>Конфигурация per-tenant: можно подключить YouTube-аналитику клиники А и Helix-LIS для клиники Б независимо.</li>
+          <li>Полная observability: каждое сообщение видно в админ-UI с retry, replay, manual override.</li>
+        </ul>
+        <div class="decision">
+          <span class="eyebrow">Принцип</span>
+          <strong>«Один integrations-service, много adapters»</strong>
+          <p class="small">Не плодим N разных сервисов на каждую интеграцию — это переиспользует общий paint reliability/observability/UI.</p>
+        </div>
+      </section>
+
+      <section id="as-is">
+        <h2>2. Состояние «как есть»</h2>
+        <table>
+          <thead><tr><th>Интеграция</th><th>Сейчас</th><th>Целевое состояние</th></tr></thead>
+          <tbody>
+            <tr><td>FHIR</td><td>Export-only, R4, фрагментарно.</td><td>R5 read/write, полный для encounter/patient/observation/medication/condition.</td></tr>
+            <tr><td>HL7 v2</td><td>Нет.</td><td>ADT (admit), ORM (order), ORU (result), MDM (document).</td></tr>
+            <tr><td>DICOM</td><td>Нет.</td><td>C-STORE приём, C-FIND/C-MOVE, viewer-link (OHIF), Orthanc/dcm4chee бридж.</td></tr>
+            <tr><td>Лаборатории</td><td>Импорт результатов руками.</td><td>Helix / Invitro / СитиЛаб / Lykon / локальные LIS через API.</td></tr>
+            <tr><td>Касса</td><td>Нет.</td><td>Атол / Эвотор (РФ), Soliq (УЗ), локальные ККМ РТ.</td></tr>
+            <tr><td>ОМС / ДМС</td><td>Нет.</td><td>ТФОМС реестр услуг, страховщики ДМС (СОГАЗ, Альфа, Ингосстрах).</td></tr>
+            <tr><td>Госуслуги ID</td><td>Нет.</td><td>ЕСИА (РФ), eGov (УЗ), единый ID гражданина РТ.</td></tr>
+            <tr><td>Бухгалтерия</td><td>Нет.</td><td>1С через REST/OData; SAP/Bitrix как опции для enterprise.</td></tr>
+            <tr><td>Маркетплейсы</td><td>Нет.</td><td>DocDoc, Сберздоровье, BeWell — двусторонний sync расписания.</td></tr>
+            <tr><td>SMS/Telegram/WhatsApp</td><td>ТЗ №4.</td><td>Уже описано.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="goals">
+        <h2>3. Цели и Out of Scope</h2>
+        <div class="two">
+          <div class="card">
+            <h3>Цели</h3>
+            <ul>
+              <li>Создать <code>integrations-service</code> (ТЗ №6) как единый hub для всех external интеграций.</li>
+              <li>Adapter-pattern: каждый интегратор — реализация общего <code>IntegrationAdapter</code> интерфейса.</li>
+              <li>FHIR R5 read/write (Patient, Practitioner, Encounter, Condition, Observation, MedicationRequest, AllergyIntolerance, ServiceRequest, DiagnosticReport).</li>
+              <li>HL7 v2: ADT^A01/04/08/40, ORM^O01, ORU^R01, MDM^T02.</li>
+              <li>DICOM: Bridge к Orthanc; viewer-link OHIF.</li>
+              <li>LIS-адаптеры: ≥ 3 в РФ (Helix / Invitro / СитиЛаб), ≥ 2 в РТ/УЗ.</li>
+              <li>Фискальная касса: ≥ 2 в РФ (Атол / Эвотор), ≥ 1 в УЗ (Soliq).</li>
+              <li>ОМС: реестр услуг + отчётность.</li>
+              <li>ЕСИА (РФ) для авторизации пациента в portal (ТЗ №5).</li>
+              <li>1С: справочники + документы (счёт-фактура).</li>
+              <li>Маркетплейс sync (хотя бы DocDoc).</li>
+              <li>Outbox + inbox с retries, DLQ, idempotency.</li>
+              <li>Admin-UI: статус каждой интеграции, манyal replay, history of messages.</li>
+              <li>Per-tenant конфигурация + per-tenant credentials в KMS (ТЗ №3).</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Out of Scope</h3>
+            <ul>
+              <li>Полная сертификация HL7 (это long-running compliance procedure).</li>
+              <li>SNOMED CT subscription (отдельная лицензия).</li>
+              <li>Радиологический workflow (DR/MWL/MPPS) — отдельная задача.</li>
+              <li>Госуслуги «для врача» (ЛНР по СМП) — отдельные ТЗ.</li>
+              <li>EDI с фарм-дистрибьюторами (заказы лекарств) — отдельная программа.</li>
+              <li>Apple HealthKit / Google Fit — фаза 2.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="arch">
+        <h2>4. Архитектура hub</h2>
+
+        <h3>4.1. Общая схема</h3>
+        <pre><code>+-------------------+      +---------------------+      +---------------------+
+| Domain services   |      | integrations-svc    |      | External system     |
+| (scheduling, emr, | ---&gt; | Outbox -&gt; Adapter --|--&gt;-- | Lab / PACS / Касса /|
+|  finance, ...)    |      | Inbox  &lt;- Adapter &lt;-|-&lt;-- | ОМС / 1C / ЕСИА    |
++-------------------+      +---------------------+      +---------------------+
+                                |        |
+                                v        v
+                          [BullMQ jobs] [audit/logs]</code></pre>
+
+        <h3>4.2. Domain models</h3>
+        <pre><code>model IntegrationProvider {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  kind         String   @db.VarChar(60)   // LIS_HELIX | FISCAL_ATOL | FHIR_GENERIC | ...
+  displayName  String   @map("display_name") @db.VarChar(255)
+  configJson   Json     @map("config_json")  // public, версионированный
+  secretsRef   String   @map("secrets_ref") @db.VarChar(255)  // ссылка на KMS
+  status       String   @db.VarChar(20)  // ACTIVE | PAUSED | ERROR | DISABLED
+  lastSyncAt   DateTime? @map("last_sync_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, kind, displayName])
+  @@schema("integrations")
+  @@map("integration_providers")
+}
+
+model IntegrationOutbox {     // расширение из ТЗ №4
+  id           String   @id @default(uuid()) @db.Uuid
+  providerId   String   @map("provider_id") @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  eventType    String   @map("event_type") @db.VarChar(120)
+  payloadJson  Json     @map("payload_json")
+  status       String   @db.VarChar(20)  // PENDING | IN_PROGRESS | SENT | FAILED | DLQ
+  attempts     Int      @default(0)
+  nextRetryAt  DateTime? @map("next_retry_at") @db.Timestamptz(6)
+  lastError    String?  @map("last_error")
+  externalId   String?  @map("external_id") @db.VarChar(255)
+  sentAt       DateTime? @map("sent_at") @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([tenantId, status])
+  @@schema("integrations")
+  @@map("integration_outbox")
+}
+
+model IntegrationInbox {
+  id              String   @id @default(uuid()) @db.Uuid
+  providerId      String   @map("provider_id") @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  externalId      String   @map("external_id") @db.VarChar(255)
+  messageType     String   @map("message_type") @db.VarChar(120)
+  payloadRaw      String   @map("payload_raw")
+  payloadJson     Json?    @map("payload_json")
+  receivedAt      DateTime @default(now()) @map("received_at") @db.Timestamptz(6)
+  processedAt     DateTime? @map("processed_at") @db.Timestamptz(6)
+  status          String   @db.VarChar(20) // RECEIVED | PROCESSED | FAILED | IGNORED
+  lastError       String?  @map("last_error")
+
+  @@unique([providerId, externalId])
+  @@schema("integrations")
+  @@map("integration_inbox")
+}
+
+model ExternalIdMap {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  providerId   String   @map("provider_id") @db.Uuid
+  entityType   String   @map("entity_type") @db.VarChar(60)   // Patient | Encounter | Order | Payment
+  internalId   String   @map("internal_id") @db.VarChar(255)
+  externalId   String   @map("external_id") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([providerId, entityType, externalId])
+  @@index([tenantId, entityType, internalId])
+  @@schema("integrations")
+  @@map("external_id_map")
+}</code></pre>
+
+        <h3>4.3. Adapter interface</h3>
+        <pre><code>export interface IntegrationAdapter&lt;TConfig = unknown&gt; {
+  readonly kind: string;
+  validateConfig(config: unknown): TConfig;
+  testConnection(config: TConfig, secrets: Secrets): Promise&lt;void&gt;;
+  sendOutbox(message: OutboxMessage, ctx: AdapterContext): Promise&lt;{ externalId?: string }&gt;;
+  receiveInbox(payload: unknown, ctx: AdapterContext): Promise&lt;InboxMessage[]&gt;;
+  buildAdminUi(): AdapterAdminUi;        // metadata для UI-конфигуратора
+}
+
+export interface AdapterContext {
+  tenantId: string;
+  providerId: string;
+  logger: Logger;
+  secrets: Secrets;
+  prisma: PrismaClient;
+  publishDomainEvent: (subject: string, data: unknown) =&gt; Promise&lt;void&gt;;
+}</code></pre>
+
+        <h3>4.4. Конфигурация per tenant</h3>
+        <ul>
+          <li>Admin-UI шаг 1: выбрать тип adapter → шаг 2: ввести конфиг (поля из <code>buildAdminUi()</code>) → шаг 3: ввести credentials (отправляются в KMS, в БД лежит только ref).</li>
+          <li><code>testConnection</code> вызывается до сохранения; ошибка показывается в UI.</li>
+          <li>Каждый adapter имеет capabilities (<code>read</code>, <code>write</code>, <code>realtime</code>) — UI это показывает.</li>
+        </ul>
+      </section>
+
+      <section id="fhir">
+        <h2>5. FHIR R5</h2>
+
+        <h3>5.1. Цели</h3>
+        <ul>
+          <li>RESTful FHIR R5 server endpoints под <code>/fhir/r5/&lt;Resource&gt;</code>.</li>
+          <li>Auth: SMART-on-FHIR (OAuth2 + scopes) и mTLS для корпоративных partners.</li>
+          <li>Resources phase 1: <code>Patient</code>, <code>Practitioner</code>, <code>Encounter</code>, <code>Condition</code>, <code>Observation</code>, <code>MedicationRequest</code>, <code>AllergyIntolerance</code>, <code>ServiceRequest</code>, <code>DiagnosticReport</code>, <code>Appointment</code>.</li>
+          <li>Read, create, update, search (по common params), <code>$everything</code> для Patient bundle.</li>
+        </ul>
+
+        <h3>5.2. Маппинг</h3>
+        <ul>
+          <li>Mapper-functions <code>toFhir.&lt;Resource&gt;</code> и <code>fromFhir.&lt;Resource&gt;</code> в <code>integrations-service/fhir/mappers</code>.</li>
+          <li>Используем структуру из ТЗ №7 (структурированные диагнозы/назначения/vitals).</li>
+          <li>Identifier extension: <code>system="https://medcrm.app/tenants/&lt;tenantId&gt;/patient-mr"</code>.</li>
+          <li>Locale: text labels мультиязычные через <code>Coding.display</code>.</li>
+        </ul>
+
+        <h3>5.3. CapabilityStatement</h3>
+        <pre><code>// /fhir/r5/metadata
+{
+  "resourceType": "CapabilityStatement",
+  "status": "active",
+  "kind": "instance",
+  "fhirVersion": "5.0.0",
+  "format": ["application/fhir+json"],
+  "rest": [{ "mode": "server", "security": { "service": [{ "coding": [...]}] },
+    "resource": [
+      { "type": "Patient",     "interaction": [{"code":"read"},{"code":"search-type"}], "searchParam": [...] },
+      { "type": "Encounter",   "interaction": [{"code":"read"},{"code":"create"},{"code":"search-type"}] },
+      ...
+    ] }]
+}</code></pre>
+
+        <h3>5.4. Subscriptions</h3>
+        <ul>
+          <li>FHIR Subscription R5 (topic-based) для push-уведомлений partner-systems.</li>
+          <li>Webhook (REST hook) и WebSocket каналы.</li>
+        </ul>
+      </section>
+
+      <section id="hl7">
+        <h2>6. HL7 v2</h2>
+
+        <h3>6.1. Поддерживаемые сообщения</h3>
+        <table>
+          <thead><tr><th>Тип</th><th>Назначение</th><th>Поток</th></tr></thead>
+          <tbody>
+            <tr><td>ADT^A01</td><td>Admit / register patient</td><td>Outbound: уведомить стационар; Inbound: импорт пациента из больницы</td></tr>
+            <tr><td>ADT^A04</td><td>Register outpatient</td><td>Outbound</td></tr>
+            <tr><td>ADT^A08</td><td>Update patient demographics</td><td>Inbound: получить обновлённые данные</td></tr>
+            <tr><td>ORM^O01</td><td>Order message</td><td>Outbound: заказ в лабораторию</td></tr>
+            <tr><td>ORU^R01</td><td>Result message</td><td>Inbound: результат анализа</td></tr>
+            <tr><td>MDM^T02</td><td>Document message</td><td>Inbound: импорт outside-документа</td></tr>
+            <tr><td>SIU^S12</td><td>Schedule notification</td><td>Outbound в стационар; Inbound с записи</td></tr>
+          </tbody>
+        </table>
+
+        <h3>6.2. Транспорт</h3>
+        <ul>
+          <li>MLLP (Minimum Lower Layer Protocol) — стандарт HL7 поверх TCP.</li>
+          <li>HTTP-вариант (для современных LIS).</li>
+          <li>SFTP-batch (для старых систем).</li>
+          <li>Outbox-relay поддерживает все три.</li>
+        </ul>
+
+        <h3>6.3. Парсинг</h3>
+        <ul>
+          <li>Библиотека <code>hl7-standard</code> или собственный лёгкий парсер для основных типов.</li>
+          <li>Валидация: required segments, encoding chars, message version.</li>
+          <li>ACK^AA / ACK^AE / ACK^AR с message-control-id.</li>
+        </ul>
+      </section>
+
+      <section id="dicom">
+        <h2>7. DICOM / PACS</h2>
+        <ul>
+          <li>Используем <strong>Orthanc</strong> как PACS-сервер (open-source, REST API).</li>
+          <li><code>integrations-service</code> общается с Orthanc через REST + DICOMweb (QIDO/WADO/STOW).</li>
+          <li>Workflow: радиолог делает снимок → modality (КТ/УЗИ/МРТ) отправляет в Orthanc → callback в MedCRM (через webhook) → создаётся <code>RadiologyReport</code> stub → линк на viewer.</li>
+          <li>Viewer: <strong>OHIF Viewer</strong> (open-source, embeded iframe или внешний URL) с подписанным токеном.</li>
+          <li>DICOM modality worklist (MWL) — отдельная задача, отметка «есть план».</li>
+          <li>Анонимизация для исследовательских export через Orthanc anonymizer.</li>
+        </ul>
+      </section>
+
+      <section id="lis">
+        <h2>8. Лабораторные интеграции</h2>
+
+        <h3>8.1. Стратегия</h3>
+        <p>Лаборатории делятся на два класса:</p>
+        <ul>
+          <li><strong>Public</strong> (Helix, Invitro, СитиЛаб, Lykon, Kasta) — у них есть API-портал партнёра.</li>
+          <li><strong>Local hospital LIS</strong> (1С-Медицина, qMS, MedTrak) — HL7 v2 / REST.</li>
+        </ul>
+
+        <h3>8.2. Adapter для Helix (пример)</h3>
+        <ul>
+          <li>Конфиг: API-ключ, partner-id, base-url, callback-url.</li>
+          <li>Outbound: создание заказа — POST <code>/orders</code> с структурой <code>{patient, services[], priority, comment}</code>.</li>
+          <li>Inbound: webhook <code>/portal/v1/webhooks/integrations/helix</code> с результатом → парсинг → <code>LabReport</code>+<code>LabResultItem</code> (ТЗ №7).</li>
+          <li>Reconciliation: poll-job каждый час по неполным заказам.</li>
+        </ul>
+
+        <h3>8.3. Generic LIS через HL7 ORU^R01</h3>
+        <ul>
+          <li>Принимаем по MLLP или HTTPS-endpoint.</li>
+          <li>Парсер ORU → <code>LabReport</code>.</li>
+          <li>Mapping LOINC-кодов (если приходят) → справочник из ТЗ №7.</li>
+        </ul>
+
+        <h3>8.4. UI заказа</h3>
+        <ul>
+          <li>В <code>ServiceOrder</code> (ТЗ №7) врач выбирает «отправить во внешнюю лабораторию» → диалог выбора провайдера, услуг (mapped к panel), приоритета.</li>
+          <li>После отправки — статус «отправлено в Helix #ORD-123456».</li>
+        </ul>
+      </section>
+
+      <section id="fiscal">
+        <h2>9. Фискальная касса</h2>
+
+        <h3>9.1. Атол (РФ)</h3>
+        <ul>
+          <li>Веб-сервер Атол Online или локальное API на ККМ.</li>
+          <li>Создание чека после <code>Payment.status=CAPTURED</code>: <code>POST /chek</code> с массивом услуг (наименование, количество, цена, ставка НДС).</li>
+          <li>Получаем <code>fnNumber</code>, <code>fdNumber</code>, <code>fpd</code>, время фискализации.</li>
+          <li>Сохраняем в <code>Receipt</code> + ссылку на ОФД.</li>
+          <li>Отправляем в email/Telegram пациенту.</li>
+        </ul>
+
+        <h3>9.2. Эвотор (РФ)</h3>
+        <ul>
+          <li>Smart-terminal с CloudCore API.</li>
+          <li>Бизнес-модель: касса в холле клиники работает оффлайн; sync через cloud.</li>
+        </ul>
+
+        <h3>9.3. Soliq (УЗ)</h3>
+        <ul>
+          <li>Подключение через Soliq REST API.</li>
+          <li>Поддержка фиск. отчётности по требованию ГНК Узбекистана.</li>
+        </ul>
+
+        <h3>9.4. РТ</h3>
+        <ul>
+          <li>Локальные ККМ; интеграция через CSV-batch report (на старте).</li>
+          <li>API-режим — по мере доступности.</li>
+        </ul>
+      </section>
+
+      <section id="oms">
+        <h2>10. ОМС / ДМС</h2>
+        <ul>
+          <li><strong>ТФОМС (РФ)</strong>: реестр услуг (R-формат) ежемесячно, реестр счёт-фактур, persona-mapping.</li>
+          <li><strong>ДМС (РФ)</strong>: SOAP/REST API страховщиков (СОГАЗ, Альфа, Ингосстрах, Ресо).</li>
+          <li>Workflow: пациент с ДМС-полисом → проверка полиса через API страховщика → гарантийное письмо → счёт направляется страховщику.</li>
+          <li><strong>Сохранение страховых полисов</strong>: <code>PatientInsurancePolicy</code> с провайдером, номером, сроком.</li>
+          <li>Лимиты по полису, перечень покрываемых услуг — кэш из API.</li>
+          <li>Отчётность XML-форматы по требованиям ТФОМС/страховщика.</li>
+        </ul>
+      </section>
+
+      <section id="gosid">
+        <h2>11. Госуслуги и ID</h2>
+
+        <h3>11.1. ЕСИА (РФ)</h3>
+        <ul>
+          <li>OAuth2 / OpenID Connect через ЕСИА.</li>
+          <li>В <code>patient-portal</code> (ТЗ №5) появляется кнопка «Войти через Госуслуги».</li>
+          <li>После авторизации — заполнение профиля из официальных данных (ФИО, дата рождения, СНИЛС).</li>
+          <li>СНИЛС используется как федеральный идентификатор пациента.</li>
+        </ul>
+
+        <h3>11.2. eGov (УЗ)</h3>
+        <ul>
+          <li>One-ID Узбекистана через OIDC.</li>
+          <li>Маппинг ПИНФЛ.</li>
+        </ul>
+
+        <h3>11.3. РТ единый ID</h3>
+        <ul>
+          <li>Готовность к интеграции, когда api станет доступным.</li>
+          <li>На старте — телефон + OTP остаётся основным методом auth.</li>
+        </ul>
+      </section>
+
+      <section id="accounting">
+        <h2>12. Бухгалтерия (1С)</h2>
+        <ul>
+          <li>1С Бухгалтерия / Управление торговлей / Медицина — через REST/OData или COM-обмен.</li>
+          <li>Объекты:
+            <ul>
+              <li>Справочники: контрагенты (пациенты, страховщики), услуги, врачи (как сотрудники).</li>
+              <li>Документы: счёт-фактура, акт оказанных услуг, поступление денежных средств.</li>
+            </ul>
+          </li>
+          <li>Двусторонний sync: новые услуги — в 1С, поступления — обратно в MedCRM (для сверки).</li>
+          <li>Расписание: ежедневная выгрузка реестра услуг в 1С.</li>
+        </ul>
+      </section>
+
+      <section id="marketplaces">
+        <h2>13. Маркетплейсы</h2>
+        <ul>
+          <li><strong>DocDoc / Sberzdorovie / BeWell</strong>: партнёрские API.</li>
+          <li>Sync слотов: outbound — наши доступные слоты → marketplace.</li>
+          <li>Sync записей: inbound — пациент записался через marketplace → создаётся <code>Appointment</code>.</li>
+          <li>Sync пациентов: создание пациента (минимальный профиль), линковка по телефону.</li>
+          <li>Sync оплат: marketplace отчитывается о платеже.</li>
+          <li>Webhook-callbacks + reconciliation jobs.</li>
+        </ul>
+      </section>
+
+      <section id="reliability">
+        <h2>14. Reliability и observability</h2>
+        <ul>
+          <li><strong>Outbox</strong>: все исходящие — через <code>IntegrationOutbox</code> (расширение ТЗ №4).</li>
+          <li><strong>Inbox</strong>: все входящие — через <code>IntegrationInbox</code> с дедупликацией по <code>(providerId, externalId)</code>.</li>
+          <li><strong>Retry</strong>: exponential backoff (1m, 5m, 15m, 1h, 6h, 24h), max 8 попыток, потом DLQ.</li>
+          <li><strong>DLQ-UI</strong>: admin может посмотреть, replay, edit payload, mark as ignored.</li>
+          <li><strong>Idempotency</strong>: каждое сообщение имеет внешний и внутренний ID.</li>
+          <li><strong>Webhooks security</strong>: HMAC-подпись + replay-protection (timestamp window).</li>
+          <li><strong>Rate limits</strong>: per-provider quota (например, Helix 100 req/min).</li>
+          <li><strong>Tracing</strong>: каждое сообщение имеет traceId, который сквозь outbox → adapter → external system → callback (через correlation header).</li>
+          <li><strong>Alerts</strong>: DLQ size &gt; 0, error rate per provider &gt; 5%, last sync &gt; 1 час назад.</li>
+          <li><strong>Admin-UI</strong>: list of providers, status, last sync, queue depth, retry, replay, configure.</li>
+        </ul>
+      </section>
+
+      <section id="files">
+        <h2>15. Структура файлов</h2>
+        <div class="file-tree">
+backend/apps/integrations-service/src/
+├─ adapters/
+│  ├─ fhir/
+│  │  ├─ fhir-r5.adapter.ts
+│  │  ├─ mappers/
+│  │  │  ├─ patient.mapper.ts
+│  │  │  ├─ encounter.mapper.ts
+│  │  │  ├─ observation.mapper.ts
+│  │  │  └─ medication-request.mapper.ts
+│  │  └─ capability.ts
+│  ├─ hl7/
+│  │  ├─ hl7-mllp.server.ts
+│  │  ├─ adt.adapter.ts
+│  │  ├─ orm.adapter.ts
+│  │  ├─ oru.adapter.ts
+│  │  └─ mdm.adapter.ts
+│  ├─ dicom/
+│  │  ├─ orthanc.adapter.ts
+│  │  └─ ohif-viewer.token.ts
+│  ├─ lis/
+│  │  ├─ helix.adapter.ts
+│  │  ├─ invitro.adapter.ts
+│  │  ├─ citilab.adapter.ts
+│  │  └─ generic-hl7-oru.adapter.ts
+│  ├─ fiscal/
+│  │  ├─ atol.adapter.ts
+│  │  ├─ evotor.adapter.ts
+│  │  └─ soliq.adapter.ts
+│  ├─ oms/
+│  │  ├─ tfoms.adapter.ts
+│  │  ├─ sogaz.adapter.ts
+│  │  └─ generic-dms.adapter.ts
+│  ├─ gov-id/
+│  │  ├─ esia.adapter.ts
+│  │  └─ egov-uz.adapter.ts
+│  ├─ accounting/
+│  │  ├─ 1c-rest.adapter.ts
+│  │  └─ bitrix24.adapter.ts
+│  └─ marketplace/
+│     ├─ docdoc.adapter.ts
+│     ├─ sberzdorovie.adapter.ts
+│     └─ bewell.adapter.ts
+├─ core/
+│  ├─ adapter-registry.ts
+│  ├─ outbox-relay.processor.ts
+│  ├─ inbox-processor.ts
+│  ├─ id-mapper.service.ts
+│  └─ secrets-resolver.ts
+├─ controllers/
+│  ├─ providers.controller.ts          ← admin CRUD
+│  ├─ outbox.controller.ts             ← list, retry, replay
+│  ├─ inbox.controller.ts
+│  ├─ webhooks.controller.ts           ← /webhooks/integrations/&lt;provider&gt;
+│  └─ fhir.controller.ts               ← /fhir/r5/*
+└─ telemetry/
+   ├─ provider.metrics.ts
+   └─ trace.context.ts
+
+frontend/modules/integrations/
+├─ pages/
+│  ├─ providers-list.tsx
+│  ├─ provider-detail.tsx
+│  └─ message-history.tsx
+└─ components/
+   ├─ adapter-config-form.tsx
+   ├─ status-badge.tsx
+   └─ replay-dialog.tsx
+
+backend/prisma/schemas/
+└─ 12-integrations.prisma               ← расширено
+        </div>
+      </section>
+
+      <section id="plan">
+        <h2>16. Этапы работ</h2>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 1 · ~1.5 недели</span>
+          <h3>Этап 1. integrations-service + outbox/inbox/registry</h3>
+          <ul>
+            <li>Bootstrap <code>integrations-service</code> (после ТЗ №6).</li>
+            <li>Prisma модели Provider / Outbox (расширить из ТЗ №4) / Inbox / ExternalIdMap.</li>
+            <li>Adapter interface + registry.</li>
+            <li>Admin-UI: список провайдеров, CRUD, status badge.</li>
+            <li>PR <code>feat(integrations): hub bootstrap + outbox/inbox/registry</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 2 · ~1.5 недели</span>
+          <h3>Этап 2. FHIR R5 server</h3>
+          <ul>
+            <li>RESTful endpoints под <code>/fhir/r5/*</code>.</li>
+            <li>Mappers: Patient, Practitioner, Encounter, Condition, Observation, MedicationRequest, AllergyIntolerance, ServiceRequest, DiagnosticReport, Appointment.</li>
+            <li>Search params.</li>
+            <li>$everything для Patient.</li>
+            <li>CapabilityStatement.</li>
+            <li>SMART-on-FHIR auth.</li>
+            <li>PR <code>feat(integrations): fhir r5 server</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 3 · ~1.5 недели</span>
+          <h3>Этап 3. Лабораторные адаптеры</h3>
+          <ul>
+            <li>Generic HL7 ORU^R01 inbound через MLLP и HTTPS.</li>
+            <li>Helix adapter (РФ).</li>
+            <li>Invitro adapter (РФ).</li>
+            <li>СитиЛаб adapter (РФ).</li>
+            <li>Reconciliation jobs.</li>
+            <li>UI заказа в EMR (ТЗ №7).</li>
+            <li>PR <code>feat(integrations): lab adapters</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 4 · ~1 неделя</span>
+          <h3>Этап 4. DICOM / PACS</h3>
+          <ul>
+            <li>Orthanc deployment (docker compose).</li>
+            <li>Orthanc adapter (приём callback, ссылка viewer).</li>
+            <li>OHIF Viewer iframe + token-auth.</li>
+            <li>RadiologyReport stub в EMR.</li>
+            <li>PR <code>feat(integrations): dicom orthanc + ohif</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 5 · ~1.5 недели</span>
+          <h3>Этап 5. Фискальная касса + чеки</h3>
+          <ul>
+            <li>Atol adapter.</li>
+            <li>Evotor adapter.</li>
+            <li>Soliq adapter (УЗ).</li>
+            <li>Receipt PDF (worker, ТЗ №4).</li>
+            <li>Связь Payment → Receipt.</li>
+            <li>PR <code>feat(integrations): fiscal cashier</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 6 · ~1.5 недели</span>
+          <h3>Этап 6. ОМС / ДМС + ЕСИА</h3>
+          <ul>
+            <li>InsurancePolicy модель и UI.</li>
+            <li>ТФОМС-reporting (XML-batch).</li>
+            <li>СОГАЗ / Альфа DMS adapter (least-common-denominator REST).</li>
+            <li>ЕСИА login для portal (ТЗ №5).</li>
+            <li>PR <code>feat(integrations): oms + dms + esia</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 7 · ~1 неделя</span>
+          <h3>Этап 7. 1С + маркетплейсы + polish</h3>
+          <ul>
+            <li>1С REST/OData adapter.</li>
+            <li>DocDoc adapter (sync расписания).</li>
+            <li>Sberzdorovie adapter.</li>
+            <li>Admin-UI: replay, edit, manual, history.</li>
+            <li>Документация <code>docs/integrations/&lt;adapter&gt;.md</code>.</li>
+            <li>PR <code>feat(integrations): 1c + marketplaces + admin polish</code>.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="acceptance">
+        <h2>17. Acceptance criteria</h2>
+        <ul class="check">
+          <li><code>integrations-service</code> работает; CRUD providers через admin-UI; testConnection валидирует.</li>
+          <li>Outbox-relay отправляет с exponential backoff; DLQ-UI работает; manual retry/replay доступны.</li>
+          <li>Inbox дедуплицирует по <code>(providerId, externalId)</code>.</li>
+          <li>FHIR R5 server: 10 ресурсов, search, $everything, CapabilityStatement, SMART-on-FHIR.</li>
+          <li>HL7 MLLP server принимает ADT/ORM/ORU с ACK; парсер устойчив.</li>
+          <li>Orthanc + OHIF работают; viewer открывается из карточки EMR.</li>
+          <li>≥ 3 лаб-адаптера (Helix/Invitro/СитиЛаб) или Generic HL7 ORU дают LabReport.</li>
+          <li>≥ 2 фискальных адаптера (Атол/Эвотор) формируют Receipt с fpd/fn/fd.</li>
+          <li>ЕСИА login для portal реализован.</li>
+          <li>1С sync: справочники + документы поступления.</li>
+          <li>≥ 1 marketplace sync расписания работает.</li>
+          <li>Webhooks signed (HMAC) + timestamp window.</li>
+          <li>Tracing сквозной (traceId через outbox → adapter → callback → inbox).</li>
+          <li>Метрики Prometheus per provider + Grafana дашборд.</li>
+          <li>Документация в <code>docs/integrations/*.md</code> для каждого adapter.</li>
+        </ul>
+      </section>
+
+      <section id="metrics">
+        <h2>18. Метрики и риски</h2>
+
+        <div class="four">
+          <div class="kpi"><span class="label">Adapters</span><span class="value">≥ 15</span><span class="hint">по итогам</span></div>
+          <div class="kpi"><span class="label">Delivery rate</span><span class="value">≥ 99%</span><span class="hint">outbox SENT</span></div>
+          <div class="kpi"><span class="label">Inbound dedupe</span><span class="value">100%</span><span class="hint">по externalId</span></div>
+          <div class="kpi"><span class="label">FHIR conformance</span><span class="value">≥ 90%</span><span class="hint">touchstone</span></div>
+          <div class="kpi"><span class="label">HL7 ACK ratio</span><span class="value">≥ 99%</span><span class="hint">AA на корректных msg</span></div>
+          <div class="kpi"><span class="label">Lab autoimport</span><span class="value">≥ 95%</span><span class="hint">% результатов без ручного ввода</span></div>
+          <div class="kpi"><span class="label">Cash auto-fiscalize</span><span class="value">100%</span><span class="hint">оплат, требующих чек</span></div>
+          <div class="kpi"><span class="label">Reconcil. lag</span><span class="value">≤ 60 мин</span><span class="hint">между MedCRM и external</span></div>
+        </div>
+
+        <table>
+          <thead><tr><th>Риск</th><th>Митигация</th></tr></thead>
+          <tbody>
+            <tr><td>Партнёрские API меняются молча.</td><td>Contract tests, canary-prober (синтетический запрос раз в час), алёрт на 5xx или structure-change.</td></tr>
+            <tr><td>HL7 v2 — древний, многие реализации «свои» вариации.</td><td>Adapter per-vendor (где нужно); fallback на «generic-hl7» с явными недокументированными правилами.</td></tr>
+            <tr><td>Webhooks теряются.</td><td>HMAC + timestamp; reconciliation poller; <code>?since=...</code> incremental pull.</td></tr>
+            <tr><td>Касса оффлайн.</td><td>Очередь чеков на стороне MedCRM + alert; «отложенная фискализация» с метками для бухгалтера.</td></tr>
+            <tr><td>ЕСИА требует строгой сертификации (ГОСТ TLS, ПО АИС).</td><td>Партнёрское подключение через сертифицированного интегратора; на старте — фронтальная mock-реализация для UAT.</td></tr>
+            <tr><td>Большие XML отчёты ТФОМС — медленные операции.</td><td>Batch-генерация в worker, разбивка на чанки, потоковое чтение Postgres.</td></tr>
+            <tr><td>Маркетплейс sync приводит к over-booking.</td><td>Reservation hold (ТЗ №5) + immediate reverse-sync after сlinic-side change; idempotency.</td></tr>
+            <tr><td>Конфиденциальные секреты в adapter-config.</td><td>KMS / SOPS (ТЗ №3); в БД только refs; rotation procedures.</td></tr>
+            <tr><td>Разные форматы LIS payload.</td><td>Mapper-per-vendor + Generic HL7; admin-UI «test sample» для отладки.</td></tr>
+            <tr><td>Юр. требования к DICOM (хранение, доступ) в РФ.</td><td>Шифрование на storage; RBAC + audit (ТЗ №3); локальное хранение в РФ-регионе (ТЗ №10).</td></tr>
+            <tr><td>Невалидные FHIR-ресурсы от партнёров.</td><td>Зод-валидация + diagnostic-report inbox; не теряем сообщение, помечаем как FAILED + админ-review.</td></tr>
+            <tr><td>1С — закрытая «корпоративная» культура; разные конфигурации.</td><td>Готовим референсную обработку (xml/cf) для типовых «1С Медицина»; в остальном через REST/OData adapter.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="decision">
+          <span class="eyebrow">Definition of Done</span>
+          <strong>integrations-service в проде; FHIR R5 server отвечает 90%+ touchstone-tests; ≥ 3 лаб-адаптера, ≥ 2 фискальных, ЕСИА для portal, 1С двусторонний sync, DocDoc маркетплейс sync, DICOM/PACS через Orthanc + OHIF. Outbox/inbox с retries + DLQ + admin-UI. Все providers видны на дашборде с status и metrics.</strong>
+        </div>
+      </section>
+
+      <section>
+        <h2>Приложение А. Связанные документы</h2>
+        <ul>
+          <li>ТЗ №3 Security — KMS-secrets, audit-log для каждой интеграции.</li>
+          <li>ТЗ №4 Async Workflows — outbox/inbox-relay базируется на BullMQ.</li>
+          <li>ТЗ №5 Patient Portal — ЕСИА login, payment receipts.</li>
+          <li>ТЗ №6 Modular Split — <code>integrations-service</code> как отдельный app.</li>
+          <li>ТЗ №7 EMR — LIS импорт → LabReport, DICOM → RadiologyReport.</li>
+          <li>ТЗ №9 Analytics — отчётность для ОМС/ТФОМС, ML-инсайты по интеграциям.</li>
+          <li>ТЗ №10 Enterprise — DICOM-storage в region-locked S3/MinIO, SLA, scale.</li>
+        </ul>
+      </section>
+
+      <footer style="margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px;">
+        Документ подготовлен в рамках roadmap MedCRM. Связанные ТЗ: №3 Security, №4 Async Workflows,
+        №5 Patient Portal, №6 Modular Split, №7 EMR Clinical, №9 Analytics, №10 Enterprise/Mobile.
+      </footer>
+    </main>
+  </article>
+</body>
+</html>

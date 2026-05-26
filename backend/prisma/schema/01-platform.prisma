@@ -1,0 +1,294 @@
+model Tenant {
+  id               String   @id @default(uuid()) @db.Uuid
+  code             String   @unique @db.VarChar(120)
+  name             String   @db.VarChar(255)
+  subscriptionPlan String   @map("subscription_plan") @db.VarChar(80)
+  defaultLocale    String   @default("ru") @map("default_locale") @db.VarChar(10)
+  timezone         String   @default("Europe/Moscow") @db.VarChar(80)
+  status           String   @default("active") @db.VarChar(40)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  branches        Branch[]
+  users           User[]
+  tenantModules   TenantModule[]
+  roles           Role[]
+  userBranchRoles UserBranchRole[]
+  userSessions    UserSession[]
+  auditLogs       AuditLog[]
+  patients        Patient[]
+  services        Service[]
+  appointments    Appointment[]
+
+  departments             Department[]
+  positions               Position[]
+  employees               Employee[]
+  employeePositions       EmployeePosition[]
+  roomTypes               RoomType[]
+  rooms                   Room[]
+  equipmentCategories     EquipmentCategory[]
+  equipment               Equipment[]
+  employeeRoomAssignments EmployeeRoomAssignment[]
+  workingSchedules        WorkingSchedule[]
+  scheduleExceptions      ScheduleException[]
+
+  waitingLists             WaitingList[]
+  availabilityCaches       AvailabilityCache[]
+  resourceBuffers          ResourceBuffer[]
+  requiredResources        ServiceRequiredResource[]
+  recurrenceRules          AppointmentRecurrenceRule[]
+  appointmentNotifications AppointmentNotification[]
+  onlineBookingTokens      OnlineBookingToken[]
+
+  receptionistDashboardCaches ReceptionistDashboardCache[]
+  appointmentVisitStates      AppointmentVisitState[]
+  visitQueues                 VisitQueue[]
+  incomingCalls               IncomingCall[]
+  invoices                    Invoice[]
+  invoiceItems                InvoiceItem[]
+
+  medicalRecords       MedicalRecord[]
+  episodesOfCare       EpisodeOfCare[]
+  encounters           Encounter[]
+  clinicalCompositions ClinicalComposition[]
+  clinicalSections     ClinicalSection[]
+  clinicalElements     ClinicalElement[]
+  clinicalTemplates    ClinicalTemplate[]
+  encounterDiagnoses   EncounterDiagnosis[]
+  prescriptions        Prescription[]
+  prescriptionItems    PrescriptionItem[]
+  labOrders            LabOrder[]
+  procedureOrders      ProcedureOrder[]
+  medicalFiles         MedicalFile[]
+  digitalSignatures    DigitalSignature[]
+  encounterVersions    EncounterVersion[]
+
+  payments                 Payment[]
+  paymentAllocations       PaymentAllocation[]
+  refunds                  Refund[]
+  paymentGateways          PaymentGateway[]
+  gatewayTransactions      GatewayTransaction[]
+  patientWallets           PatientWallet[]
+  walletTransactions       WalletTransaction[]
+  familyWallets            FamilyWallet[]
+  patientDebts             PatientDebt[]
+  payrollRules             PayrollRule[]
+  payrollCalculations      PayrollCalculation[]
+  subscriptions            TenantSubscription[]
+  usageMetrics             TenantUsageMetric[]
+  cashierShifts            CashierShift[]
+  conversations            Conversation[]
+  conversationParticipants ConversationParticipant[]
+  messages                 Message[]
+  communicationChannels    CommunicationChannel[]
+  smsProviders             SmsProvider[]
+  notificationRules        NotificationRule[]
+  notificationsQueue       NotificationsQueue[]
+  chatbotFlows             ChatbotFlow[]
+  chatbotActionLogs        ChatbotActionLog[]
+  messageTemplates         MessageTemplate[]
+  communicationCampaigns   CommunicationCampaign[]
+  communicationMetrics     CommunicationMetric[]
+  conversationAssignments  ConversationAssignment[]
+  messageAttachments       MessageAttachment[]
+  communicationPreferences CommunicationPreference[]
+  integrationProviders     IntegrationProvider[]
+  webhookEvents            WebhookEvent[]
+  integrationLogs          IntegrationLog[]
+  laboratoryProviders      LaboratoryProvider[]
+  labResults               LabResult[]
+  clinicalObservations     ClinicalObservation[]
+  storageProviders         StorageProvider[]
+  filesUploaded            File[]
+  fileLinks                FileLink[]
+  telephonyProviders       TelephonyProvider[]
+  callEvents               CallEvent[]
+  medicalDevices           MedicalDevice[]
+  deviceMeasurements       DeviceMeasurement[]
+  integrationMetrics       IntegrationMetric[]
+
+  dwFactAppointments       DwFactAppointment[]
+  dwFactPayments           DwFactPayment[]
+  dwFactMarketing          DwFactMarketing[]
+  financialDailyAggregates FinancialDailyAggregate[]
+  marketingFunnelMetrics   MarketingFunnelMetric[]
+  roomUtilizationMetrics   RoomUtilizationMetric[]
+  noShowMetrics            NoShowMetric[]
+  retentionMetrics         RetentionMetric[]
+  doctorKpiMetrics         DoctorKpiMetric[]
+  scheduledReports         ScheduledReport[]
+  generatedReports         GeneratedReport[]
+  realtimeMetricCaches     RealtimeMetricCache[]
+
+  warehouses            Warehouse[]
+  inventoryItems        InventoryItem[]
+  inventoryCategories   InventoryCategory[]
+  inventoryBatches      InventoryBatch[]
+  inventoryTransactions InventoryTransaction[]
+  suppliers             Supplier[]
+  purchaseOrders        PurchaseOrder[]
+  inventoryTransfers    InventoryTransfer[]
+  inventoryBalances     InventoryBalance[]
+  inventoryAudits       InventoryAudit[]
+  serviceBomTemplates   ServiceBomTemplate[]
+  inventoryConsumptions InventoryConsumption[]
+  stockAlertRules       StockAlertRule[]
+  stockAlerts           StockAlert[]
+  integrationOutboxes   IntegrationOutbox[]
+  portalGrants          PatientPortalGrant[]
+
+  @@map("tenants")
+  @@schema("platform")
+}
+
+model Branch {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  code      String   @db.VarChar(120)
+  name      String   @db.VarChar(255)
+  address   String?
+  phone     String?  @db.VarChar(60)
+  timezone  String   @db.VarChar(80)
+  status    String   @default("active") @db.VarChar(40)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant       Tenant           @relation(fields: [tenantId], references: [id])
+  userRoles    UserBranchRole[]
+  patients     Patient[]
+  appointments Appointment[]
+
+  departments             Department[]
+  rooms                   Room[]
+  employeePositions       EmployeePosition[]
+  equipment               Equipment[]
+  employeeRoomAssignments EmployeeRoomAssignment[]
+  legalDocuments          PatientLegalDocument[]
+
+  waitingLists       WaitingList[]
+  availabilityCaches AvailabilityCache[]
+
+  receptionistDashboardCaches ReceptionistDashboardCache[]
+  visitQueues                 VisitQueue[]
+  incomingCalls               IncomingCall[]
+  invoices                    Invoice[]
+
+  episodesOfCare EpisodeOfCare[]
+  payments       Payment[]
+  cashierShifts  CashierShift[]
+  medicalDevices MedicalDevice[]
+  warehouses     Warehouse[]
+
+  @@unique([tenantId, code])
+  @@map("branches")
+  @@schema("platform")
+}
+
+model SystemModule {
+  id           String   @id @default(uuid()) @db.Uuid
+  code         String   @unique @db.VarChar(120)
+  name         String   @db.VarChar(255)
+  version      String   @db.VarChar(40)
+  isCore       Boolean  @default(false) @map("is_core")
+  dependencies Json     @default("[]")
+  status       String   @default("active") @db.VarChar(40)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenantModules TenantModule[]
+  permissions   Permission[]
+
+  @@map("system_modules")
+  @@schema("platform")
+}
+
+model TenantModule {
+  id                String    @id @default(uuid()) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  moduleId          String    @map("module_id") @db.Uuid
+  enabled           Boolean   @default(false)
+  activatedAt       DateTime? @map("activated_at") @db.Timestamptz(6)
+  configurationJson Json      @default("{}") @map("configuration_json")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id])
+  module SystemModule @relation(fields: [moduleId], references: [id])
+
+  @@unique([tenantId, moduleId])
+  @@index([tenantId, enabled])
+  @@map("tenant_modules")
+  @@schema("platform")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  branchId      String?  @map("branch_id") @db.Uuid
+  userId        String?  @map("user_id") @db.Uuid
+  action        String   @db.VarChar(160)
+  entityType    String?  @map("entity_type") @db.VarChar(120)
+  entityId      String?  @map("entity_id") @db.Uuid
+  oldValuesJson Json?    @map("old_values_json")
+  newValuesJson Json?    @map("new_values_json")
+  ipAddress     String?  @map("ip_address") @db.Inet
+  userAgent     String?  @map("user_agent")
+  requestId     String   @map("request_id") @db.VarChar(160)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  prevHash      String?  @map("prev_hash") @db.VarChar(128)
+  hash          String?  @map("hash") @db.VarChar(128)
+  signature     String?  @map("signature") @db.VarChar(255)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, action, createdAt])
+  @@index([tenantId, hash])
+  @@map("audit_logs")
+  @@schema("platform")
+}
+
+model Service {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  code              String   @db.VarChar(120)
+  name              String   @db.VarChar(255)
+  durationMinutes   Int      @map("duration_minutes")
+  requiresRoom      Boolean  @default(false) @map("requires_room")
+  requiresEquipment Boolean  @default(false) @map("requires_equipment")
+  color             String?  @db.VarChar(40)
+  isOnlineBookable  Boolean  @default(false) @map("is_online_bookable")
+  isActive          Boolean  @default(true) @map("is_active")
+  basePrice         Decimal  @default(0.0) @map("base_price") @db.Decimal(12, 2)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  appointments Appointment[]
+
+  waitingLists      WaitingList[]
+  requiredResources ServiceRequiredResource[]
+
+  invoiceItems InvoiceItem[]
+
+  prescriptionItems PrescriptionItem[]
+  bomTemplates      ServiceBomTemplate[]
+
+  @@unique([tenantId, code])
+  @@map("services")
+  @@schema("platform")
+}
+
+model EncryptionKey {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  version      Int
+  encryptedDek Bytes     @map("encrypted_dek")
+  state        String    @db.VarChar(20) // active | retired
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  retiredAt    DateTime? @map("retired_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, version])
+  @@map("encryption_keys")
+  @@schema("platform")
+}

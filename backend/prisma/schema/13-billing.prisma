@@ -1,0 +1,47 @@
+model SubscriptionPlan {
+  id            String               @id @default(uuid()) @db.Uuid
+  code          String               @unique @db.VarChar(80)
+  name          String               @db.VarChar(255)
+  monthlyPrice  Decimal              @map("monthly_price") @db.Decimal(12, 2)
+  yearlyPrice   Decimal              @map("yearly_price") @db.Decimal(12, 2)
+  featuresJson  Json                 @map("features_json")
+  limitsJson    Json                 @map("limits_json")
+  isActive      Boolean              @default(true) @map("is_active")
+  subscriptions TenantSubscription[]
+
+  @@map("subscription_plans")
+  @@schema("billing")
+}
+
+model TenantSubscription {
+  id                 String    @id @default(uuid()) @db.Uuid
+  tenantId           String    @map("tenant_id") @db.Uuid
+  subscriptionPlanId String    @map("subscription_plan_id") @db.Uuid
+  subscriptionStatus String    @default("TRIAL") @map("subscription_status") @db.VarChar(40) // TRIAL, ACTIVE, OVERDUE, SUSPENDED, CANCELLED
+  startedAt          DateTime  @map("started_at") @db.Timestamptz(6)
+  expiresAt          DateTime  @map("expires_at") @db.Timestamptz(6)
+  autoRenew          Boolean   @default(true) @map("auto_renew")
+  trialEndsAt        DateTime? @map("trial_ends_at") @db.Timestamptz(6)
+  blockedAt          DateTime? @map("blocked_at") @db.Timestamptz(6)
+
+  tenant           Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscriptionPlan SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_subscriptions")
+  @@schema("billing")
+}
+
+model TenantUsageMetric {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  metricCode   String   @map("metric_code") @db.VarChar(80)
+  currentUsage Int      @map("current_usage")
+  limitValue   Int      @map("limit_value")
+  measuredAt   DateTime @default(now()) @map("measured_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, metricCode])
+  @@map("tenant_usage_metrics")
+  @@schema("billing")
+}

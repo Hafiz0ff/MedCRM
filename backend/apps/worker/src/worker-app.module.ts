@@ -1,6 +1,7 @@
 import { AuditModule } from '@core/audit/audit.module';
 import { RedisModule } from '@core/cache/redis.module';
 import { PrismaModule } from '@core/database/prisma.module';
+import { EventBusModule } from '@core/eventbus/eventbus.module';
 import { QueueModule } from '@core/queue/queue.module';
 import { TenancyModule } from '@core/tenancy/tenancy.module';
 import { Module } from '@nestjs/common';
@@ -17,6 +18,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     TenancyModule,
     AuditModule,
     QueueModule,
+    EventBusModule,
     IntegrationsModule,
     NotificationsModule,
     KpiModule,

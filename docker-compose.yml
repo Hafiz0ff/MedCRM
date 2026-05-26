@@ -27,8 +27,21 @@ services:
       timeout: 5s
       retries: 5
 
+  nats:
+    image: nats:2.10-alpine
+    container_name: medcrm-nats
+    command: '-js -m 8222'
+    ports:
+      - '4222:4222'
+      - '8222:8222'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:8222/varz || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   minio:
-    image: minio/minio:RELEASE.2026-05-06T19-54-26Z
+    image: minio/minio:latest
     container_name: medcrm-minio
     command: server /data --console-address ":9001"
     environment:
@@ -58,10 +71,15 @@ services:
       PORT: ${AUTH_SERVICE_PORT:-3001}
       DATABASE_URL: ${DATABASE_URL:-postgresql://medcrm:medcrm_password@postgres:5432/medcrm?schema=public}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      NATS_URL: ${NATS_URL:-nats://nats:4222}
+      SCHEDULING_SERVICE_HOST: ${SCHEDULING_SERVICE_HOST:-scheduling-service}
+      SCHEDULING_SERVICE_TCP_PORT: ${SCHEDULING_SERVICE_TCP_PORT:-3004}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      nats:
         condition: service_healthy
     ports:
       - '3001:3001'
@@ -70,6 +88,41 @@ services:
         [
           'CMD-SHELL',
           'node -e "fetch(''http://localhost:3001/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  scheduling-service:
+    build:
+      context: ./backend
+      dockerfile: infrastructure/docker/Dockerfile
+      args:
+        APP_NAME: scheduling-service
+    container_name: medcrm-scheduling-service
+    env_file:
+      - .env.example
+    environment:
+      PORT: ${SCHEDULING_SERVICE_PORT:-3003}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://medcrm:medcrm_password@postgres:5432/medcrm?schema=public}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      NATS_URL: ${NATS_URL:-nats://nats:4222}
+      SCHEDULING_SERVICE_TCP_PORT: ${SCHEDULING_SERVICE_TCP_PORT:-3004}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    ports:
+      - '3003:3003'
+      - '3004:3004'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://localhost:3003/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
         ]
       interval: 10s
       timeout: 5s
@@ -88,8 +141,12 @@ services:
       PORT: ${API_GATEWAY_PORT:-3000}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:3001}
       AUTH_SERVICE_INTERNAL_URL: ${AUTH_SERVICE_INTERNAL_URL:-http://auth-service:3001}
+      SCHEDULING_SERVICE_URL: ${SCHEDULING_SERVICE_URL:-http://scheduling-service:3003}
+      SCHEDULING_SERVICE_INTERNAL_URL: ${SCHEDULING_SERVICE_INTERNAL_URL:-http://scheduling-service:3003}
     depends_on:
       auth-service:
+        condition: service_healthy
+      scheduling-service:
         condition: service_healthy
     ports:
       - '3000:3000'

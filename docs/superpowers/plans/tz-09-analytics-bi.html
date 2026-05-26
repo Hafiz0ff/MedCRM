@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ТЗ №9. Analytics, BI & Data Warehouse — MedCRM</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #101828;
+      --muted: #667085;
+      --line: #d9e1ea;
+      --surface: #ffffff;
+      --soft: #f6f8fb;
+      --brand: #079685;
+      --brand-dark: #04786b;
+      --brand-soft: #e7f8f5;
+      --blue: #2563eb;
+      --amber: #b45309;
+      --red: #b42318;
+      --green: #15803d;
+      --violet: #6d28d9;
+      --shadow: 0 16px 40px rgba(16, 24, 40, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #eef3f7; color: var(--ink); font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; line-height: 1.55; }
+    .page { width: min(1180px, calc(100% - 40px)); margin: 32px auto; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+    header.cover { padding: 56px 56px 40px; background: linear-gradient(135deg, rgba(109, 40, 217, 0.12), rgba(7, 150, 133, 0.14)), #fbfdff; border-bottom: 1px solid var(--line); }
+    main { padding: 36px 56px 56px; }
+    h1, h2, h3, h4 { margin: 0; line-height: 1.18; }
+    h1 { max-width: 880px; font-size: 42px; font-weight: 760; }
+    h2 { margin-top: 48px; padding-top: 26px; border-top: 1px solid var(--line); font-size: 26px; }
+    h3 { margin-top: 28px; font-size: 19px; }
+    h4 { margin-top: 18px; font-size: 16px; color: #344054; }
+    p { margin: 10px 0 0; }
+    ul, ol { margin: 10px 0 0; padding-left: 22px; }
+    li + li { margin-top: 6px; }
+    table { width: 100%; margin-top: 14px; border-collapse: collapse; font-size: 14px; }
+    th, td { vertical-align: top; padding: 12px 14px; border: 1px solid var(--line); text-align: left; }
+    th { background: #f3f7fa; font-weight: 700; }
+    code { padding: 2px 5px; border-radius: 5px; background: #edf2f7; color: #243244; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.92em; }
+    pre { margin-top: 12px; padding: 16px 18px; background: #0b1220; color: #e6edf3; border-radius: 10px; overflow-x: auto; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; line-height: 1.55; }
+    pre code { background: transparent; color: inherit; padding: 0; }
+    .meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
+    .meta div, .note, .decision, .warning, .danger, .card { border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.85); padding: 14px 16px; }
+    .meta span, .eyebrow { display: block; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .meta strong { display: block; margin-top: 4px; font-size: 15px; }
+    .lead { max-width: 820px; margin-top: 18px; color: #344054; font-size: 18px; }
+    .toc { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; margin-top: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+    .toc a { color: var(--brand-dark); text-decoration: none; font-weight: 600; }
+    .toc a:hover { text-decoration: underline; }
+    .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 16px; }
+    .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 16px; }
+    .four { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+    .card { padding: 18px; }
+    .card h3 { margin-top: 0; }
+    .note { background: #f8fbff; border-color: #c7d8f0; }
+    .decision { background: #ecfdf5; border-color: #a7f3d0; }
+    .warning { background: #fff7ed; border-color: #fed7aa; }
+    .danger { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
+    .small { color: var(--muted); font-size: 13px; }
+    .stage { border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: 10px; padding: 16px 18px; margin-top: 14px; background: #fbfeff; }
+    .stage h3 { margin-top: 0; }
+    .stage .stage-meta { display: inline-block; margin-right: 10px; padding: 2px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-dark); font-size: 12px; font-weight: 700; }
+    .kpi { border-radius: 12px; padding: 18px; border: 1px solid var(--line); background: linear-gradient(180deg, #ffffff, #f7fafc); }
+    .kpi .label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .kpi .value { display: block; margin-top: 6px; font-size: 26px; font-weight: 760; }
+    .kpi .hint { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .check { padding-left: 0; list-style: none; }
+    .check li { position: relative; padding: 6px 0 6px 26px; border-bottom: 1px dashed #e5e7eb; }
+    .check li:before { content: ""; position: absolute; left: 0; top: 11px; width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid var(--brand); background: #fff; }
+    .check li:last-child { border-bottom: 0; }
+    .file-tree { margin-top: 12px; padding: 16px 20px; background: #0b1220; color: #e6edf3; border-radius: 10px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; line-height: 1.7; overflow-x: auto; }
+    .file-tree b { color: #7dd3fc; font-weight: 700; }
+    .dash {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-rows: auto auto;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .dash .tile {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fbfeff;
+      padding: 14px;
+      font-size: 13px;
+    }
+    .dash .tile.kpi-tile {
+      background: linear-gradient(135deg, rgba(7,150,133,0.12), rgba(7,150,133,0.02));
+    }
+    .dash .tile .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; }
+    .dash .tile .value { display:block; margin-top:4px; font-size: 22px; font-weight: 760; }
+    .dash .tile.wide { grid-column: span 2; }
+    .dash .tile.tall { grid-row: span 2; }
+    .bar { height: 8px; background: #e5e7eb; border-radius: 999px; margin-top: 6px; }
+    .bar > span { display: block; height: 100%; border-radius: 999px; background: var(--brand); }
+    @media (max-width: 860px) {
+      .page { width: 100%; margin: 0; border-width: 0; }
+      header.cover, main { padding: 28px 20px; }
+      h1 { font-size: 30px; }
+      .meta, .two, .three, .four, .toc, .dash { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: #fff; }
+      .page { width: 100%; margin: 0; border: 0; box-shadow: none; }
+      header.cover, main { padding: 24px 32px; }
+      pre { background: #f4f4f5; color: #111827; }
+    }
+  </style>
+</head>
+<body>
+  <article class="page">
+    <header class="cover">
+      <span class="eyebrow">MedCRM · ТЗ №9 · Analytics, BI & Data Warehouse</span>
+      <h1>Аналитический слой: ClickHouse, dbt, дашборды, ML-инсайты</h1>
+      <p class="lead">
+        В Prisma уже сидят <code>DwFact*</code>, <code>DoctorKpiMetric</code>, <code>FinancialDailyAggregate</code>,
+        <code>MarketingFunnelMetric</code>. Но никто из них ничего не строит — расчёты разрозненные, дашбордов нет,
+        предиктивных моделей тоже. ТЗ №9 описывает построение полноценного analytics-стека: ClickHouse как DWH с
+        CDC-репликацией из Postgres, dbt-модели для финансов/операций/маркетинга/клиники, дашборды (Metabase /
+        Superset), ML для no-show prediction, executive-дайджесты в Telegram.
+      </p>
+      <section class="meta">
+        <div><span>Версия</span><strong>1.0</strong></div>
+        <div><span>Дата</span><strong>25 мая 2026</strong></div>
+        <div><span>Проект</span><strong>xiewan1230-maker/MedCRM</strong></div>
+        <div><span>Фокус</span><strong>Data warehouse, BI, ML</strong></div>
+      </section>
+    </header>
+
+    <main>
+      <nav class="toc">
+        <a href="#purpose">1. Назначение</a>
+        <a href="#as-is">2. Состояние «как есть»</a>
+        <a href="#goals">3. Цели и Out of Scope</a>
+        <a href="#arch">4. Архитектура стека</a>
+        <a href="#cdc">5. CDC из Postgres</a>
+        <a href="#warehouse">6. ClickHouse DWH</a>
+        <a href="#dbt">7. dbt-модели</a>
+        <a href="#dashboards">8. Дашборды и BI</a>
+        <a href="#kpi">9. KPI-каталог</a>
+        <a href="#ml">10. ML / predictive</a>
+        <a href="#realtime">11. Operational realtime</a>
+        <a href="#governance">12. Data governance</a>
+        <a href="#exports">13. Экспорты и отчёты</a>
+        <a href="#files">14. Структура файлов</a>
+        <a href="#plan">15. Этапы работ</a>
+        <a href="#acceptance">16. Acceptance</a>
+        <a href="#metrics">17. Метрики и риски</a>
+      </nav>
+
+      <section id="purpose">
+        <h2>1. Назначение</h2>
+        <p>
+          Сегодня в MedCRM есть таблицы для агрегатов, но нет ни систематического ETL, ни дашбордов, ни ML.
+          Владелец клиники не может в одно касание увидеть: какова загрузка кабинетов сегодня? Какой DSO у дебиторки?
+          Сколько потеряно денег на no-show в прошлом месяце? Какие маркетинг-каналы конвертируют? Сколько повторных
+          обращений у каждого врача за квартал?
+        </p>
+        <p>
+          ТЗ №9 закрывает эту дыру: <strong>analytics-service</strong> (ТЗ №6) становится владельцем read-models;
+          параллельно строится <strong>ClickHouse DWH</strong> через CDC-репликацию; на DWH работают dbt-модели и
+          BI-дашборды; ML-сервис делает предсказания (no-show, churn, forecasting).
+        </p>
+        <div class="decision">
+          <span class="eyebrow">Принцип</span>
+          <strong>«Аналитика — отдельный слой, не нагружающий operational DB»</strong>
+          <p class="small">Никаких сложных аналитических запросов к Postgres-операционке. Всё, что для BI — в ClickHouse, обновляется через CDC + dbt.</p>
+        </div>
+      </section>
+
+      <section id="as-is">
+        <h2>2. Состояние «как есть»</h2>
+        <table>
+          <thead><tr><th>Слой</th><th>Сейчас</th><th>Проблема</th></tr></thead>
+          <tbody>
+            <tr><td>DWH</td><td>Нет.</td><td>Все запросы аналитики идут к operational Postgres → деградация.</td></tr>
+            <tr><td>Агрегаты</td><td>Модели <code>DwFact*</code> в Prisma, но ни один воркер не наполняет их регулярно.</td><td>Пустые таблицы.</td></tr>
+            <tr><td>Дашборды</td><td>Frontend admin module есть как пунктир.</td><td>Нет реальных графиков.</td></tr>
+            <tr><td>BI tool</td><td>Нет.</td><td>Self-service для бизнес-пользователей невозможен.</td></tr>
+            <tr><td>ML</td><td>Нет.</td><td>No-show prediction, churn detection — не делаются.</td></tr>
+            <tr><td>Executive reports</td><td>Нет.</td><td>Владелец клиники не имеет «утренней сводки».</td></tr>
+            <tr><td>Marketing attribution</td><td>UTM хранится в <code>PatientLead</code> и связанных моделях, но без воронки/возврата.</td><td>Невозможно посчитать LTV per canal.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="goals">
+        <h2>3. Цели и Out of Scope</h2>
+        <div class="two">
+          <div class="card">
+            <h3>Цели</h3>
+            <ul>
+              <li>ClickHouse как DWH с CDC-репликацией из Postgres через Debezium / pgoutput.</li>
+              <li>dbt-модели: staging → intermediate → marts (finance, operations, marketing, clinical).</li>
+              <li>Аналитический сервис <code>analytics-service</code> (ТЗ №6) с REST API <code>/api/v1/analytics/*</code>.</li>
+              <li>≥ 8 встроенных дашбордов в admin-UI MedCRM (через iframe Metabase/Superset + native panels).</li>
+              <li>Self-service BI: Metabase или Superset с tenant-aware row-level security.</li>
+              <li>ML-models v1: no-show prediction, patient churn risk, revenue forecasting.</li>
+              <li>Executive digest: ежедневный/еженедельный отчёт в Telegram/email.</li>
+              <li>Marketing attribution: lead → visit → revenue с UTM-tracking.</li>
+              <li>Anomaly detection на ключевых метриках (резкий рост cancellations и пр.).</li>
+              <li>Tenant isolation: каждый тенант видит только свои данные; cross-tenant аналитика — только для платформы.</li>
+              <li>Историзация: SCD2 для медленно меняющихся справочников (врачи, услуги).</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Out of Scope</h3>
+            <ul>
+              <li>Полная замена operational Postgres ClickHouse-ом.</li>
+              <li>Real-time streaming SQL (Materialize / RisingWave) — фаза 2.</li>
+              <li>Data science notebook environment для пользователей — отдельно.</li>
+              <li>Custom dashboards drag-n-drop для конечного user — используем готовый BI tool.</li>
+              <li>Federated query / data mesh — слишком рано.</li>
+              <li>Apple Health / Google Fit агрегаты — отдельно.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="arch">
+        <h2>4. Архитектура стека</h2>
+        <pre><code>┌────────────────────────────────────────────────────────────────────┐
+│ Postgres (operational, ТЗ №6)                                       │
+│  ├─ scheduling.appointments                                         │
+│  ├─ emr.encounters                                                  │
+│  ├─ finance.invoices, finance.payments                              │
+│  └─ ...                                                             │
+└──────────────────────────┬─────────────────────────────────────────┘
+                           │ logical replication (pgoutput)
+                           ▼
+┌────────────────────────────────────────────────────────────────────┐
+│ Debezium (Kafka Connect) / pg2ch_replicator                        │
+│  └─ stream changes to Kafka topics OR direct to ClickHouse         │
+└──────────────────────────┬─────────────────────────────────────────┘
+                           ▼
+┌────────────────────────────────────────────────────────────────────┐
+│ ClickHouse (DWH, columnar)                                          │
+│  ├─ stg.* (raw replicated tables)                                  │
+│  ├─ int.* (cleaned, normalized)                                    │
+│  └─ mart.* (business-ready tables)                                 │
+└──────────────────────────┬─────────────────────────────────────────┘
+                           │
+              ┌────────────┴───────────────┬────────────────────────┐
+              ▼                            ▼                        ▼
+┌──────────────────────┐   ┌────────────────────────┐  ┌─────────────────────┐
+│ analytics-service    │   │ Metabase / Superset    │  │ ML pipelines        │
+│  REST /api/v1/analytics │   │  (self-service BI)    │  │  (no-show, churn,  │
+│  with tenant scope   │   │  embed via iframe      │  │   forecast, anomaly)│
+└──────────────────────┘   └────────────────────────┘  └─────────────────────┘</code></pre>
+      </section>
+
+      <section id="cdc">
+        <h2>5. CDC из Postgres</h2>
+
+        <h3>5.1. Технология</h3>
+        <table>
+          <thead><tr><th>Опция</th><th>Pros</th><th>Cons</th></tr></thead>
+          <tbody>
+            <tr><td>Debezium + Kafka</td><td>Зрелый, full event-log, поддержка любых subscribers.</td><td>Тяжёлый стек, нужен Kafka.</td></tr>
+            <tr><td>Debezium + JDBC sink</td><td>Прямо в ClickHouse, без Kafka.</td><td>Connector ClickHouse менее зрелый.</td></tr>
+            <tr><td>PeerDB (open source)</td><td>Лёгкий, лучше всего для Postgres → ClickHouse, кратко-fashioned.</td><td>Молодой продукт.</td></tr>
+            <tr><td>Native ClickHouse PostgreSQL engine</td><td>Прямой view-replication.</td><td>Не для production-scale.</td></tr>
+            <tr><td>Periodic ETL (Airbyte)</td><td>Зрелый, готовые connectors.</td><td>Не real-time (batch).</td></tr>
+          </tbody>
+        </table>
+        <div class="decision">
+          <span class="eyebrow">Решение</span>
+          <strong>PeerDB</strong> для прямого Postgres → ClickHouse (логическая репликация на pgoutput, низкий лаг,
+          лёгкая эксплуатация). Опционально Debezium + Kafka, если потребуется fan-out в дополнительные системы.
+        </div>
+
+        <h3>5.2. Какие таблицы реплицируем</h3>
+        <ul>
+          <li>Все таблицы из <code>scheduling</code>, <code>emr</code>, <code>finance</code>, <code>communications</code>, <code>inventory</code>, <code>auth.tenants</code>, <code>auth.users</code>, <code>auth.roles</code>, справочники.</li>
+          <li>НЕ реплицируем: <code>encrypted_*</code>-колонки PHI (см. ТЗ №3) — на стороне DWH работаем с хэшами/масками; для full unsafe — отдельный security-controlled load.</li>
+        </ul>
+
+        <h3>5.3. Schema mapping</h3>
+        <ul>
+          <li>Postgres schemas → ClickHouse databases (<code>scheduling_stg</code>, <code>emr_stg</code>, ...).</li>
+          <li>UUID → <code>UUID</code> в ClickHouse.</li>
+          <li>JSONB → <code>String</code> с tag-engine <code>JSON</code> (или <code>Tuple</code> для известной структуры).</li>
+        </ul>
+      </section>
+
+      <section id="warehouse">
+        <h2>6. ClickHouse DWH</h2>
+
+        <h3>6.1. Развёртывание</h3>
+        <ul>
+          <li>ClickHouse в docker compose (dev) и K8s (prod, ТЗ №10).</li>
+          <li>Single-node на старте; шардирование при росте.</li>
+          <li>Backup: <code>BACKUP DATABASE</code> в S3/MinIO, retention 30 дней.</li>
+        </ul>
+
+        <h3>6.2. Storage strategy</h3>
+        <ul>
+          <li><strong>Staging</strong> (<code>stg.*</code>): сырые реплицированные таблицы, ReplacingMergeTree по PK.</li>
+          <li><strong>Intermediate</strong> (<code>int.*</code>): joined, denormalized, type-corrected. MergeTree partitioned by month.</li>
+          <li><strong>Marts</strong> (<code>mart.*</code>): bisness-ready, aggregated. SummingMergeTree / AggregatingMergeTree.</li>
+        </ul>
+
+        <h3>6.3. Tenant isolation</h3>
+        <ul>
+          <li>Каждая таблица содержит <code>tenant_id</code>.</li>
+          <li>ClickHouse RBAC: per-tenant role, row policy на <code>tenant_id = currentUser-tenant</code>.</li>
+          <li>Для BI-инструмента — тенант пробрасывается через JWT/parameter в подключение.</li>
+        </ul>
+
+        <h3>6.4. Sample table</h3>
+        <pre><code>CREATE TABLE int.fact_appointment (
+  appointment_id     UUID,
+  tenant_id          UUID,
+  patient_id         UUID,
+  doctor_id          UUID,
+  specialty_code     LowCardinality(String),
+  branch_id          UUID,
+  start_at           DateTime64(3),
+  end_at             DateTime64(3),
+  status             LowCardinality(String),
+  is_no_show         UInt8,
+  is_online_booking  UInt8,
+  is_first_visit     UInt8,
+  channel            LowCardinality(String),  -- portal | offline | marketplace
+  revenue_cents      Int64,
+  cancel_reason      LowCardinality(Nullable(String)),
+  created_at         DateTime64(3),
+  updated_at         DateTime64(3),
+  _version           UInt64
+)
+ENGINE = ReplacingMergeTree(_version)
+PARTITION BY toYYYYMM(start_at)
+ORDER BY (tenant_id, start_at, appointment_id)
+SETTINGS index_granularity = 8192;</code></pre>
+      </section>
+
+      <section id="dbt">
+        <h2>7. dbt-модели</h2>
+
+        <h3>7.1. Структура</h3>
+        <pre><code>dbt/
+├─ models/
+│  ├─ staging/
+│  │  ├─ stg_appointments.sql
+│  │  ├─ stg_invoices.sql
+│  │  ├─ stg_payments.sql
+│  │  └─ ...
+│  ├─ intermediate/
+│  │  ├─ int_fact_appointment.sql
+│  │  ├─ int_fact_payment.sql
+│  │  ├─ int_dim_doctor.sql           ← SCD2
+│  │  ├─ int_dim_service.sql          ← SCD2
+│  │  └─ int_dim_patient.sql
+│  └─ marts/
+│     ├─ finance/
+│     │  ├─ fct_revenue_daily.sql
+│     │  ├─ fct_ar_aging.sql
+│     │  └─ fct_payment_method.sql
+│     ├─ operations/
+│     │  ├─ fct_doctor_utilization.sql
+│     │  ├─ fct_room_utilization.sql
+│     │  ├─ fct_no_show_rate.sql
+│     │  └─ fct_visit_duration.sql
+│     ├─ marketing/
+│     │  ├─ fct_lead_funnel.sql
+│     │  ├─ fct_attribution.sql
+│     │  └─ fct_retention_cohort.sql
+│     └─ clinical/
+│        ├─ fct_diagnosis_freq.sql
+│        ├─ fct_prescription_usage.sql
+│        └─ fct_critical_lab.sql
+├─ tests/
+├─ macros/
+└─ snapshots/                           ← SCD2 snapshots</code></pre>
+
+        <h3>7.2. Schedule</h3>
+        <ul>
+          <li>Incremental-материализация — каждый час по большинству март.</li>
+          <li>Full refresh — раз в неделю на специальных моделях.</li>
+          <li>Trigger через worker (ТЗ №4): <code>analytics.dbt-run</code> job в BullMQ.</li>
+        </ul>
+
+        <h3>7.3. Tests</h3>
+        <ul>
+          <li>not_null, unique, accepted_values на ключевых атрибутах.</li>
+          <li>relationships (FK-целостность между marts).</li>
+          <li>Custom: «revenue per day &gt; 0 в рабочие дни», «no-show rate ≤ 30%», alarm если нарушение.</li>
+        </ul>
+      </section>
+
+      <section id="dashboards">
+        <h2>8. Дашборды и BI</h2>
+
+        <h3>8.1. Tool stack</h3>
+        <table>
+          <thead><tr><th>Вариант</th><th>Pros</th><th>Cons</th></tr></thead>
+          <tbody>
+            <tr><td>Metabase OSS</td><td>Простой, отличный embed, mature.</td><td>Меньше power-функций.</td></tr>
+            <tr><td>Apache Superset</td><td>Powerful, SQL-native.</td><td>Steeper learning curve.</td></tr>
+            <tr><td>Grafana</td><td>Любим для operational metrics.</td><td>Не для бизнес-аналитики.</td></tr>
+            <tr><td>Native panels в MedCRM</td><td>Tight integration.</td><td>Долго делать.</td></tr>
+          </tbody>
+        </table>
+        <div class="decision">
+          <span class="eyebrow">Решение</span>
+          <strong>Metabase OSS для self-service BI</strong> + <strong>native dashboards в MedCRM</strong> (Recharts / ECharts из ТЗ №2) для 8 ключевых дашбордов.
+        </div>
+
+        <h3>8.2. Превью «Финансовый owner-дашборд»</h3>
+        <div class="dash">
+          <div class="tile kpi-tile"><span class="label">Выручка за день</span><span class="value">412 800 ₽</span></div>
+          <div class="tile kpi-tile"><span class="label">Чеков</span><span class="value">128</span></div>
+          <div class="tile kpi-tile"><span class="label">Avg ticket</span><span class="value">3 225 ₽</span></div>
+          <div class="tile kpi-tile"><span class="label">AR overdue</span><span class="value">84 000 ₽</span></div>
+          <div class="tile wide">
+            <div class="label">Revenue trend, 30 дней</div>
+            <div class="value" style="font-size: 14px; color: var(--brand-dark)">▂▃▄▆▅▆▇▆▅▆▇█▇▇▆▇█▇▇</div>
+          </div>
+          <div class="tile">
+            <div class="label">No-show rate</div>
+            <div class="value">14.2%</div>
+            <div class="bar"><span style="width:14.2%"></span></div>
+          </div>
+          <div class="tile">
+            <div class="label">Online-bookings</div>
+            <div class="value">32%</div>
+            <div class="bar"><span style="width:32%"></span></div>
+          </div>
+          <div class="tile wide">
+            <div class="label">Top doctors by revenue</div>
+            <div style="margin-top:6px">1. Иванов А.И. — 96 200 ₽</div>
+            <div>2. Петрова Е. — 71 800 ₽</div>
+            <div>3. Сидоров К. — 58 400 ₽</div>
+          </div>
+          <div class="tile wide">
+            <div class="label">Cancellation reasons</div>
+            <div style="margin-top:6px">Передумал (43%), Перенёс (28%), Не дозвонились (16%), Прочее (13%)</div>
+          </div>
+        </div>
+
+        <h3>8.3. Топ-8 дашбордов</h3>
+        <ol>
+          <li><strong>Owner overview</strong> — выручка, no-show, online-bookings, AR.</li>
+          <li><strong>Doctor performance</strong> — загрузка, отзывы, ticket avg, повторные визиты.</li>
+          <li><strong>Room/Equipment utilization</strong> — % загрузки, простой.</li>
+          <li><strong>Finance</strong> — cash flow, AR aging, payment methods, debts.</li>
+          <li><strong>Marketing attribution</strong> — leads/sources/conversions, LTV per channel.</li>
+          <li><strong>Patient cohorts</strong> — retention, churn risk.</li>
+          <li><strong>Clinical activity</strong> — топ диагнозов, услуг, рецептов.</li>
+          <li><strong>Forecast</strong> — ожидаемая выручка и загрузка на 14 дней.</li>
+        </ol>
+      </section>
+
+      <section id="kpi">
+        <h2>9. KPI-каталог</h2>
+        <table>
+          <thead><tr><th>Категория</th><th>KPI</th><th>Формула</th><th>Granularity</th></tr></thead>
+          <tbody>
+            <tr><td>Finance</td><td>Revenue</td><td>SUM(invoice.total) WHERE paid</td><td>day/week/month, branch, doctor, service</td></tr>
+            <tr><td>Finance</td><td>Avg ticket</td><td>Revenue / paid invoices</td><td>день, врач</td></tr>
+            <tr><td>Finance</td><td>AR aging</td><td>Overdue: 0–30, 31–60, 61–90, 90+ days</td><td>день</td></tr>
+            <tr><td>Finance</td><td>DSO</td><td>(AR / Revenue) × days</td><td>месяц</td></tr>
+            <tr><td>Finance</td><td>Refund rate</td><td>SUM(refunds) / SUM(payments)</td><td>месяц</td></tr>
+            <tr><td>Operations</td><td>Doctor utilization</td><td>booked_minutes / available_minutes</td><td>день, врач</td></tr>
+            <tr><td>Operations</td><td>Room utilization</td><td>same per room</td><td>день, кабинет</td></tr>
+            <tr><td>Operations</td><td>No-show rate</td><td>no_shows / scheduled</td><td>день, врач, канал</td></tr>
+            <tr><td>Operations</td><td>Cancellation rate</td><td>cancelled / scheduled</td><td>аналогично</td></tr>
+            <tr><td>Operations</td><td>Avg visit duration</td><td>AVG(end_at − start_at)</td><td>врач, услуга</td></tr>
+            <tr><td>Operations</td><td>Wait time</td><td>actual_start − scheduled_start</td><td>день, кабинет</td></tr>
+            <tr><td>Marketing</td><td>Lead → first visit conversion</td><td>visited / leads</td><td>канал</td></tr>
+            <tr><td>Marketing</td><td>CAC</td><td>spend / new patients</td><td>канал, месяц</td></tr>
+            <tr><td>Marketing</td><td>LTV (12 мес)</td><td>SUM(revenue per patient за 12 мес)</td><td>канал, специальность</td></tr>
+            <tr><td>Marketing</td><td>Retention M3 / M6 / M12</td><td>cohort returning rate</td><td>cohort</td></tr>
+            <tr><td>Clinical</td><td>Diagnosis frequency</td><td>COUNT(distinct encounter) per ICD</td><td>специальность, месяц</td></tr>
+            <tr><td>Clinical</td><td>Critical lab incidence</td><td>COUNT(critical) / COUNT(lab)</td><td>врач, лаб.</td></tr>
+            <tr><td>Clinical</td><td>Repeat visit rate</td><td>visits 2+ within 90d / first visits</td><td>врач, специальность</td></tr>
+            <tr><td>Patient</td><td>NPS</td><td>opinion survey aggregate</td><td>врач, клиника</td></tr>
+            <tr><td>Patient</td><td>Churn risk</td><td>ML model output</td><td>пациент</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="ml">
+        <h2>10. ML / predictive</h2>
+
+        <h3>10.1. Архитектура</h3>
+        <ul>
+          <li>Отдельный <code>ml-worker</code> в Python (FastAPI) — модель обучается раз в день, online-inference через REST.</li>
+          <li>Обучающие данные: ClickHouse → pandas/polars dataframe.</li>
+          <li>Модели лёгкие: scikit-learn (LogReg, GradientBoosting), Prophet для forecasting.</li>
+          <li>Tracking: MLflow (single-node) для версионирования моделей.</li>
+          <li>Сервинг: FastAPI <code>/predict</code> с input-валидацией Pydantic.</li>
+        </ul>
+
+        <h3>10.2. Модель v1: No-show prediction</h3>
+        <ul>
+          <li>Признаки: история no-show пациента, расстояние до клиники (если есть), время до приёма, время суток, день недели, канал записи, цена, специальность, погода (опционально), наличие предоплаты.</li>
+          <li>Целевая: <code>is_no_show</code> в исторических данных.</li>
+          <li>Метрики: ROC AUC ≥ 0.75, precision @ recall=0.5.</li>
+          <li>Применение: для записей в окне 48 часов считаем риск; если &gt; threshold → дополнительный SMS/звонок, предложение предоплаты (ТЗ №5).</li>
+        </ul>
+
+        <h3>10.3. Модель v2: Churn risk</h3>
+        <ul>
+          <li>Признаки: дни с последнего визита, частота визитов, тип специальностей, средний чек, активность в портале (ТЗ №5).</li>
+          <li>Целевая: пациент «отвалился» (no visit ≥ 365 days).</li>
+          <li>Применение: маркетинг-сегмент «risk of churn» → push-кампания.</li>
+        </ul>
+
+        <h3>10.4. Модель v3: Revenue forecast</h3>
+        <ul>
+          <li>Prophet на daily revenue с учётом сезонности (неделя, год, праздники).</li>
+          <li>Per-branch и per-specialty форки.</li>
+          <li>Visualization в forecast-дашборде.</li>
+        </ul>
+
+        <h3>10.5. Anomaly detection</h3>
+        <ul>
+          <li>Простой Z-score + ARIMA-residual.</li>
+          <li>Метрики: no-show rate, cancellation rate, revenue, payment success rate.</li>
+          <li>Alert через ТЗ №4 в Telegram владельцу.</li>
+        </ul>
+      </section>
+
+      <section id="realtime">
+        <h2>11. Operational realtime</h2>
+        <p>Не всё надо считать через DWH; <em>прямо-сейчас</em>-метрики работают на operational Postgres + Redis:</p>
+        <ul>
+          <li>Live-queue (сколько ждёт в холле) — Postgres + Socket.IO.</li>
+          <li>Сегодняшняя выручка — Redis-cached aggregator (worker, ТЗ №4) с обновлением каждые 60s.</li>
+          <li>Текущая загрузка кабинетов — то же.</li>
+          <li>Прочие «исторические» метрики — ClickHouse.</li>
+        </ul>
+      </section>
+
+      <section id="governance">
+        <h2>12. Data governance</h2>
+        <ul>
+          <li><strong>PII / PHI handling</strong>: в ClickHouse PHI-колонки реплицируются в encrypted виде (см. ТЗ №3); расшифровка возможна только в специальном secure-режиме для аудиторских отчётов.</li>
+          <li><strong>Аналитические снапшоты</strong>: для дашбордов используем только safe-fields (ID, агрегаты, hashed names).</li>
+          <li><strong>Tenant isolation</strong>: каждый запрос в BI-tool проходит через connection с per-tenant role + row-policy.</li>
+          <li><strong>Audit</strong>: все BI-queries логируются (кто-что-когда), доступ к данным аудитируется (требования ФЗ-152).</li>
+          <li><strong>Retention</strong>: cold storage в S3/MinIO для данных старше 7 лет.</li>
+          <li><strong>Data dictionary</strong>: dbt docs автогенерируется + публикуется на <code>docs/analytics/</code>.</li>
+        </ul>
+      </section>
+
+      <section id="exports">
+        <h2>13. Экспорты и отчёты</h2>
+        <ul>
+          <li><strong>Executive digest</strong>: ежедневный Telegram в 09:00 владельцу: выручка вчера, бронирования сегодня, no-show, alerts.</li>
+          <li><strong>Weekly business review</strong>: каждый понедельник по email, PDF с топ-метриками.</li>
+          <li><strong>ТФОМС</strong> отчёт — XML батч (ТЗ №8).</li>
+          <li><strong>Бухгалтерия 1С</strong>: ежедневный реестр услуг (ТЗ №8).</li>
+          <li><strong>Custom export</strong>: пользователь через Metabase может экспортировать CSV/XLSX любого дашборда.</li>
+          <li><strong>FHIR DiagnosticReport bundle</strong>: для интеграции с госуслугами (через ТЗ №8).</li>
+        </ul>
+      </section>
+
+      <section id="files">
+        <h2>14. Структура файлов</h2>
+        <div class="file-tree">
+backend/apps/analytics-service/src/
+├─ controllers/
+│  ├─ kpi.controller.ts
+│  ├─ dashboards.controller.ts
+│  └─ forecasts.controller.ts
+├─ read-models/                          ← локальные read-models из ТЗ №6
+│  ├─ appointment-read-model.ts
+│  ├─ payment-read-model.ts
+│  └─ encounter-read-model.ts
+├─ ch-client/
+│  ├─ clickhouse.module.ts
+│  ├─ clickhouse.service.ts
+│  └─ query.builder.ts
+├─ digest/
+│  ├─ daily-digest.processor.ts
+│  └─ digest-builder.service.ts
+├─ ml-client/
+│  ├─ no-show.client.ts
+│  ├─ churn.client.ts
+│  └─ forecast.client.ts
+└─ ...
+
+ml-worker/                                ← NEW Python service
+├─ pyproject.toml
+├─ src/
+│  ├─ main.py                             ← FastAPI
+│  ├─ models/
+│  │  ├─ no_show.py
+│  │  ├─ churn.py
+│  │  └─ forecast.py
+│  ├─ training/
+│  │  ├─ load_data.py
+│  │  └─ train_no_show.py
+│  └─ inference/
+│     └─ ...
+└─ Dockerfile
+
+dbt/                                      ← NEW
+├─ dbt_project.yml
+├─ profiles.yml                           ← ClickHouse profile
+├─ models/
+│  ├─ staging/
+│  ├─ intermediate/
+│  └─ marts/
+├─ tests/
+├─ snapshots/
+└─ macros/
+
+infrastructure/
+├─ clickhouse/
+│  ├─ users.xml
+│  ├─ config.xml
+│  └─ init-schemas.sql
+├─ peerdb/
+│  └─ mirror-config.yaml
+├─ metabase/
+│  └─ docker-compose.yml
+└─ ml-worker/
+   └─ docker-compose.yml
+
+frontend/modules/analytics/
+├─ pages/
+│  ├─ overview.tsx
+│  ├─ finance.tsx
+│  ├─ operations.tsx
+│  ├─ marketing.tsx
+│  ├─ clinical.tsx
+│  ├─ forecast.tsx
+│  └─ self-service.tsx                    ← embed Metabase iframe
+└─ components/
+   ├─ kpi-card.tsx
+   ├─ revenue-chart.tsx
+   ├─ retention-cohort.tsx
+   ├─ funnel.tsx
+   └─ forecast-graph.tsx
+        </div>
+      </section>
+
+      <section id="plan">
+        <h2>15. Этапы работ</h2>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 1 · ~1 неделя</span>
+          <h3>Этап 1. ClickHouse + CDC</h3>
+          <ul>
+            <li>ClickHouse в docker compose, init schemas (stg/int/mart).</li>
+            <li>PeerDB настроен для копирования critical-tables (≥ 20).</li>
+            <li>Smoke: вставка в Postgres появляется в ClickHouse ≤ 10s.</li>
+            <li>Tenant isolation: ROW POLICY работает.</li>
+            <li>PR <code>feat(analytics): clickhouse + peerdb cdc</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 2 · ~1.5 недели</span>
+          <h3>Этап 2. dbt + marts</h3>
+          <ul>
+            <li>dbt project, профайл на ClickHouse.</li>
+            <li>Staging слои.</li>
+            <li>Intermediate fact + dim (SCD2 для doctor/service).</li>
+            <li>Marts: finance, operations.</li>
+            <li>dbt tests + docs.</li>
+            <li>Schedule через worker (BullMQ jobs).</li>
+            <li>PR <code>feat(analytics): dbt + finance/operations marts</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 3 · ~1.5 недели</span>
+          <h3>Этап 3. analytics-service + native дашборды</h3>
+          <ul>
+            <li>analytics-service (ТЗ №6) с ClickHouse client.</li>
+            <li>API <code>/api/v1/analytics/kpi/*</code>.</li>
+            <li>Native dashboards: overview, finance, operations (Recharts из ТЗ №2).</li>
+            <li>PR <code>feat(analytics): native dashboards (owner/finance/operations)</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 4 · ~1 неделя</span>
+          <h3>Этап 4. Marketing + clinical marts + дашборды</h3>
+          <ul>
+            <li>Marketing marts: lead funnel, attribution, retention cohort.</li>
+            <li>Clinical marts: diagnosis frequency, prescription usage.</li>
+            <li>Native dashboards.</li>
+            <li>PR <code>feat(analytics): marketing + clinical</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 5 · ~1 неделя</span>
+          <h3>Этап 5. Metabase self-service BI</h3>
+          <ul>
+            <li>Metabase в docker compose.</li>
+            <li>JWT-embed с tenant-scope.</li>
+            <li>Преднастроенные коллекции дашбордов из marts.</li>
+            <li>Доступ из admin-UI через iframe.</li>
+            <li>PR <code>feat(analytics): metabase self-service bi</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 6 · ~1.5 недели</span>
+          <h3>Этап 6. ML pipeline + No-show prediction</h3>
+          <ul>
+            <li><code>ml-worker</code> FastAPI service.</li>
+            <li>Training job: ежедневное обучение модели на ClickHouse-данных.</li>
+            <li>Inference API <code>/predict/no-show</code>.</li>
+            <li>Интеграция в booking-flow (ТЗ №5): для записей в окне 48 часов запрос предсказания.</li>
+            <li>MLflow для tracking.</li>
+            <li>PR <code>feat(analytics): no-show prediction</code>.</li>
+          </ul>
+        </div>
+
+        <div class="stage">
+          <span class="stage-meta">Спринт 7 · ~1 неделя</span>
+          <h3>Этап 7. Churn + forecast + anomaly + digest</h3>
+          <ul>
+            <li>Churn model + retention segment.</li>
+            <li>Revenue forecast (Prophet).</li>
+            <li>Anomaly detection с Telegram alerts.</li>
+            <li>Daily executive digest в Telegram.</li>
+            <li>Weekly PDF report.</li>
+            <li>PR <code>feat(analytics): churn + forecast + digest</code>.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="acceptance">
+        <h2>16. Acceptance criteria</h2>
+        <ul class="check">
+          <li>ClickHouse в проде; PeerDB CDC лаг ≤ 10s P95.</li>
+          <li>dbt project с ≥ 30 моделями (staging + intermediate + marts по 4 категориям).</li>
+          <li>dbt tests прогоняются в CI; failure блокирует deploy.</li>
+          <li>analytics-service отдаёт KPI per tenant через REST API.</li>
+          <li>≥ 8 native дашбордов работают в admin-UI MedCRM.</li>
+          <li>Metabase self-service BI доступен из admin-UI; tenant-isolation работает.</li>
+          <li>ML no-show prediction: ROC AUC ≥ 0.75 на test set; интегрирован в booking-flow.</li>
+          <li>Churn model генерирует сегмент пациентов с risk; маркетинг может targeted-кампанию (после ТЗ №4).</li>
+          <li>Revenue forecast на 14 дней с MAPE ≤ 15%.</li>
+          <li>Anomaly detection шлёт alert в Telegram при отклонении.</li>
+          <li>Daily executive digest приходит в 09:00 по timezone клиники.</li>
+          <li>PHI данные в DWH защищены: encrypted-колонки не дешифруются для дашбордов.</li>
+          <li>BI access аудитируется (kто, что запросил, когда).</li>
+          <li>Документация: dbt docs + <code>docs/analytics/*.md</code>.</li>
+        </ul>
+      </section>
+
+      <section id="metrics">
+        <h2>17. Метрики и риски</h2>
+
+        <div class="four">
+          <div class="kpi"><span class="label">CDC lag P95</span><span class="value">≤ 10 s</span><span class="hint">postgres → clickhouse</span></div>
+          <div class="kpi"><span class="label">dbt models</span><span class="value">≥ 30</span><span class="hint">staging + int + marts</span></div>
+          <div class="kpi"><span class="label">Dashboards</span><span class="value">8+</span><span class="hint">native + Metabase</span></div>
+          <div class="kpi"><span class="label">ROC AUC no-show</span><span class="value">≥ 0.75</span><span class="hint">production model</span></div>
+          <div class="kpi"><span class="label">Forecast MAPE</span><span class="value">≤ 15%</span><span class="hint">revenue 14d</span></div>
+          <div class="kpi"><span class="label">Query latency</span><span class="value">≤ 1 s</span><span class="hint">native dashboard P95</span></div>
+          <div class="kpi"><span class="label">DWH retention</span><span class="value">7 лет</span><span class="hint">cold storage S3</span></div>
+          <div class="kpi"><span class="label">Digest delivery</span><span class="value">≥ 99%</span><span class="hint">daily executive</span></div>
+        </div>
+
+        <table>
+          <thead><tr><th>Риск</th><th>Митигация</th></tr></thead>
+          <tbody>
+            <tr><td>PeerDB ещё молодой, могут быть баги.</td><td>Параллельно держим Debezium-вариант как fallback; контроль over data-consistency: nightly checksum job.</td></tr>
+            <tr><td>ClickHouse требует уметь его обслуживать.</td><td>Документация + runbooks; backup в S3; alerts на disk usage и replication lag.</td></tr>
+            <tr><td>dbt — новая ответственность.</td><td>Постепенный onboarding; начинаем с минимума март и расширяем.</td></tr>
+            <tr><td>ML модель no-show может иметь bias.</td><td>Fairness checks по специальностям/возрасту/полу; не блокируем запись на основе модели — только дополнительные коммуникации.</td></tr>
+            <tr><td>Tenant cross-leak в Metabase embed.</td><td>JWT с claim <code>tenantId</code>; ROW POLICY на каждой ClickHouse таблице; integration-test проверяет невозможность cross-tenant.</td></tr>
+            <tr><td>PHI «утечка» в DWH.</td><td>Encrypted-колонки не реплицируются в plain; для аудиторских отчётов — отдельный secure pipeline с дешифровкой по запросу.</td></tr>
+            <tr><td>Большие full-refresh ломают prod.</td><td>Incremental-by-default; full-refresh — только в off-hours, через worker-jobs с lock.</td></tr>
+            <tr><td>Self-service BI приводит к heavy queries.</td><td>ClickHouse quotas + query timeouts per tenant; алёрт на long-running queries.</td></tr>
+            <tr><td>Стоимость инфры растёт.</td><td>Cold-storage policy; компрессия LZ4/ZSTD; TTL по партициям; sharding только при необходимости.</td></tr>
+            <tr><td>Сложность для DevOps команды.</td><td>Postel-принцип: BI-стек упакован в docker compose и K8s charts (ТЗ №10), team-onboarding документация.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="decision">
+          <span class="eyebrow">Definition of Done</span>
+          <strong>ClickHouse-DWH со свежими данными, ≥ 30 dbt-моделей, 8+ дашбордов в админ-UI, Metabase self-service для бизнес-пользователей, no-show prediction и revenue forecast в проде, daily/weekly executive digests, anomaly alerts. PHI защищён, audit включён, tenant isolation работает.</strong>
+        </div>
+      </section>
+
+      <section>
+        <h2>Приложение А. Связанные документы</h2>
+        <ul>
+          <li>ТЗ №3 Security — encrypted-колонки PHI не реплицируются в plain, audit логирует BI-access.</li>
+          <li>ТЗ №4 Async Workflows — worker запускает dbt-runs, digest-jobs, ML training jobs.</li>
+          <li>ТЗ №5 Patient Portal — no-show prediction триггерит дополнительные напоминания.</li>
+          <li>ТЗ №6 Modular Split — <code>analytics-service</code> как domain.</li>
+          <li>ТЗ №7 EMR — структурированные данные позволяют clinical analytics.</li>
+          <li>ТЗ №8 Integrations — ТФОМС/1С отчётность; маркетплейс sync даёт source data.</li>
+          <li>ТЗ №10 Enterprise — multi-region DWH, K8s deployment, SLA.</li>
+        </ul>
+      </section>
+
+      <footer style="margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px;">
+        Документ подготовлен в рамках roadmap MedCRM. Связанные ТЗ: №3 Security, №4 Async Workflows,
+        №5 Patient Portal, №6 Modular Split, №7 EMR Clinical, №8 Integrations Hub, №10 Enterprise/Mobile.
+      </footer>
+    </main>
+  </article>
+</body>
+</html>
