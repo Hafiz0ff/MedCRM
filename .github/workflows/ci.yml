@@ -101,9 +101,10 @@ jobs:
         run: npm --workspace backend run test:gateway
 
       - name: Run Backend E2E Tests
-        run: node --test-concurrency=1 -r ts-node/register -r tsconfig-paths/register --test backend/apps/auth-service/src/test/*.e2e-spec.ts
+        run: npm --workspace backend run test:e2e
         env:
           DATABASE_URL: postgresql://medcrm:medcrm_password@localhost:5432/medcrm?schema=public
+          SCHEDULING_DATABASE_URL: postgresql://medcrm:medcrm_password@localhost:5432/medcrm_scheduling?schema=public
           REDIS_URL: redis://localhost:6379
           JWT_SECRET: supersecretjwtkeyforcitestingonly
           PORT: 3001

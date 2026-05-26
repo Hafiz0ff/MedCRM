@@ -2451,7 +2451,7 @@ async function main(): Promise<void> {
     data: {
       tenantId: tenant.id,
       branchId: branch.id,
-      roomId: usiOffice.id,
+      roomId: null,
       deviceType: 'MONITOR',
       manufacturer: 'Mindray',
       model: 'BeneVision N15',
