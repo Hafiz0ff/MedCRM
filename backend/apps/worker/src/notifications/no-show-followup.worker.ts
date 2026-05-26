@@ -5,7 +5,7 @@ import { SchedulingPrismaService } from '@core/database/scheduling-prisma.servic
 import { QueueNames } from '@core/queue/queue-names';
 import { QueueService } from '@core/queue/queue.module';
 import { Injectable, OnModuleInit, Logger, Inject } from '@nestjs/common';
-import { Worker, Job } from 'bullmq';
+import { Worker, Job, type ConnectionOptions } from 'bullmq';
 import Redis from 'ioredis';
 
 type NoShowPayload = {
@@ -33,7 +33,7 @@ export class NoShowFollowupWorker implements OnModuleInit {
       async (job: Job<NoShowPayload>) => {
         await this.handleNoShow(job);
       },
-      { connection, concurrency: 10 },
+      { connection: connection as unknown as ConnectionOptions, concurrency: 10 },
     );
 
     this.worker.on('failed', (job, err) => {

@@ -1,6 +1,6 @@
 import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { Global, Inject, Injectable, Module, OnApplicationShutdown } from '@nestjs/common';
-import { Queue } from 'bullmq';
+import { Queue, type ConnectionOptions } from 'bullmq';
 import Redis from 'ioredis';
 import { QueueNames } from './queue-names';
 
@@ -23,7 +23,7 @@ export class QueueService implements OnApplicationShutdown {
     let queue = this.queues.get(queueName);
     if (!queue) {
       queue = new Queue(queueName, {
-        connection: this.getConnection(),
+        connection: this.getConnection() as unknown as ConnectionOptions,
         defaultJobOptions: {
           attempts: 5,
           backoff: {

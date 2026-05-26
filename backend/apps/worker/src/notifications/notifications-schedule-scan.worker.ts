@@ -4,7 +4,7 @@ import { SchedulingPrismaService } from '@core/database/scheduling-prisma.servic
 import { QueueNames } from '@core/queue/queue-names';
 import { QueueService } from '@core/queue/queue.module';
 import { Injectable, OnModuleInit, Logger, Inject } from '@nestjs/common';
-import { Worker, Job } from 'bullmq';
+import { Worker, Job, type ConnectionOptions } from 'bullmq';
 import Redis from 'ioredis';
 
 @Injectable()
@@ -27,7 +27,7 @@ export class NotificationsScheduleScanWorker implements OnModuleInit {
       async (job: Job) => {
         await this.scanUpcomingAppointments();
       },
-      { connection, concurrency: 1 },
+      { connection: connection as unknown as ConnectionOptions, concurrency: 1 },
     );
 
     this.worker.on('failed', (job, err) => {

@@ -1,6 +1,6 @@
 import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { Inject, Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { Queue, Worker, Job } from 'bullmq';
+import { Queue, Worker, Job, type ConnectionOptions } from 'bullmq';
 import Redis from 'ioredis';
 import { PrismaService } from '../prisma.service';
 
@@ -24,14 +24,16 @@ export class RemindersService implements OnModuleInit, OnModuleDestroy {
     this.queueConnection = this.redis.duplicate({ maxRetriesPerRequest: null });
     this.workerConnection = this.redis.duplicate({ maxRetriesPerRequest: null });
 
-    this.queue = new Queue(APPOINTMENT_REMINDERS_QUEUE, { connection: this.queueConnection });
+    this.queue = new Queue(APPOINTMENT_REMINDERS_QUEUE, {
+      connection: this.queueConnection as unknown as ConnectionOptions,
+    });
 
     this.worker = new Worker(
       APPOINTMENT_REMINDERS_QUEUE,
       async (job: Job) => {
         await this.processReminder(job);
       },
-      { connection: this.workerConnection, concurrency: 5 },
+      { connection: this.workerConnection as unknown as ConnectionOptions, concurrency: 5 },
     );
 
     this.worker.on('completed', (job) => {

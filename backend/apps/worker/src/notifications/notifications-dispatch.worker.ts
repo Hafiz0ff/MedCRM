@@ -6,7 +6,7 @@ import { QueueNames } from '@core/queue/queue-names';
 import { QueueService } from '@core/queue/queue.module';
 import { TemplateService } from '@core/templates/template.service';
 import { Injectable, OnModuleInit, Logger, Inject } from '@nestjs/common';
-import { Worker, Job } from 'bullmq';
+import { Worker, Job, type ConnectionOptions } from 'bullmq';
 import Redis from 'ioredis';
 
 type DispatchPayload = {
@@ -36,7 +36,7 @@ export class NotificationsDispatchWorker implements OnModuleInit {
       async (job: Job<DispatchPayload>) => {
         await this.handleDispatch(job);
       },
-      { connection, concurrency: 20 },
+      { connection: connection as unknown as ConnectionOptions, concurrency: 20 },
     );
 
     this.worker.on('failed', (job, err) => {

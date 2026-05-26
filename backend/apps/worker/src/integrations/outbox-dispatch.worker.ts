@@ -3,7 +3,7 @@ import { PrismaService } from '@core/database/prisma.service';
 import { QueueNames } from '@core/queue/queue-names';
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { Worker, Job } from 'bullmq';
+import { Worker, Job, type ConnectionOptions } from 'bullmq';
 import Redis from 'ioredis';
 
 type OutboxPayload = {
@@ -33,7 +33,7 @@ export class OutboxDispatchWorker implements OnModuleInit {
       async (job: Job<OutboxPayload>) => {
         await this.processDispatch(job);
       },
-      { connection, concurrency: 20 },
+      { connection: connection as unknown as ConnectionOptions, concurrency: 20 },
     );
 
     this.worker.on('failed', (job, err) => {

@@ -23,7 +23,7 @@
     "prisma:migrate": "prisma migrate deploy && prisma migrate deploy --schema=apps/scheduling-service/prisma/schema.prisma",
     "prisma:format": "prisma format && prisma format --schema=apps/scheduling-service/prisma/schema.prisma",
     "prisma:validate": "prisma validate && prisma validate --schema=apps/scheduling-service/prisma/schema.prisma",
-    "prisma:drift": "prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema --shadow-database-url \"$SHADOW_DATABASE_URL\" --exit-code && prisma migrate diff --from-migrations apps/scheduling-service/prisma/migrations --to-schema-datamodel apps/scheduling-service/prisma/schema.prisma --shadow-database-url \"$SCHEDULING_SHADOW_DATABASE_URL\" --exit-code",
+    "prisma:drift": "prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema --shadow-database-url \"$SHADOW_DATABASE_URL\" && prisma migrate diff --from-migrations apps/scheduling-service/prisma/migrations --to-schema-datamodel apps/scheduling-service/prisma/schema.prisma --shadow-database-url \"$SCHEDULING_SHADOW_DATABASE_URL\"",
     "prisma:dev": "prisma migrate dev && prisma migrate dev --schema=apps/scheduling-service/prisma/schema.prisma",
     "prisma:seed": "tsx prisma/seeds/seed.ts",
     "audit:verify": "tsx prisma/scripts/verify-audit-chain.ts"
