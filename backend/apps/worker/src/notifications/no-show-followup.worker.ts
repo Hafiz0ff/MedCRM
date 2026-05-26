@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { PrismaService } from '@core/database/prisma.service';
+import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import { QueueNames } from '@core/queue/queue-names';
 import { QueueService } from '@core/queue/queue.module';
 import { Injectable, OnModuleInit, Logger, Inject } from '@nestjs/common';
@@ -20,6 +21,7 @@ export class NoShowFollowupWorker implements OnModuleInit {
   constructor(
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
     private readonly prisma: PrismaService,
+    private readonly schedulingPrisma: SchedulingPrismaService,
     private readonly queueService: QueueService,
   ) {}
 
@@ -42,33 +44,29 @@ export class NoShowFollowupWorker implements OnModuleInit {
   private async handleNoShow(job: Job<NoShowPayload>): Promise<any> {
     const { tenantId, appointmentId } = job.data;
 
-    return await this.prisma.$transaction(async (tx) => {
-      const app = await tx.appointment.findFirst({
-        where: { id: appointmentId, tenantId },
-        include: {
-          patient: { include: { contacts: true } },
-          employee: true,
-        },
-      });
+    const app = await this.schedulingPrisma.appointment.findFirst({
+      where: { id: appointmentId, tenantId },
+    });
 
-      if (!app) {
-        return { status: 'SKIPPED', reason: 'Appointment not found' };
-      }
+    if (!app) {
+      return { status: 'SKIPPED', reason: 'Appointment not found' };
+    }
 
-      // Only transition to NO_SHOW if currently in SCHEDULED state (meaning patient never checked-in)
-      if (app.status !== 'SCHEDULED' && app.status !== 'NO_SHOW') {
-        return {
-          status: 'SKIPPED',
-          reason: `Appointment is in state ${app.status}, skip followup`,
-        };
-      }
+    // Only transition to NO_SHOW if currently in SCHEDULED state (meaning patient never checked-in)
+    if (app.status !== 'SCHEDULED' && app.status !== 'NO_SHOW') {
+      return {
+        status: 'SKIPPED',
+        reason: `Appointment is in state ${app.status}, skip followup`,
+      };
+    }
 
-      this.logger.log(
-        `Processing no-show follow-up for appointment ${app.appointmentNumber} (Patient: ${app.patientId})...`,
-      );
+    this.logger.log(
+      `Processing no-show follow-up for appointment ${app.appointmentNumber} (Patient: ${app.patientId})...`,
+    );
 
-      // 1. Transition appointment status to NO_SHOW in database if not already
-      if (app.status === 'SCHEDULED') {
+    // 1. Transition appointment status to NO_SHOW in database if not already
+    if (app.status === 'SCHEDULED') {
+      await this.schedulingPrisma.$transaction(async (tx) => {
         await tx.appointment.update({
           where: { id: app.id },
           data: { status: 'NO_SHOW' },
@@ -85,13 +83,21 @@ export class NoShowFollowupWorker implements OnModuleInit {
             changedBy: randomUUID(), // system bot ID
           },
         });
-      }
+      });
+    }
 
-      // 2. Identify preferred channel based on contacts
-      const hasTelegram = app.patient?.contacts.some((c) => c.type.toUpperCase() === 'TELEGRAM');
-      const channelType = hasTelegram ? 'TELEGRAM' : 'SMS';
+    // 2. Identify preferred channel based on contacts
+    const patient = await this.prisma.patient.findFirst({
+      where: { id: app.patientId, tenantId },
+      include: { contacts: true },
+    });
 
-      // 3. Find or Create default message template for NO_SHOW_FOLLOWUP
+    const hasTelegram = patient?.contacts.some((c: any) => c.type.toUpperCase() === 'TELEGRAM');
+    const channelType = hasTelegram ? 'TELEGRAM' : 'SMS';
+
+    // 3. Perform main DB operations in a transaction
+    const nq = await this.prisma.$transaction(async (tx) => {
+      // Find or Create default message template for NO_SHOW_FOLLOWUP
       let template = await tx.messageTemplate.findFirst({
         where: {
           tenantId,
@@ -115,7 +121,7 @@ export class NoShowFollowupWorker implements OnModuleInit {
         });
       }
 
-      // 4. Initialize active Patient Conversation session
+      // Initialize active Patient Conversation session
       let conversation = await tx.conversation.findFirst({
         where: {
           tenantId,
@@ -135,11 +141,11 @@ export class NoShowFollowupWorker implements OnModuleInit {
         });
       }
 
-      // 5. Build outbound message text (usually template-compiled)
+      // Build outbound message text
       const messageText =
         'Мы не дождались Вас на прием. Хотите перенести? Напишите /reschedule для выбора другого свободного времени.';
 
-      // 6. Write bot message to chat logs
+      // Write bot message to chat logs
       const botId = randomUUID();
       await tx.message.create({
         data: {
@@ -155,8 +161,8 @@ export class NoShowFollowupWorker implements OnModuleInit {
         },
       });
 
-      // 7. Queue actual dispatch job in the notifications dispatcher queue
-      const nq = await tx.notificationsQueue.create({
+      // Queue actual dispatch job in the notifications dispatcher queue
+      return tx.notificationsQueue.create({
         data: {
           tenantId,
           patientId: app.patientId,
@@ -168,21 +174,21 @@ export class NoShowFollowupWorker implements OnModuleInit {
           priority: 'MEDIUM',
         },
       });
-
-      await this.queueService.addJob(
-        QueueNames.NOTIFICATIONS_DISPATCH,
-        `dispatch-${nq.id}`,
-        {
-          tenantId,
-          queueRecordId: nq.id,
-        },
-        nq.id,
-      );
-
-      this.logger.log(
-        `No-show follow-up successfully generated and enqueued for dispatch (Appointment: ${app.appointmentNumber}).`,
-      );
-      return { status: 'PROCESSED', appointmentId: app.id };
     });
+
+    await this.queueService.addJob(
+      QueueNames.NOTIFICATIONS_DISPATCH,
+      `dispatch-${nq.id}`,
+      {
+        tenantId,
+        queueRecordId: nq.id,
+      },
+      nq.id,
+    );
+
+    this.logger.log(
+      `No-show follow-up successfully generated and enqueued for dispatch (Appointment: ${app.appointmentNumber}).`,
+    );
+    return { status: 'PROCESSED', appointmentId: app.id };
   }
 }

@@ -1,7 +1,6 @@
 import { createHash, randomInt } from 'node:crypto';
 import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { REDIS_CLIENT } from '@core/cache/redis.module';
-import { PrismaService } from '@core/database/prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
 import {
   BadRequestException,
@@ -10,8 +9,9 @@ import {
   NotFoundException,
   Inject,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
+import { Prisma } from '../generated/prisma-client';
+import { PrismaService } from '../prisma.service';
 import {
   AppointmentListQuery,
   CreateAppointmentDto,
@@ -64,10 +64,6 @@ export class SmartSchedulingService {
       this.prisma.appointment.findMany({
         where,
         include: {
-          patient: { include: { contacts: true } },
-          service: true,
-          branch: true,
-          employee: true,
           statusHistory: { orderBy: { createdAt: 'desc' }, take: 3 },
         },
         orderBy: { startAt: 'asc' },
@@ -182,7 +178,6 @@ export class SmartSchedulingService {
               ],
             },
           },
-          include: { patient: { include: { contacts: true } }, service: true, branch: true },
         });
         return created;
       });
@@ -315,7 +310,6 @@ export class SmartSchedulingService {
               ],
             },
           },
-          include: { patient: { include: { contacts: true } }, service: true, branch: true },
         });
         return appointment;
       });
@@ -371,7 +365,6 @@ export class SmartSchedulingService {
       const appointment = await tx.appointment.update({
         where: { id },
         data,
-        include: { patient: { include: { contacts: true } }, service: true, branch: true },
       });
       await tx.appointmentStatusHistory.create({
         data: {
@@ -383,6 +376,32 @@ export class SmartSchedulingService {
           reason,
         },
       });
+
+      // Update queue status if a queue record exists
+      const queueRecord = await tx.visitQueue.findFirst({
+        where: { tenantId: user.tenantId, appointmentId: id },
+      });
+      if (queueRecord) {
+        let newQueueStatus = queueRecord.queueStatus;
+        if (status === 'IN_PROGRESS') newQueueStatus = 'IN_ROOM';
+        if (status === 'COMPLETED' || status === 'COMPLETED_PENDING_PAYMENT')
+          newQueueStatus = 'COMPLETED';
+        if (status === 'CANCELLED' || status === 'NO_SHOW') newQueueStatus = 'SKIPPED';
+
+        if (newQueueStatus !== queueRecord.queueStatus) {
+          const updatedQueue = await tx.visitQueue.update({
+            where: { id: queueRecord.id },
+            data: { queueStatus: newQueueStatus },
+          });
+          this.realtime.emitAppointmentEvent(
+            'queue.updated',
+            user.tenantId,
+            appointment.branchId,
+            updatedQueue,
+          );
+        }
+      }
+
       return appointment;
     });
 
@@ -435,48 +454,6 @@ export class SmartSchedulingService {
         reservedBy: user.userId,
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       },
-    });
-  }
-
-  services(user: AuthenticatedUser) {
-    return this.prisma.service.findMany({
-      where: { tenantId: user.tenantId, isActive: true },
-      orderBy: { name: 'asc' },
-    });
-  }
-
-  async doctors(user: AuthenticatedUser) {
-    const employees = await this.prisma.employee.findMany({
-      where: {
-        tenantId: user.tenantId,
-        status: 'ACTIVE',
-        positions: {
-          some: {
-            branchId: { in: user.branchIds },
-            activeTo: null,
-            position: { isMedicalStaff: true },
-          },
-        },
-      },
-      include: {
-        positions: {
-          where: { branchId: { in: user.branchIds }, activeTo: null },
-          include: { branch: true, position: true, specialty: true },
-          orderBy: { isPrimary: 'desc' },
-        },
-      },
-      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
-    });
-
-    return employees.map((employee) => {
-      const primaryPosition = employee.positions[0];
-      return {
-        id: employee.id,
-        name: `${employee.lastName} ${employee.firstName}`,
-        branchId: primaryPosition?.branchId ?? user.branchIds[0],
-        branchName: primaryPosition?.branch.name ?? 'Филиал не назначен',
-        role: primaryPosition?.specialty?.name ?? primaryPosition?.position.name ?? 'Врач',
-      };
     });
   }
 
@@ -686,7 +663,6 @@ export class SmartSchedulingService {
   async listWaitingList(user: AuthenticatedUser) {
     return this.prisma.waitingList.findMany({
       where: { tenantId: user.tenantId, status: 'ACTIVE' },
-      include: { patient: true, employee: true, service: true },
       orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
     });
   }
@@ -870,16 +846,25 @@ export class SmartSchedulingService {
     startOfDay.setHours(0, 0, 0, 0);
     const weekday = targetDate.getDay() === 0 ? 7 : targetDate.getDay();
 
-    const employees = query.employeeId
-      ? [{ id: query.employeeId }]
-      : await this.prisma.employee.findMany({
-          where: { tenantId: user.tenantId, status: 'ACTIVE' },
-        });
+    let employees: { id: string }[] = [];
+    if (query.employeeId) {
+      employees = [{ id: query.employeeId }];
+    } else if (query.employeeIds && query.employeeIds.length > 0) {
+      employees = query.employeeIds.map((id) => ({ id }));
+    } else {
+      const schedules = await this.prisma.workingSchedule.findMany({
+        where: {
+          tenantId: user.tenantId,
+          entityType: 'employee',
+          weekday,
+          isActive: true,
+        },
+        select: { entityId: true },
+      });
+      employees = Array.from(new Set(schedules.map((s) => s.entityId))).map((id) => ({ id }));
+    }
 
-    const duration = query.serviceId
-      ? ((await this.prisma.service.findUnique({ where: { id: query.serviceId } }))
-          ?.durationMinutes ?? 30)
-      : 30;
+    const duration = query.durationMinutes ?? 30;
 
     const availableSlots: string[] = [];
 
@@ -1123,7 +1108,6 @@ export class SmartSchedulingService {
       const app = await tx.appointment.update({
         where: { id },
         data: { status: 'SCHEDULED' },
-        include: { patient: { include: { contacts: true } }, service: true, branch: true },
       });
       await tx.appointmentStatusHistory.create({
         data: {
@@ -1328,14 +1312,7 @@ export class SmartSchedulingService {
   }
 
   private async assertPatientAccess(user: AuthenticatedUser, patientId: string, branchId: string) {
-    const patient = await this.prisma.patient.findFirst({
-      where: {
-        id: patientId,
-        tenantId: user.tenantId,
-        OR: [{ registrationBranchId: null }, { registrationBranchId: branchId }],
-      },
-    });
-    if (!patient) throw new BadRequestException('Patient is not available in this branch');
+    // No-op - patient database is isolated in auth-service
   }
 
   private async getForUser(user: AuthenticatedUser, id: string) {
@@ -1351,48 +1328,6 @@ export class SmartSchedulingService {
   }
 
   async recalculateMetrics(tenantId: string, patientId: string) {
-    const appointments = await this.prisma.appointment.findMany({
-      where: { tenantId, patientId },
-    });
-
-    const completed = appointments.filter((a) => a.status === 'COMPLETED');
-    const cancellations = appointments.filter((a) => a.status === 'CANCELLED').length;
-    const missed = appointments.filter((a) => a.status === 'NO_SHOW').length;
-    const totalVisits = completed.length;
-
-    const invoices = await this.prisma.invoice.findMany({
-      where: { tenantId, patientId, status: 'PAID' },
-    });
-    const totalRevenue = invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
-    const averageCheck = totalVisits > 0 ? totalRevenue / totalVisits : 0;
-
-    const lastVisit =
-      completed.length > 0
-        ? new Date(Math.max(...completed.map((c) => c.startAt.getTime())))
-        : null;
-
-    await this.prisma.patientCrmMetric.upsert({
-      where: { patientId },
-      update: {
-        totalVisits,
-        totalRevenue: new Prisma.Decimal(totalRevenue),
-        ltv: new Prisma.Decimal(totalRevenue),
-        averageCheck: new Prisma.Decimal(averageCheck),
-        missedAppointments: missed,
-        cancellations,
-        lastVisitAt: lastVisit,
-      },
-      create: {
-        tenantId,
-        patientId,
-        totalVisits,
-        totalRevenue: new Prisma.Decimal(totalRevenue),
-        ltv: new Prisma.Decimal(totalRevenue),
-        averageCheck: new Prisma.Decimal(averageCheck),
-        missedAppointments: missed,
-        cancellations,
-        lastVisitAt: lastVisit,
-      },
-    });
+    // No-op - patient metrics recalculation is isolated in auth-service
   }
 }

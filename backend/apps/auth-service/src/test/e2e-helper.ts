@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { PrismaService } from '@core/database/prisma.service';
+import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
@@ -10,6 +11,7 @@ export interface TestContext {
   app: INestApplication;
   baseUrl: string;
   prisma: PrismaService;
+  schedulingPrisma: SchedulingPrismaService;
   authHeaders: Record<string, string>;
   tenantId: string;
   branchId: string;
@@ -42,6 +44,7 @@ export async function setupE2eTest(): Promise<TestContext> {
   const baseUrl = `http://localhost:${port}`;
 
   const prisma = app.get(PrismaService);
+  const schedulingPrisma = app.get(SchedulingPrismaService);
 
   // Perform login to get access token and headers
   const loginRes = await fetch(`${baseUrl}/auth/login`, {
@@ -81,6 +84,7 @@ export async function setupE2eTest(): Promise<TestContext> {
     app,
     baseUrl,
     prisma,
+    schedulingPrisma,
     authHeaders,
     tenantId: tenant.id,
     branchId: branch.id,

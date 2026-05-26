@@ -233,7 +233,6 @@ model MedicalDevice {
 
   tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch       Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  room         Room?               @relation(fields: [roomId], references: [id], onDelete: SetNull)
   measurements DeviceMeasurement[]
 
   @@map("medical_devices")

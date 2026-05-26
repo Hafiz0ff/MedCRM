@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { PrismaService } from '@core/database/prisma.service';
+import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import {
   normalizeName,
   normalizePhone,
@@ -36,6 +37,7 @@ import {
 export class PatientCrmService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly schedulingPrisma: SchedulingPrismaService,
     private readonly audit: AuditLoggerService,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
     private readonly encryption: EncryptionService,
@@ -123,10 +125,28 @@ export class PatientCrmService {
       include: {
         contacts: true,
         registrationBranch: true,
-        appointments: { orderBy: { startAt: 'desc' }, take: 5, include: { service: true } },
       },
     });
     if (!patient) throw new NotFoundException('Patient not found');
+
+    const appointments = await this.schedulingPrisma.appointment.findMany({
+      where: { tenantId: user.tenantId, patientId: id },
+      orderBy: { startAt: 'desc' },
+      take: 5,
+    });
+
+    const serviceIds = appointments.map((a) => a.serviceId).filter(Boolean) as string[];
+    const services =
+      serviceIds.length > 0
+        ? await this.prisma.service.findMany({ where: { id: { in: serviceIds } } })
+        : [];
+    const serviceMap = new Map(services.map((s) => [s.id, s]));
+
+    const appointmentsWithService = appointments.map((a) => ({
+      ...a,
+      service: a.serviceId ? serviceMap.get(a.serviceId) || null : null,
+    }));
+
     await this.audit.log({
       tenantId: user.tenantId,
       branchId: patient.registrationBranchId ?? undefined,
@@ -135,7 +155,11 @@ export class PatientCrmService {
       entityType: 'patient',
       entityId: patient.id,
     });
-    return patient;
+
+    return {
+      ...patient,
+      appointments: appointmentsWithService,
+    };
   }
 
   async update(user: AuthenticatedUser, id: string, dto: UpdatePatientDto) {
@@ -700,12 +724,12 @@ export class PatientCrmService {
       throw new ForbiddenException('Tenant mismatch');
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.appointment.updateMany({
-        where: { tenantId: user.tenantId, patientId: dto.secondaryPatientId },
-        data: { patientId: dto.primaryPatientId },
-      });
+    await this.schedulingPrisma.appointment.updateMany({
+      where: { tenantId: user.tenantId, patientId: dto.secondaryPatientId },
+      data: { patientId: dto.primaryPatientId },
+    });
 
+    await this.prisma.$transaction(async (tx) => {
       await tx.patientContact.updateMany({
         where: { tenantId: user.tenantId, patientId: dto.secondaryPatientId },
         data: { patientId: dto.primaryPatientId, isPrimary: false },
@@ -759,13 +783,13 @@ export class PatientCrmService {
   }
 
   async recalculateMetrics(tenantId: string, patientId: string) {
-    const appointments = await this.prisma.appointment.findMany({
+    const appointments = await this.schedulingPrisma.appointment.findMany({
       where: { tenantId, patientId },
     });
 
-    const completed = appointments.filter((a) => a.status === 'COMPLETED');
-    const cancellations = appointments.filter((a) => a.status === 'CANCELLED').length;
-    const missed = appointments.filter((a) => a.status === 'NO_SHOW').length;
+    const completed = appointments.filter((a: any) => a.status === 'COMPLETED');
+    const cancellations = appointments.filter((a: any) => a.status === 'CANCELLED').length;
+    const missed = appointments.filter((a: any) => a.status === 'NO_SHOW').length;
     const totalVisits = completed.length;
 
     const invoices = await this.prisma.invoice.findMany({
@@ -776,7 +800,7 @@ export class PatientCrmService {
 
     const lastVisit =
       completed.length > 0
-        ? new Date(Math.max(...completed.map((c) => c.startAt.getTime())))
+        ? new Date(Math.max(...completed.map((c: any) => c.startAt.getTime())))
         : null;
 
     await this.prisma.patientCrmMetric.upsert({

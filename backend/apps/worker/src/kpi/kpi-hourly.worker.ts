@@ -1,5 +1,6 @@
 import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { PrismaService } from '@core/database/prisma.service';
+import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import { QueueNames } from '@core/queue/queue-names';
 import { QueueService } from '@core/queue/queue.module';
 import { Injectable, OnModuleInit, Logger, Inject } from '@nestjs/common';
@@ -14,6 +15,7 @@ export class KpiHourlyWorker implements OnModuleInit {
   constructor(
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
     private readonly prisma: PrismaService,
+    private readonly schedulingPrisma: SchedulingPrismaService,
     private readonly queueService: QueueService,
   ) {}
 
@@ -71,7 +73,7 @@ export class KpiHourlyWorker implements OnModuleInit {
         this.logger.log(`Running hourly queue aggregates for tenant ${tenant.id}...`);
 
         // 1. Calculate active checked-in patients in waiting room
-        const checkedInCount = await this.prisma.appointment.count({
+        const checkedInCount = await this.schedulingPrisma.appointment.count({
           where: {
             tenantId: tenant.id,
             startAt: { gte: startOfToday },
@@ -80,7 +82,7 @@ export class KpiHourlyWorker implements OnModuleInit {
         });
 
         // 2. Calculate active in-progress appointments (doctor occupancy)
-        const inProgressCount = await this.prisma.appointment.count({
+        const inProgressCount = await this.schedulingPrisma.appointment.count({
           where: {
             tenantId: tenant.id,
             startAt: { gte: startOfToday },

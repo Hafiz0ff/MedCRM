@@ -39,7 +39,7 @@ describe('E2E Reception Workflow Completion', () => {
     const endAt = new Date(startAt);
     endAt.setMinutes(endAt.getMinutes() + 30);
 
-    const app = await context.prisma.appointment.create({
+    const app = await context.schedulingPrisma.appointment.create({
       data: {
         tenantId: context.tenantId,
         branchId: context.branchId,

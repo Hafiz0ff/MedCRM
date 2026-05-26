@@ -237,7 +237,7 @@ describe('E2E Communications & Notifications Studio', () => {
     assert.equal(webhookRes.status, 201);
 
     // 3. Verify in DB that the appointment is upgraded to CONFIRMED
-    const dbApp = await context.prisma.appointment.findUnique({
+    const dbApp = await context.schedulingPrisma.appointment.findUnique({
       where: { id: appointmentId },
     });
     assert.equal(dbApp?.status, 'CONFIRMED');
@@ -256,7 +256,7 @@ describe('E2E Communications & Notifications Studio', () => {
     assert.equal(tgWebhookRes.status, 201);
 
     // 5. Verify in DB that the appointment is transitioned to CANCELLED
-    const dbAppCancel = await context.prisma.appointment.findUnique({
+    const dbAppCancel = await context.schedulingPrisma.appointment.findUnique({
       where: { id: appointmentId },
     });
     assert.equal(dbAppCancel?.status, 'CANCELLED');

@@ -1,4 +1,5 @@
 import { PrismaService } from '@core/database/prisma.service';
+import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
@@ -10,7 +11,10 @@ import {
 
 @Injectable()
 export class DirectoriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly schedulingPrisma: SchedulingPrismaService,
+  ) {}
 
   // Specialties
   async listSpecialties() {
@@ -70,14 +74,14 @@ export class DirectoriesService {
 
   // Room Types
   async listRoomTypes(user: AuthenticatedUser) {
-    return this.prisma.roomType.findMany({
+    return this.schedulingPrisma.roomType.findMany({
       where: { OR: [{ tenantId: null }, { tenantId: user.tenantId }] },
       orderBy: { name: 'asc' },
     });
   }
 
   async createRoomType(user: AuthenticatedUser, dto: RoomTypeDto) {
-    return this.prisma.roomType.create({
+    return this.schedulingPrisma.roomType.create({
       data: {
         tenantId: user.tenantId,
         code: dto.code,
@@ -89,24 +93,24 @@ export class DirectoriesService {
   }
 
   async deleteRoomType(user: AuthenticatedUser, id: string) {
-    const type = await this.prisma.roomType.findFirst({
+    const type = await this.schedulingPrisma.roomType.findFirst({
       where: { id, tenantId: user.tenantId },
     });
     if (!type) throw new NotFoundException('Room type not found');
     if (type.isSystem) throw new Error('Cannot delete system room type');
-    return this.prisma.roomType.delete({ where: { id } });
+    return this.schedulingPrisma.roomType.delete({ where: { id } });
   }
 
   // Equipment Categories
   async listEquipmentCategories(user: AuthenticatedUser) {
-    return this.prisma.equipmentCategory.findMany({
+    return this.schedulingPrisma.equipmentCategory.findMany({
       where: { OR: [{ tenantId: null }, { tenantId: user.tenantId }] },
       orderBy: { name: 'asc' },
     });
   }
 
   async createEquipmentCategory(user: AuthenticatedUser, dto: EquipmentCategoryDto) {
-    return this.prisma.equipmentCategory.create({
+    return this.schedulingPrisma.equipmentCategory.create({
       data: {
         tenantId: user.tenantId,
         code: dto.code,
@@ -117,11 +121,11 @@ export class DirectoriesService {
   }
 
   async deleteEquipmentCategory(user: AuthenticatedUser, id: string) {
-    const category = await this.prisma.equipmentCategory.findFirst({
+    const category = await this.schedulingPrisma.equipmentCategory.findFirst({
       where: { id, tenantId: user.tenantId },
     });
     if (!category) throw new NotFoundException('Equipment category not found');
     if (category.isSystem) throw new Error('Cannot delete system category');
-    return this.prisma.equipmentCategory.delete({ where: { id } });
+    return this.schedulingPrisma.equipmentCategory.delete({ where: { id } });
   }
 }

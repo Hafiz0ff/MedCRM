@@ -1,5 +1,6 @@
 import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
+import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
 import {
   Injectable,
@@ -23,6 +24,7 @@ import {
 export class FinanceService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly schedulingPrisma: SchedulingPrismaService,
     private readonly audit: AuditLoggerService,
     private readonly realtime: RealtimeGateway,
   ) {}
@@ -134,7 +136,6 @@ export class FinanceService {
           },
         },
         branch: { select: { id: true, name: true } },
-        appointment: { select: { id: true, appointmentNumber: true, startAt: true, status: true } },
         items: {
           include: {
             service: { select: { id: true, name: true, code: true } },
@@ -149,7 +150,22 @@ export class FinanceService {
       take: 100,
     });
 
-    return { items: invoices, total: invoices.length };
+    const appointmentIds = invoices.map((i) => i.appointmentId).filter(Boolean) as string[];
+    const appointments =
+      appointmentIds.length > 0
+        ? await this.schedulingPrisma.appointment.findMany({
+            where: { id: { in: appointmentIds } },
+            select: { id: true, appointmentNumber: true, startAt: true, status: true },
+          })
+        : [];
+
+    const appMap = new Map(appointments.map((a) => [a.id, a]));
+    const invoicesWithApp = invoices.map((inv) => ({
+      ...inv,
+      appointment: inv.appointmentId ? appMap.get(inv.appointmentId) || null : null,
+    }));
+
+    return { items: invoicesWithApp, total: invoices.length };
   }
 
   async listPayments(user: AuthenticatedUser) {
@@ -434,42 +450,48 @@ export class FinanceService {
         },
       });
 
-      // If PAID and tied to an appointment, transition the appointment status to COMPLETED
-      if (newStatus === 'PAID' && invoice.appointmentId) {
-        const app = await tx.appointment.findUnique({ where: { id: invoice.appointmentId } });
-        if (
-          app &&
-          ['COMPLETED_PENDING_PAYMENT', 'CHECKED_IN', 'IN_PROGRESS'].includes(app.status)
-        ) {
-          await tx.appointment.update({
-            where: { id: invoice.appointmentId },
-            data: { status: 'COMPLETED', completedAt: new Date() },
-          });
-          await tx.appointmentStatusHistory.create({
-            data: {
-              tenantId: user.tenantId,
-              appointmentId: invoice.appointmentId,
-              oldStatus: app.status,
-              newStatus: 'COMPLETED',
-              changedBy: user.userId,
-              reason: 'Оплата счета завершена',
-            },
-          });
-          await tx.appointmentVisitState.create({
-            data: {
-              tenantId: user.tenantId,
-              appointmentId: invoice.appointmentId,
-              oldState: app.status,
-              newState: 'COMPLETED',
-              changedBy: user.userId,
-              workstationType: 'RECEPTIONIST',
-            },
-          });
-        }
-      }
-
       return { payment, invoice: updatedInvoice };
     });
+
+    // If PAID and tied to an appointment, transition the appointment status to COMPLETED (outside main DB transaction)
+    if (result.invoice.status === 'PAID' && invoice.appointmentId) {
+      try {
+        await this.schedulingPrisma.$transaction(async (stx) => {
+          const app = await stx.appointment.findUnique({ where: { id: invoice.appointmentId! } });
+          if (
+            app &&
+            ['COMPLETED_PENDING_PAYMENT', 'CHECKED_IN', 'IN_PROGRESS'].includes(app.status)
+          ) {
+            await stx.appointment.update({
+              where: { id: invoice.appointmentId! },
+              data: { status: 'COMPLETED', completedAt: new Date() },
+            });
+            await stx.appointmentStatusHistory.create({
+              data: {
+                tenantId: user.tenantId,
+                appointmentId: invoice.appointmentId!,
+                oldStatus: app.status,
+                newStatus: 'COMPLETED',
+                changedBy: user.userId,
+                reason: 'Оплата счета завершена',
+              },
+            });
+            await stx.appointmentVisitState.create({
+              data: {
+                tenantId: user.tenantId,
+                appointmentId: invoice.appointmentId!,
+                oldState: app.status,
+                newState: 'COMPLETED',
+                changedBy: user.userId,
+                workstationType: 'RECEPTIONIST',
+              },
+            });
+          }
+        });
+      } catch (err: any) {
+        console.error(`Failed to transition appointment status upon payment: ${err.message}`);
+      }
+    }
 
     this.realtime.emitAppointmentEvent(
       'payment.completed',

@@ -29,7 +29,6 @@ model Patient {
   registrationBranch Branch?          @relation(fields: [registrationBranchId], references: [id])
   assignedManager    User?            @relation("PatientAssignedManager", fields: [assignedManagerId], references: [id])
   contacts           PatientContact[]
-  appointments       Appointment[]
 
   addresses      PatientAddress[]
   leads          PatientLead[]
@@ -40,11 +39,7 @@ model Patient {
   timelineEvents PatientTimelineEvent[]
   notes          PatientNote[]
 
-  waitingLists        WaitingList[]
-  onlineBookingTokens OnlineBookingToken[]
   portalGrants        PatientPortalGrant[]
-
-  incomingCalls IncomingCall[]
   invoices      Invoice[]
 
   medicalRecord  MedicalRecord?

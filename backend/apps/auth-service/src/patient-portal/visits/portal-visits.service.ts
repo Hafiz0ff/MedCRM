@@ -1,10 +1,14 @@
 import { PrismaService } from '@core/database/prisma.service';
+import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { AuthenticatedPortalUser } from '../auth/patient-jwt-payload';
 
 @Injectable()
 export class PortalVisitsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly schedulingPrisma: SchedulingPrismaService,
+  ) {}
 
   private async resolveGrant(accountId: string, tenantCode: string) {
     const tenant = await this.prisma.tenant.findUnique({ where: { code: tenantCode } });
@@ -36,24 +40,61 @@ export class PortalVisitsService {
     };
 
     const [visits, total] = await Promise.all([
-      this.prisma.appointment.findMany({
+      this.schedulingPrisma.appointment.findMany({
         where: whereClause,
-        include: {
-          employee: {
-            select: { id: true, firstName: true, lastName: true, middleName: true },
-          },
-          service: { select: { id: true, name: true } },
-          branch: { select: { id: true, name: true, address: true } },
-        },
         orderBy: { startAt: 'desc' },
         skip,
         take: safeLimit,
       }),
-      this.prisma.appointment.count({ where: whereClause }),
+      this.schedulingPrisma.appointment.count({ where: whereClause }),
     ]);
 
+    if (visits.length === 0) {
+      return {
+        visits: [],
+        total,
+        page: safePage,
+        limit: safeLimit,
+        totalPages: 0,
+      };
+    }
+
+    const employeeIds = Array.from(new Set(visits.map((a) => a.employeeId)));
+    const serviceIds = Array.from(
+      new Set(visits.map((a) => a.serviceId).filter(Boolean)),
+    ) as string[];
+    const branchIds = Array.from(new Set(visits.map((a) => a.branchId)));
+
+    const [employees, services, branches] = await Promise.all([
+      this.prisma.employee.findMany({
+        where: { id: { in: employeeIds } },
+        select: { id: true, firstName: true, lastName: true, middleName: true },
+      }),
+      serviceIds.length > 0
+        ? this.prisma.service.findMany({
+            where: { id: { in: serviceIds } },
+            select: { id: true, name: true },
+          })
+        : [],
+      this.prisma.branch.findMany({
+        where: { id: { in: branchIds } },
+        select: { id: true, name: true, address: true },
+      }),
+    ]);
+
+    const employeeMap = new Map(employees.map((e) => [e.id, e]));
+    const serviceMap = new Map(services.map((s) => [s.id, s]));
+    const branchMap = new Map(branches.map((b) => [b.id, b]));
+
+    const enrichedVisits = visits.map((a) => ({
+      ...a,
+      employee: employeeMap.get(a.employeeId) || null,
+      service: a.serviceId ? serviceMap.get(a.serviceId) || null : null,
+      branch: branchMap.get(a.branchId) || null,
+    }));
+
     return {
-      visits,
+      visits: enrichedVisits,
       total,
       page: safePage,
       limit: safeLimit,
@@ -68,31 +109,47 @@ export class PortalVisitsService {
   ) {
     const { tenant, grant } = await this.resolveGrant(portalUser.accountId, tenantCode);
 
-    const appointment = await this.prisma.appointment.findFirst({
+    const appointment = await this.schedulingPrisma.appointment.findFirst({
       where: {
         id: appointmentId,
         tenantId: tenant.id,
         patientId: grant.patientId,
       },
       include: {
-        employee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            middleName: true,
-            photoFileId: true,
-          },
-        },
-        service: {
-          select: { id: true, name: true, durationMinutes: true, basePrice: true },
-        },
-        branch: { select: { id: true, name: true, address: true, phone: true } },
         statusHistory: { orderBy: { createdAt: 'desc' } },
       },
     });
 
     if (!appointment) throw new NotFoundException('Appointment not found');
-    return appointment;
+
+    const [employee, service, branch] = await Promise.all([
+      this.prisma.employee.findFirst({
+        where: { id: appointment.employeeId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          middleName: true,
+          photoFileId: true,
+        },
+      }),
+      appointment.serviceId
+        ? this.prisma.service.findFirst({
+            where: { id: appointment.serviceId },
+            select: { id: true, name: true, durationMinutes: true, basePrice: true },
+          })
+        : null,
+      this.prisma.branch.findFirst({
+        where: { id: appointment.branchId },
+        select: { id: true, name: true, address: true, phone: true },
+      }),
+    ]);
+
+    return {
+      ...appointment,
+      employee,
+      service,
+      branch,
+    };
   }
 }

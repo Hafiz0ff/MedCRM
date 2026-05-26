@@ -1,4 +1,5 @@
 import { PrismaService } from '@core/database/prisma.service';
+import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
 import {
@@ -14,7 +15,10 @@ import {
 export class InventoryService {
   private readonly logger = new Logger(InventoryService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly schedulingPrisma: SchedulingPrismaService,
+  ) {}
 
   // 1. Warehouses Management
   async createWarehouse(tenantId: string, dto: CreateWarehouseDto) {
@@ -305,15 +309,18 @@ export class InventoryService {
       `EMR auto write-off triggered for appt: ${appointmentId}, encounter: ${encounterId}`,
     );
 
-    const appointment = await this.prisma.appointment.findUnique({
+    const appointment = await this.schedulingPrisma.appointment.findUnique({
       where: { id: appointmentId },
-      include: { service: true },
     });
 
     if (!appointment || !appointment.serviceId) {
       this.logger.warn(`No appointment or service ID found for write-off`);
       return;
     }
+
+    const service = await this.prisma.service.findUnique({
+      where: { id: appointment.serviceId },
+    });
 
     // Get active BOM template
     const bomTemplate = await this.prisma.serviceBomTemplate.findFirst({
@@ -328,7 +335,7 @@ export class InventoryService {
     });
 
     if (!bomTemplate) {
-      this.logger.log(`No active BOM template found for service: ${appointment.service?.name}`);
+      this.logger.log(`No active BOM template found for service: ${service?.name}`);
       return;
     }
 

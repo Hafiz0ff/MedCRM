@@ -1,5 +1,6 @@
 import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { PrismaService } from '@core/database/prisma.service';
+import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import { QueueNames } from '@core/queue/queue-names';
 import { QueueService } from '@core/queue/queue.module';
 import { Injectable, OnModuleInit, Logger, Inject } from '@nestjs/common';
@@ -14,6 +15,7 @@ export class NotificationsScheduleScanWorker implements OnModuleInit {
   constructor(
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
     private readonly prisma: PrismaService,
+    private readonly schedulingPrisma: SchedulingPrismaService,
     private readonly queueService: QueueService,
   ) {}
 
@@ -70,24 +72,36 @@ export class NotificationsScheduleScanWorker implements OnModuleInit {
     for (const tenant of activeTenants) {
       try {
         // Query appointments in the next 24 hours
-        const appointments24h = await this.prisma.appointment.findMany({
+        const appointments24h = await this.schedulingPrisma.appointment.findMany({
           where: {
             tenantId: tenant.id,
             startAt: { gte: now, lte: horizon24h },
             status: { in: ['SCHEDULED', 'CONFIRMED'] },
           },
-          include: {
-            patient: { include: { contacts: true } },
-          },
         });
 
-        for (const app of appointments24h) {
-          const hoursLeft = (app.startAt.getTime() - now.getTime()) / (1000 * 60 * 60);
+        if (appointments24h.length > 0) {
+          const patientIds = Array.from(new Set(appointments24h.map((a) => a.patientId)));
+          const patients = await this.prisma.patient.findMany({
+            where: { id: { in: patientIds } },
+            include: { contacts: true },
+          });
+          const patientMap = new Map(patients.map((p) => [p.id, p]));
 
-          if (hoursLeft <= 2.0) {
-            await this.checkAndCreateReminder(tenant.id, app, 'REMINDER_2H');
-          } else {
-            await this.checkAndCreateReminder(tenant.id, app, 'REMINDER_24H');
+          for (const app of appointments24h) {
+            const patient = patientMap.get(app.patientId) || null;
+            const appWithPatient = {
+              ...app,
+              patient,
+            };
+
+            const hoursLeft = (app.startAt.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+            if (hoursLeft <= 2.0) {
+              await this.checkAndCreateReminder(tenant.id, appWithPatient, 'REMINDER_2H');
+            } else {
+              await this.checkAndCreateReminder(tenant.id, appWithPatient, 'REMINDER_24H');
+            }
           }
         }
       } catch (err: any) {

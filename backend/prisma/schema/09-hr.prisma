@@ -16,8 +16,6 @@ model Department {
   parent              Department?              @relation("DepartmentTree", fields: [parentDepartmentId], references: [id], onDelete: SetNull)
   children            Department[]             @relation("DepartmentTree")
   employeePositions   EmployeePosition[]
-  rooms               Room[]
-  employeeAssignments EmployeeRoomAssignment[]
 
   encounters Encounter[]
   warehouses Warehouse[]
@@ -36,8 +34,6 @@ model Specialty {
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   employeePositions EmployeePosition[]
-  roomSpecialties   RoomSpecialty[]
-  roomAssignments   EmployeeRoomAssignment[]
 
   clinicalTemplates ClinicalTemplate[]
 
@@ -87,11 +83,6 @@ model Employee {
   tenant          Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user            User?                    @relation(fields: [userId], references: [id], onDelete: SetNull)
   positions       EmployeePosition[]
-  roomAssignments EmployeeRoomAssignment[]
-  appointments    Appointment[]
-
-  waitingLists       WaitingList[]
-  availabilityCaches AvailabilityCache[]
 
   performedInvoiceItems InvoiceItem[]
 

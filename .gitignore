@@ -1,3 +1,4 @@
+.DS_Store
 node_modules
 .next
 dist
@@ -8,5 +9,6 @@ coverage
 *.log
 *.tsbuildinfo
 backend/generated
+backend/apps/scheduling-service/src/generated
 frontend/.next
 docker-data

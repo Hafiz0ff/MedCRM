@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
+import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
 import {
   Injectable,
@@ -28,6 +29,7 @@ export class CommunicationsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly schedulingPrisma: SchedulingPrismaService,
     private readonly audit: AuditLoggerService,
     private readonly realtime: RealtimeGateway,
   ) {}
@@ -584,7 +586,7 @@ export class CommunicationsService {
     }
 
     // Find the latest pending appointment to confirm or cancel
-    const app = await this.prisma.appointment.findFirst({
+    const app = await this.schedulingPrisma.appointment.findFirst({
       where: { tenantId, patientId, status: { in: ['SCHEDULED', 'CHECKED_IN', 'CONFIRMED'] } },
       orderBy: { startAt: 'desc' },
     });
@@ -604,7 +606,7 @@ export class CommunicationsService {
 
     if (normalizedInput === '1') {
       // 1. CONFIRMATION
-      await this.prisma.$transaction(async (tx) => {
+      await this.schedulingPrisma.$transaction(async (tx) => {
         await tx.appointment.update({
           where: { id: app.id },
           data: { status: 'CONFIRMED', confirmedAt: new Date() },
@@ -620,17 +622,17 @@ export class CommunicationsService {
             reason: 'Подтверждено через чат-бота',
           },
         });
+      });
 
-        await tx.chatbotActionLog.create({
-          data: {
-            tenantId,
-            patientId,
-            conversationId,
-            actionType: 'CONFIRM_APPOINTMENT',
-            sourceMessageId: messageId,
-            actionResult: `Подтвержден визит ${app.appointmentNumber}`,
-          },
-        });
+      await this.prisma.chatbotActionLog.create({
+        data: {
+          tenantId,
+          patientId,
+          conversationId,
+          actionType: 'CONFIRM_APPOINTMENT',
+          sourceMessageId: messageId,
+          actionResult: `Подтвержден визит ${app.appointmentNumber}`,
+        },
       });
 
       // Reply confirmation success
@@ -642,7 +644,7 @@ export class CommunicationsService {
       );
     } else if (normalizedInput === '2') {
       // 2. CANCELLATION
-      await this.prisma.$transaction(async (tx) => {
+      await this.schedulingPrisma.$transaction(async (tx) => {
         await tx.appointment.update({
           where: { id: app.id },
           data: {
@@ -662,17 +664,17 @@ export class CommunicationsService {
             reason: 'Отменено через чат-бота',
           },
         });
+      });
 
-        await tx.chatbotActionLog.create({
-          data: {
-            tenantId,
-            patientId,
-            conversationId,
-            actionType: 'CANCEL_APPOINTMENT',
-            sourceMessageId: messageId,
-            actionResult: `Отменен визит ${app.appointmentNumber}`,
-          },
-        });
+      await this.prisma.chatbotActionLog.create({
+        data: {
+          tenantId,
+          patientId,
+          conversationId,
+          actionType: 'CANCEL_APPOINTMENT',
+          sourceMessageId: messageId,
+          actionResult: `Отменен визит ${app.appointmentNumber}`,
+        },
       });
 
       // Reply cancellation success
@@ -717,7 +719,7 @@ export class CommunicationsService {
 
   private async triggerWaitingListFailover(tenantId: string, cancelledApp: any) {
     // Find highest priority patient in waiting list waiting for the same doctor or service
-    const waiting = await this.prisma.waitingList.findFirst({
+    const waiting = await this.schedulingPrisma.waitingList.findFirst({
       where: {
         tenantId,
         branchId: cancelledApp.branchId,

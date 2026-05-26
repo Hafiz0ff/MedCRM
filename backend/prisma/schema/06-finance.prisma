@@ -22,7 +22,6 @@ model Invoice {
   tenant              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch              Branch               @relation(fields: [branchId], references: [id], onDelete: Cascade)
   patient             Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  appointment         Appointment?         @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   creator             User                 @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   items               InvoiceItem[]
   payments            Payment[]

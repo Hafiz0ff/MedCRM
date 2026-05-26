@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { PrismaService } from '@core/database/prisma.service';
+import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import { QueueNames } from '@core/queue/queue-names';
 import { QueueService } from '@core/queue/queue.module';
 import { Injectable, Logger } from '@nestjs/common';
@@ -10,6 +11,7 @@ export class ChatbotProcessor {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly schedulingPrisma: SchedulingPrismaService,
     private readonly queueService: QueueService,
   ) {}
 
@@ -27,7 +29,7 @@ export class ChatbotProcessor {
 
     // 1. Process CONFIRM intent (/yes, да, подтверждаю)
     if (text.startsWith('/yes') || text === 'да' || text === 'подтверждаю') {
-      const activeApp = await this.prisma.appointment.findFirst({
+      const activeApp = await this.schedulingPrisma.appointment.findFirst({
         where: {
           tenantId,
           patientId,
@@ -41,7 +43,7 @@ export class ChatbotProcessor {
         return 'У вас нет предстоящих записей, ожидающих подтверждения.';
       }
 
-      await this.prisma.$transaction(async (tx) => {
+      await this.schedulingPrisma.$transaction(async (tx) => {
         await tx.appointment.update({
           where: { id: activeApp.id },
           data: { status: 'CONFIRMED' },
@@ -64,7 +66,7 @@ export class ChatbotProcessor {
 
     // 2. Process CANCEL intent (/no, нет, отменить)
     if (text.startsWith('/no') || text === 'нет' || text === 'отменить') {
-      const activeApp = await this.prisma.appointment.findFirst({
+      const activeApp = await this.schedulingPrisma.appointment.findFirst({
         where: {
           tenantId,
           patientId,
@@ -78,7 +80,7 @@ export class ChatbotProcessor {
         return 'Предстоящих записей для отмены не найдено.';
       }
 
-      await this.prisma.$transaction(async (tx) => {
+      await this.schedulingPrisma.$transaction(async (tx) => {
         await tx.appointment.update({
           where: { id: activeApp.id },
           data: { status: 'CANCELLED' },
@@ -101,7 +103,7 @@ export class ChatbotProcessor {
 
     // 3. Process RESCHEDULE intent (/reschedule, перенос)
     if (text.startsWith('/reschedule') || text.includes('перенос') || text.includes('перенести')) {
-      const activeApp = await this.prisma.appointment.findFirst({
+      const activeApp = await this.schedulingPrisma.appointment.findFirst({
         where: {
           tenantId,
           patientId,

@@ -50,8 +50,11 @@ export class AuditLoggerService {
     this.logger.log(JSON.stringify(structuredPayload));
 
     try {
+      if (!('auditLog' in this.prisma)) {
+        return;
+      }
       // Retrieve the last audit log hash to link the chain
-      const lastLog = await this.prisma.auditLog.findFirst({
+      const lastLog = await (this.prisma as any).auditLog.findFirst({
         orderBy: { createdAt: 'desc' },
       });
       const prevHash = lastLog ? lastLog.hash : null;

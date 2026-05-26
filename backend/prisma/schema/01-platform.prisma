@@ -18,32 +18,10 @@ model Tenant {
   auditLogs       AuditLog[]
   patients        Patient[]
   services        Service[]
-  appointments    Appointment[]
-
   departments             Department[]
   positions               Position[]
   employees               Employee[]
   employeePositions       EmployeePosition[]
-  roomTypes               RoomType[]
-  rooms                   Room[]
-  equipmentCategories     EquipmentCategory[]
-  equipment               Equipment[]
-  employeeRoomAssignments EmployeeRoomAssignment[]
-  workingSchedules        WorkingSchedule[]
-  scheduleExceptions      ScheduleException[]
-
-  waitingLists             WaitingList[]
-  availabilityCaches       AvailabilityCache[]
-  resourceBuffers          ResourceBuffer[]
-  requiredResources        ServiceRequiredResource[]
-  recurrenceRules          AppointmentRecurrenceRule[]
-  appointmentNotifications AppointmentNotification[]
-  onlineBookingTokens      OnlineBookingToken[]
-
-  receptionistDashboardCaches ReceptionistDashboardCache[]
-  appointmentVisitStates      AppointmentVisitState[]
-  visitQueues                 VisitQueue[]
-  incomingCalls               IncomingCall[]
   invoices                    Invoice[]
   invoiceItems                InvoiceItem[]
 
@@ -156,21 +134,9 @@ model Branch {
   tenant       Tenant           @relation(fields: [tenantId], references: [id])
   userRoles    UserBranchRole[]
   patients     Patient[]
-  appointments Appointment[]
-
   departments             Department[]
-  rooms                   Room[]
   employeePositions       EmployeePosition[]
-  equipment               Equipment[]
-  employeeRoomAssignments EmployeeRoomAssignment[]
   legalDocuments          PatientLegalDocument[]
-
-  waitingLists       WaitingList[]
-  availabilityCaches AvailabilityCache[]
-
-  receptionistDashboardCaches ReceptionistDashboardCache[]
-  visitQueues                 VisitQueue[]
-  incomingCalls               IncomingCall[]
   invoices                    Invoice[]
 
   episodesOfCare EpisodeOfCare[]
@@ -264,11 +230,6 @@ model Service {
   updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
-  appointments Appointment[]
-
-  waitingLists      WaitingList[]
-  requiredResources ServiceRequiredResource[]
-
   invoiceItems InvoiceItem[]
 
   prescriptionItems PrescriptionItem[]

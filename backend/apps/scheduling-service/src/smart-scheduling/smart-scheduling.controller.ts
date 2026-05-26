@@ -184,18 +184,6 @@ export class SmartSchedulingController {
     return this.scheduling.reserveSlot(user, dto);
   }
 
-  @Get('services')
-  @RequirePermissions('scheduling.availability.read')
-  services(@CurrentUser() user: AuthenticatedUser) {
-    return this.scheduling.services(user);
-  }
-
-  @Get('doctors')
-  @RequirePermissions('scheduling.availability.read')
-  doctors(@CurrentUser() user: AuthenticatedUser) {
-    return this.scheduling.doctors(user);
-  }
-
   // Waiting List Endpoints
   @Get('waiting-list')
   @RequirePermissions('scheduling.appointments.read')

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { PrismaService } from '@core/database/prisma.service';
+import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
 import {
   Injectable,
@@ -37,6 +38,7 @@ const BOARD_STATUSES = [
 export class ReceptionService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly schedulingPrisma: SchedulingPrismaService,
     private readonly audit: AuditLoggerService,
     private readonly realtime: RealtimeGateway,
     @Inject(forwardRef(() => SmartSchedulingService))
@@ -72,7 +74,7 @@ export class ReceptionService {
     const targetBranchId = branchId ?? user.branchIds[0];
     const todayStr = dateStr ?? new Date().toISOString().slice(0, 10);
 
-    const cached = await this.prisma.receptionistDashboardCache.findUnique({
+    const cached = await this.schedulingPrisma.receptionistDashboardCache.findUnique({
       where: {
         tenantId_branchId_dashboardDate: {
           tenantId: user.tenantId,
@@ -96,43 +98,17 @@ export class ReceptionService {
     const end = new Date(date);
     end.setUTCHours(23, 59, 59, 999);
 
-    const appointments = await this.prisma.appointment.findMany({
+    const appointments = await this.schedulingPrisma.appointment.findMany({
       where: {
         tenantId,
         branchId,
         startAt: { gte: start, lte: end },
       },
       include: {
-        patient: {
-          include: {
-            contacts: true,
-            tags: { include: { tag: true } },
-            metrics: true,
-            invoices: {
-              where: { status: { in: ['DRAFT', 'PENDING_PAYMENT'] } },
-            },
-          },
-        },
-        service: true,
         resources: true,
       },
       orderBy: { startAt: 'asc' },
     });
-
-    const employeeIds = [...new Set(appointments.map((a) => a.employeeId))];
-    const employees = await this.prisma.employee.findMany({
-      where: { id: { in: employeeIds } },
-    });
-    const employeeMap = new Map(employees.map((e) => [e.id, e]));
-
-    const roomIds = appointments
-      .flatMap((a) => a.resources)
-      .filter((r) => r.resourceType === 'ROOM')
-      .map((r) => r.resourceId);
-    const rooms = await this.prisma.room.findMany({
-      where: { id: { in: roomIds } },
-    });
-    const roomMap = new Map(rooms.map((r) => [r.id, r]));
 
     const columns: Record<string, any[]> = {
       WAITING: [],
@@ -144,12 +120,79 @@ export class ReceptionService {
       CANCELLED: [],
     };
 
+    if (appointments.length === 0) {
+      const emptyDashboard = {
+        branchId,
+        date: dateStr,
+        columns,
+        counters: {
+          total: 0,
+          waiting: 0,
+          checkedIn: 0,
+          inProgress: 0,
+          completedPendingPayment: 0,
+          completed: 0,
+          cancelled: 0,
+          noShow: 0,
+        },
+        queue: [],
+        recalculatedAt: new Date().toISOString(),
+      };
+      await this.saveDashboardToCache(tenantId, branchId, dateStr, emptyDashboard);
+      return emptyDashboard;
+    }
+
+    const patientIds = Array.from(new Set(appointments.map((a) => a.patientId)));
+    const serviceIds = Array.from(
+      new Set(appointments.map((a) => a.serviceId).filter(Boolean)),
+    ) as string[];
+    const employeeIds = Array.from(new Set(appointments.map((a) => a.employeeId)));
+
+    const [patients, services, employees, rooms] = await Promise.all([
+      this.prisma.patient.findMany({
+        where: { id: { in: patientIds } },
+        include: {
+          contacts: true,
+          tags: { include: { tag: true } },
+          metrics: true,
+          invoices: {
+            where: { status: { in: ['DRAFT', 'PENDING_PAYMENT'] } },
+          },
+        },
+      }),
+      serviceIds.length > 0
+        ? this.prisma.service.findMany({ where: { id: { in: serviceIds } } })
+        : [],
+      this.prisma.employee.findMany({
+        where: { id: { in: employeeIds } },
+      }),
+      this.schedulingPrisma.room.findMany({
+        where: {
+          id: {
+            in: appointments
+              .flatMap((a) => a.resources)
+              .filter((r) => r.resourceType === 'ROOM')
+              .map((r) => r.resourceId),
+          },
+        },
+      }),
+    ]);
+
+    const patientMap = new Map(patients.map((p) => [p.id, p]));
+    const serviceMap = new Map(services.map((s) => [s.id, s]));
+    const employeeMap = new Map(employees.map((e) => [e.id, e]));
+    const roomMap = new Map(rooms.map((r) => [r.id, r]));
+
     for (const app of appointments) {
-      const p = app.patient;
+      const p = patientMap.get(app.patientId);
+      if (!p) continue;
+
       const primaryContact =
-        p.contacts.find((c) => c.isPrimary)?.value || p.contacts[0]?.value || null;
-      const isVip = p.tags.some((t) => t.tag.code === 'VIP' || t.tag.name.toLowerCase() === 'vip');
-      const debt = p.invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+        p.contacts.find((c: any) => c.isPrimary)?.value || p.contacts[0]?.value || null;
+      const isVip = p.tags.some(
+        (t: any) => t.tag.code === 'VIP' || t.tag.name.toLowerCase() === 'vip',
+      );
+      const debt = p.invoices.reduce((sum: number, inv: any) => sum + Number(inv.totalAmount), 0);
       const age = p.birthDate ? this.calculateAge(p.birthDate) : null;
 
       const employee = employeeMap.get(app.employeeId);
@@ -157,10 +200,10 @@ export class ReceptionService {
         ? `${employee.lastName} ${employee.firstName}`
         : 'Неизвестный врач';
 
-      const appRooms = app.resources.filter((r) => r.resourceType === 'ROOM');
+      const appRooms = app.resources.filter((r: any) => r.resourceType === 'ROOM');
       const roomName =
         appRooms
-          .map((r) => roomMap.get(r.resourceId)?.name)
+          .map((r: any) => roomMap.get(r.resourceId)?.name)
           .filter(Boolean)
           .join(', ') || 'Нет кабинета';
 
@@ -170,7 +213,7 @@ export class ReceptionService {
         patientName: p.fullName,
         patientCode: p.patientCode,
         patient: { fullName: p.fullName },
-        service: app.service,
+        service: app.serviceId ? serviceMap.get(app.serviceId) || null : null,
         appointmentNumber: app.appointmentNumber,
         age,
         phone: primaryContact,
@@ -224,7 +267,17 @@ export class ReceptionService {
       recalculatedAt: new Date().toISOString(),
     };
 
-    await this.prisma.receptionistDashboardCache.upsert({
+    await this.saveDashboardToCache(tenantId, branchId, dateStr, dashboardJson);
+    return dashboardJson;
+  }
+
+  private async saveDashboardToCache(
+    tenantId: string,
+    branchId: string,
+    dateStr: string,
+    dashboardJson: any,
+  ) {
+    await this.schedulingPrisma.receptionistDashboardCache.upsert({
       where: {
         tenantId_branchId_dashboardDate: {
           tenantId,
@@ -248,16 +301,19 @@ export class ReceptionService {
     this.realtime.emitAppointmentEvent('reception.dashboard.updated', tenantId, branchId, {
       dateStr,
     });
-    return dashboardJson;
   }
 
   async checkIn(user: AuthenticatedUser, dto: CheckInDto) {
-    const appointment = await this.prisma.appointment.findUnique({
+    const appointment = await this.schedulingPrisma.appointment.findUnique({
       where: { id: dto.appointmentId },
-      include: { patient: true },
     });
     if (!appointment) throw new NotFoundException('Запись не найдена');
     if (appointment.tenantId !== user.tenantId) throw new ForbiddenException();
+
+    const patient = await this.prisma.patient.findUnique({
+      where: { id: appointment.patientId },
+    });
+    if (!patient) throw new NotFoundException('Пациент не найден');
 
     const allowed = ['SCHEDULED', 'CONFIRMED'];
     if (!allowed.includes(appointment.status)) {
@@ -266,7 +322,7 @@ export class ReceptionService {
       );
     }
 
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.schedulingPrisma.$transaction(async (tx) => {
       const app = await tx.appointment.update({
         where: { id: dto.appointmentId },
         data: { status: 'CHECKED_IN', checkedInAt: new Date() },
@@ -335,7 +391,7 @@ export class ReceptionService {
 
     this.realtime.emitAppointmentEvent('patient.checked_in', user.tenantId, appointment.branchId, {
       appointmentId: appointment.id,
-      patientName: appointment.patient.fullName,
+      patientName: patient.fullName,
       queueNumber: result.queueRecord.queueNumber,
     });
     this.realtime.emitAppointmentEvent(
@@ -364,7 +420,7 @@ export class ReceptionService {
     status: string,
     reason?: string,
   ) {
-    const current = await this.prisma.appointment.findUnique({
+    const current = await this.schedulingPrisma.appointment.findUnique({
       where: { id: appointmentId },
     });
     if (!current) throw new NotFoundException('Запись не найдена');
@@ -397,11 +453,10 @@ export class ReceptionService {
       data.cancellationReason = reason ?? null;
     }
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      const app = await tx.appointment.update({
+    const app = await this.schedulingPrisma.$transaction(async (tx) => {
+      const updated = await tx.appointment.update({
         where: { id: appointmentId },
         data,
-        include: { patient: { include: { contacts: true } }, service: true, branch: true },
       });
 
       await tx.appointmentStatusHistory.create({
@@ -444,18 +499,35 @@ export class ReceptionService {
           this.realtime.emitAppointmentEvent(
             'queue.updated',
             user.tenantId,
-            app.branchId,
+            updated.branchId,
             updatedQueue,
           );
         }
       }
 
-      if (status === 'COMPLETED' || status === 'COMPLETED_PENDING_PAYMENT') {
-        await this.autoGenerateInvoiceTx(tx, user, app);
-      }
-
-      return app;
+      return updated;
     });
+
+    // Resolve patient, service, branch from main DB
+    const [patient, service, branch] = await Promise.all([
+      this.prisma.patient.findFirst({
+        where: { id: app.patientId },
+        include: { contacts: true },
+      }),
+      app.serviceId ? this.prisma.service.findFirst({ where: { id: app.serviceId } }) : null,
+      this.prisma.branch.findFirst({ where: { id: app.branchId } }),
+    ]);
+
+    const result = {
+      ...app,
+      patient,
+      service,
+      branch,
+    };
+
+    if (status === 'COMPLETED' || status === 'COMPLETED_PENDING_PAYMENT') {
+      await this.autoGenerateInvoice(user, result);
+    }
 
     const dateStr = result.startAt.toISOString().slice(0, 10);
     await this.recalculateDashboard(user.tenantId, result.branchId, dateStr);
@@ -476,10 +548,10 @@ export class ReceptionService {
     return result;
   }
 
-  private async autoGenerateInvoiceTx(tx: any, user: AuthenticatedUser, app: any) {
-    if (!app.serviceId || !app.service) return;
+  private async autoGenerateInvoice(user: AuthenticatedUser, app: any) {
+    if (!app.serviceId) return;
 
-    const existing = await tx.invoice.findFirst({
+    const existing = await this.prisma.invoice.findFirst({
       where: { tenantId: user.tenantId, appointmentId: app.id },
     });
     if (existing) return;
@@ -488,16 +560,18 @@ export class ReceptionService {
     const subtotalAmount = unitPrice;
     const totalAmount = unitPrice;
 
-    const invoice = await tx.invoice.create({
+    const invoice = await this.prisma.invoice.create({
       data: {
         tenantId: user.tenantId,
         branchId: app.branchId,
         patientId: app.patientId,
         appointmentId: app.id,
+        invoiceNumber: `INV-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
         status: app.status === 'COMPLETED_PENDING_PAYMENT' ? 'PENDING_PAYMENT' : 'DRAFT',
         subtotalAmount,
         discountAmount: 0,
         totalAmount,
+        dueAmount: totalAmount,
         createdBy: user.userId,
         items: {
           create: [
@@ -506,7 +580,7 @@ export class ReceptionService {
               serviceId: app.serviceId,
               quantity: 1,
               unitPrice,
-              totalPrice: unitPrice,
+              totalAmount: unitPrice,
               performerEmployeeId: app.employeeId,
             },
           ],
@@ -520,11 +594,27 @@ export class ReceptionService {
   }
 
   async getQueue(user: AuthenticatedUser, branchId: string) {
-    return this.prisma.visitQueue.findMany({
+    const queues = await this.schedulingPrisma.visitQueue.findMany({
       where: { tenantId: user.tenantId, branchId },
-      include: { appointment: { include: { patient: true } } },
+      include: { appointment: true },
       orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
     });
+
+    if (queues.length === 0) return [];
+
+    const patientIds = Array.from(new Set(queues.map((q) => q.appointment.patientId)));
+    const patients = await this.prisma.patient.findMany({
+      where: { id: { in: patientIds } },
+    });
+    const patientMap = new Map(patients.map((p) => [p.id, p]));
+
+    return queues.map((q) => ({
+      ...q,
+      appointment: {
+        ...q.appointment,
+        patient: patientMap.get(q.appointment.patientId) || null,
+      },
+    }));
   }
 
   async updateQueueStatus(
@@ -533,7 +623,7 @@ export class ReceptionService {
     status: string,
     reason?: string,
   ) {
-    const queueRecord = await this.prisma.visitQueue.findUnique({
+    const queueRecord = await this.schedulingPrisma.visitQueue.findUnique({
       where: { id: queueId },
     });
     if (!queueRecord) throw new NotFoundException('Запись очереди не найдена');
@@ -544,7 +634,7 @@ export class ReceptionService {
       throw new BadRequestException(`Недопустимый статус очереди: ${status}`);
     }
 
-    const updated = await this.prisma.visitQueue.update({
+    const updated = await this.schedulingPrisma.visitQueue.update({
       where: { id: queueId },
       data: { queueStatus: status },
     });
@@ -574,11 +664,11 @@ export class ReceptionService {
   }
 
   async updateQueuePriority(user: AuthenticatedUser, id: string, priority: string) {
-    let queueRecord = await this.prisma.visitQueue.findUnique({
+    let queueRecord = await this.schedulingPrisma.visitQueue.findUnique({
       where: { id },
     });
     if (!queueRecord) {
-      queueRecord = await this.prisma.visitQueue.findFirst({
+      queueRecord = await this.schedulingPrisma.visitQueue.findFirst({
         where: { appointmentId: id, tenantId: user.tenantId },
       });
     }
@@ -590,7 +680,7 @@ export class ReceptionService {
       throw new BadRequestException(`Недопустимый приоритет очереди: ${priority}`);
     }
 
-    const updated = await this.prisma.visitQueue.update({
+    const updated = await this.schedulingPrisma.visitQueue.update({
       where: { id: queueRecord.id },
       data: { priority },
     });
@@ -641,8 +731,10 @@ export class ReceptionService {
     let card = null;
     if (contact) {
       const p = contact.patient;
-      const debt = p.invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
-      const isVip = p.tags.some((t) => t.tag.code === 'VIP' || t.tag.name.toLowerCase() === 'vip');
+      const debt = p.invoices.reduce((sum: number, inv: any) => sum + Number(inv.totalAmount), 0);
+      const isVip = p.tags.some(
+        (t: any) => t.tag.code === 'VIP' || t.tag.name.toLowerCase() === 'vip',
+      );
       const notesCount = await this.prisma.patientNote.count({ where: { patientId: p.id } });
 
       card = {
@@ -656,7 +748,7 @@ export class ReceptionService {
       };
     }
 
-    const call = await this.prisma.incomingCall.create({
+    const call = await this.schedulingPrisma.incomingCall.create({
       data: {
         tenantId: user.tenantId,
         branchId: dto.branchId,
@@ -688,12 +780,27 @@ export class ReceptionService {
   }
 
   async searchCalls(user: AuthenticatedUser, branchId: string) {
-    return this.prisma.incomingCall.findMany({
+    const calls = await this.schedulingPrisma.incomingCall.findMany({
       where: { tenantId: user.tenantId, branchId },
-      include: { patient: true },
       orderBy: { callStartedAt: 'desc' },
       take: 20,
     });
+
+    if (calls.length === 0) return [];
+
+    const patientIds = Array.from(
+      new Set(calls.map((c) => c.patientId).filter(Boolean)),
+    ) as string[];
+    const patients =
+      patientIds.length > 0
+        ? await this.prisma.patient.findMany({ where: { id: { in: patientIds } } })
+        : [];
+    const patientMap = new Map(patients.map((p) => [p.id, p]));
+
+    return calls.map((c) => ({
+      ...c,
+      patient: c.patientId ? patientMap.get(c.patientId) || null : null,
+    }));
   }
 
   async getInvoices(user: AuthenticatedUser, branchId: string) {
@@ -757,41 +864,46 @@ export class ReceptionService {
     if (!invoice) throw new NotFoundException('Счет не найден');
     if (invoice.tenantId !== user.tenantId) throw new ForbiddenException();
 
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const inv = await tx.invoice.update({
-        where: { id: invoiceId },
-        data: { status: 'PAID' },
-      });
+    const { updatedInvoice, shouldUpdateAppointment } = await this.prisma.$transaction(
+      async (tx) => {
+        const inv = await tx.invoice.update({
+          where: { id: invoiceId },
+          data: { status: 'PAID' },
+        });
 
-      await tx.payment.create({
-        data: {
-          tenantId: user.tenantId,
-          branchId: invoice.branchId,
-          invoiceId: invoice.id,
-          patientId: invoice.patientId,
-          paymentMethod: dto.paymentMethod,
-          amount: invoice.totalAmount,
-          cashierUserId: user.userId,
-          status: 'COMPLETED',
-        },
-      });
+        await tx.payment.create({
+          data: {
+            tenantId: user.tenantId,
+            branchId: invoice.branchId,
+            invoiceId: invoice.id,
+            patientId: invoice.patientId,
+            paymentMethod: dto.paymentMethod,
+            amount: invoice.totalAmount,
+            cashierUserId: user.userId,
+            status: 'COMPLETED',
+          },
+        });
 
-      // If tied to an appointment, transition the appointment status to COMPLETED
-      if (invoice.appointmentId) {
-        const app = await tx.appointment.findUnique({ where: { id: invoice.appointmentId } });
-        if (
-          app &&
-          ['COMPLETED_PENDING_PAYMENT', 'CHECKED_IN', 'IN_PROGRESS'].includes(app.status)
-        ) {
+        return { updatedInvoice: inv, shouldUpdateAppointment: !!invoice.appointmentId };
+      },
+    );
+
+    // If tied to an appointment, transition the appointment status to COMPLETED
+    if (shouldUpdateAppointment && invoice.appointmentId) {
+      const app = await this.schedulingPrisma.appointment.findUnique({
+        where: { id: invoice.appointmentId },
+      });
+      if (app && ['COMPLETED_PENDING_PAYMENT', 'CHECKED_IN', 'IN_PROGRESS'].includes(app.status)) {
+        await this.schedulingPrisma.$transaction(async (tx) => {
           await tx.appointment.update({
-            where: { id: invoice.appointmentId },
+            where: { id: invoice.appointmentId! },
             data: { status: 'COMPLETED', completedAt: new Date() },
           });
 
           await tx.appointmentStatusHistory.create({
             data: {
               tenantId: user.tenantId,
-              appointmentId: invoice.appointmentId,
+              appointmentId: invoice.appointmentId!,
               oldStatus: app.status,
               newStatus: 'COMPLETED',
               changedBy: user.userId,
@@ -802,24 +914,22 @@ export class ReceptionService {
           await tx.appointmentVisitState.create({
             data: {
               tenantId: user.tenantId,
-              appointmentId: invoice.appointmentId,
+              appointmentId: invoice.appointmentId!,
               oldState: app.status,
               newState: 'COMPLETED',
               changedBy: user.userId,
               workstationType: 'RECEPTIONIST',
             },
           });
-        }
+        });
       }
-
-      return inv;
-    });
+    }
 
     this.realtime.emitAppointmentEvent(
       'payment.completed',
       user.tenantId,
       invoice.branchId,
-      updated,
+      updatedInvoice,
     );
 
     // Invalidate dashboard cache
@@ -836,10 +946,10 @@ export class ReceptionService {
       entityType: 'invoice',
       entityId: invoiceId,
       oldValuesJson: invoice,
-      newValuesJson: updated,
+      newValuesJson: updatedInvoice,
     });
 
-    return updated;
+    return updatedInvoice;
   }
 
   async fastBooking(user: AuthenticatedUser, dto: FastBookingDto) {
@@ -854,8 +964,7 @@ export class ReceptionService {
     let patientId = contact?.patientId;
 
     if (!patientId) {
-      const count = await this.prisma.patient.count({ where: { tenantId: user.tenantId } });
-      const patientCode = `P-${String(count + 1).padStart(6, '0')}`;
+      const patientCode = await this.nextPatientCode(user.tenantId);
       const fullName = [dto.lastName, dto.firstName, dto.middleName].filter(Boolean).join(' ');
 
       const newPatient = await this.prisma.patient.create({
@@ -903,7 +1012,7 @@ export class ReceptionService {
 
     // If booking contains a custom priority, update appointment priority
     if (dto.priority && dto.priority !== 'NORMAL') {
-      await this.prisma.appointment.update({
+      await this.schedulingPrisma.appointment.update({
         where: { id: app.id },
         data: { priority: dto.priority },
       });
@@ -944,12 +1053,25 @@ export class ReceptionService {
     });
     if (!patient) throw new NotFoundException('Пациент не найден');
 
-    const recentAppointments = await this.prisma.appointment.findMany({
+    const recentAppointments = await this.schedulingPrisma.appointment.findMany({
       where: { patientId, tenantId: user.tenantId },
-      include: { service: true },
       orderBy: { startAt: 'desc' },
       take: 5,
     });
+
+    const serviceIds = recentAppointments.map((a) => a.serviceId).filter(Boolean) as string[];
+    const services =
+      serviceIds.length > 0
+        ? await this.prisma.service.findMany({ where: { id: { in: serviceIds } } })
+        : [];
+    const serviceMap = new Map(services.map((s) => [s.id, s]));
+
+    const recentAppointmentsWithService = recentAppointments.map((a) => ({
+      id: a.id,
+      date: a.startAt.toISOString(),
+      service: a.serviceId ? (serviceMap.get(a.serviceId)?.name ?? 'Без услуги') : 'Без услуги',
+      status: a.status,
+    }));
 
     const debt = patient.invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
     const isVip = patient.tags.some(
@@ -990,23 +1112,18 @@ export class ReceptionService {
           }
         : null,
       familyMembers,
-      recentAppointments: recentAppointments.map((a) => ({
-        id: a.id,
-        date: a.startAt.toISOString(),
-        service: a.service?.name ?? 'Без услуги',
-        status: a.status,
-      })),
+      recentAppointments: recentAppointmentsWithService,
     };
   }
 
   async recalculateMetrics(tenantId: string, patientId: string) {
-    const appointments = await this.prisma.appointment.findMany({
+    const appointments = await this.schedulingPrisma.appointment.findMany({
       where: { tenantId, patientId },
     });
 
-    const completed = appointments.filter((a) => a.status === 'COMPLETED');
-    const cancellations = appointments.filter((a) => a.status === 'CANCELLED').length;
-    const missed = appointments.filter((a) => a.status === 'NO_SHOW').length;
+    const completed = appointments.filter((a: any) => a.status === 'COMPLETED');
+    const cancellations = appointments.filter((a: any) => a.status === 'CANCELLED').length;
+    const missed = appointments.filter((a: any) => a.status === 'NO_SHOW').length;
     const totalVisits = completed.length;
 
     const invoices = await this.prisma.invoice.findMany({
@@ -1017,7 +1134,7 @@ export class ReceptionService {
 
     const lastVisit =
       completed.length > 0
-        ? new Date(Math.max(...completed.map((c) => c.startAt.getTime())))
+        ? new Date(Math.max(...completed.map((c: any) => c.startAt.getTime())))
         : null;
 
     await this.prisma.patientCrmMetric.upsert({
@@ -1043,5 +1160,25 @@ export class ReceptionService {
         lastVisitAt: lastVisit,
       },
     });
+  }
+
+  private async nextPatientCode(tenantId: string): Promise<string> {
+    const exists = await this.redis.exists(`tenant:${tenantId}:patient_seq`);
+    if (!exists) {
+      const lastPatient = await this.prisma.patient.findFirst({
+        where: { tenantId },
+        orderBy: { patientCode: 'desc' },
+      });
+      let seq = 0;
+      if (lastPatient) {
+        const match = lastPatient.patientCode.match(/\d+/);
+        if (match) {
+          seq = parseInt(match[0], 10);
+        }
+      }
+      await this.redis.set(`tenant:${tenantId}:patient_seq`, seq);
+    }
+    const seq = await this.redis.incr(`tenant:${tenantId}:patient_seq`);
+    return `P-${String(seq).padStart(6, '0')}`;
   }
 }

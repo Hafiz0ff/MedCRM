@@ -62,7 +62,6 @@ model Encounter {
 
   tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   patient               Patient                @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  appointment           Appointment?           @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   episode               EpisodeOfCare?         @relation(fields: [episodeId], references: [id], onDelete: SetNull)
   doctor                Employee               @relation(fields: [doctorEmployeeId], references: [id], onDelete: Cascade)
   department            Department?            @relation(fields: [departmentId], references: [id], onDelete: SetNull)

@@ -15,7 +15,6 @@ model Warehouse {
   tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch          Branch?     @relation(fields: [branchId], references: [id], onDelete: SetNull)
   department      Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  room            Room?       @relation(fields: [roomId], references: [id], onDelete: SetNull)
   parentWarehouse Warehouse?  @relation("WarehouseHierarchy", fields: [parentWarehouseId], references: [id], onDelete: SetNull)
   childWarehouses Warehouse[] @relation("WarehouseHierarchy")
 
@@ -302,7 +301,6 @@ model InventoryConsumption {
   consumedAt        DateTime @default(now()) @map("consumed_at") @db.Timestamptz(6)
 
   tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   encounter   Encounter?   @relation(fields: [encounterId], references: [id], onDelete: SetNull)
   warehouse   Warehouse    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
 

@@ -1,8 +1,8 @@
 import { REDIS_CLIENT } from '@core/cache/redis.module';
-import { PrismaService } from '@core/database/prisma.service';
 import { Inject, Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Queue, Worker, Job } from 'bullmq';
 import Redis from 'ioredis';
+import { PrismaService } from '../prisma.service';
 
 export const APPOINTMENT_REMINDERS_QUEUE = 'appointment-reminders';
 
@@ -71,7 +71,6 @@ export class RemindersService implements OnModuleInit, OnModuleDestroy {
     const { appointmentId } = job.data;
     const appointment = await this.prisma.appointment.findUnique({
       where: { id: appointmentId },
-      include: { patient: { include: { contacts: true } }, service: true, branch: true },
     });
 
     if (!appointment || ['CANCELLED', 'COMPLETED', 'NO_SHOW'].includes(appointment.status)) {
@@ -92,7 +91,7 @@ export class RemindersService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.logger.log(
-      `Reminder sent for appointment ${appointment.appointmentNumber} — patient ${appointment.patient.fullName}`,
+      `Reminder sent for appointment ${appointment.appointmentNumber} — patient ${appointment.patientId}`,
     );
   }
 }

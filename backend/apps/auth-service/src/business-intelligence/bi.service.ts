@@ -1,5 +1,6 @@
 import { AuditLoggerService } from '@core/audit/audit-logger.service';
 import { PrismaService } from '@core/database/prisma.service';
+import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -11,6 +12,7 @@ export class BusinessIntelligenceService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly schedulingPrisma: SchedulingPrismaService,
     private readonly audit: AuditLoggerService,
   ) {}
 
@@ -22,7 +24,7 @@ export class BusinessIntelligenceService {
     );
 
     // A. Sync Appointments to DwFactAppointment
-    const appts = await this.prisma.appointment.findMany({
+    const appts = await this.schedulingPrisma.appointment.findMany({
       where: { tenantId },
     });
 
@@ -98,14 +100,30 @@ export class BusinessIntelligenceService {
     const patients = await this.prisma.patient.findMany({
       where: { tenantId },
       include: {
-        appointments: { where: { status: 'COMPLETED' }, orderBy: { startAt: 'asc' }, take: 1 },
         invoices: { include: { payments: true } },
         leads: true,
       },
     });
 
+    const patientIds = patients.map((p) => p.id);
+    const firstAppointments = await this.schedulingPrisma.appointment.findMany({
+      where: {
+        tenantId,
+        patientId: { in: patientIds },
+        status: 'COMPLETED',
+      },
+      orderBy: { startAt: 'asc' },
+    });
+
+    const firstAppMap = new Map<string, Date>();
+    for (const app of firstAppointments) {
+      if (!firstAppMap.has(app.patientId)) {
+        firstAppMap.set(app.patientId, app.startAt);
+      }
+    }
+
     for (const pat of patients) {
-      const firstVisit = pat.appointments[0]?.startAt || null;
+      const firstVisit = firstAppMap.get(pat.id) || null;
       let firstPayment: Date | null = null;
       let totalLtv = new Decimal(0);
 
@@ -608,7 +626,7 @@ export class BusinessIntelligenceService {
   }
 
   async triggerRealtimeCacheUpdate(tenantId: string) {
-    const activeApptsCount = await this.prisma.appointment.count({
+    const activeApptsCount = await this.schedulingPrisma.appointment.count({
       where: { tenantId, status: 'SCHEDULED' },
     });
 
@@ -617,7 +635,7 @@ export class BusinessIntelligenceService {
       _sum: { totalAmount: true },
     });
 
-    const checkedInCount = await this.prisma.appointment.count({
+    const checkedInCount = await this.schedulingPrisma.appointment.count({
       where: { tenantId, status: 'CHECKED_IN' },
     });
 

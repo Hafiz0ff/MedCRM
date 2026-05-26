@@ -1,8 +1,18 @@
 import { createHash } from 'crypto';
 import { PrismaClient, Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
+import { PrismaClient as SchedulingPrismaClient } from '../../apps/scheduling-service/src/generated/prisma-client';
 
 const prisma = new PrismaClient();
+const schedulingPrisma = new SchedulingPrismaClient({
+  datasources: {
+    db: {
+      url:
+        process.env.SCHEDULING_DATABASE_URL ||
+        'postgresql://medcrm:medcrm_password@localhost:5432/medcrm_scheduling?schema=public',
+    },
+  },
+});
 
 const modules = [
   { code: 'auth', name: 'Auth/RBAC', version: '1.0.0', isCore: true, dependencies: [] },
@@ -403,7 +413,7 @@ async function main(): Promise<void> {
 
   const roomTypeMap = new Map<string, string>();
   for (const rt of roomTypesData) {
-    const r = await prisma.roomType.upsert({
+    const r = await schedulingPrisma.roomType.upsert({
       where: { tenantId_code: { tenantId: tenant.id, code: rt.code } },
       update: {},
       create: { ...rt, tenantId: tenant.id, isSystem: true },
@@ -421,7 +431,7 @@ async function main(): Promise<void> {
 
   const categoryMap = new Map<string, string>();
   for (const cat of categoriesData) {
-    const c = await prisma.equipmentCategory.upsert({
+    const c = await schedulingPrisma.equipmentCategory.upsert({
       where: { tenantId_code: { tenantId: tenant.id, code: cat.code } },
       update: {},
       create: { ...cat, tenantId: tenant.id, isSystem: true },
@@ -461,7 +471,7 @@ async function main(): Promise<void> {
   });
 
   // 6. Rooms
-  const docOffice = await prisma.room.upsert({
+  const docOffice = await schedulingPrisma.room.upsert({
     where: {
       tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'room-101' },
     },
@@ -478,7 +488,7 @@ async function main(): Promise<void> {
     },
   });
 
-  const usiOffice = await prisma.room.upsert({
+  const usiOffice = await schedulingPrisma.room.upsert({
     where: {
       tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'room-102' },
     },
@@ -495,7 +505,7 @@ async function main(): Promise<void> {
     },
   });
 
-  const cardioOffice = await prisma.room.upsert({
+  const cardioOffice = await schedulingPrisma.room.upsert({
     where: {
       tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'room-103' },
     },
@@ -512,7 +522,7 @@ async function main(): Promise<void> {
     },
   });
 
-  const treatmentRoom = await prisma.room.upsert({
+  const treatmentRoom = await schedulingPrisma.room.upsert({
     where: {
       tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'room-104' },
     },
@@ -530,7 +540,7 @@ async function main(): Promise<void> {
   });
 
   // Allowed specialties in room-102
-  await prisma.roomSpecialty.upsert({
+  await schedulingPrisma.roomSpecialty.upsert({
     where: {
       roomId_specialtyId: { roomId: usiOffice.id, specialtyId: specialtyMap.get('radiologist')! },
     },
@@ -538,7 +548,7 @@ async function main(): Promise<void> {
     create: { roomId: usiOffice.id, specialtyId: specialtyMap.get('radiologist')! },
   });
 
-  await prisma.roomSpecialty.upsert({
+  await schedulingPrisma.roomSpecialty.upsert({
     where: {
       roomId_specialtyId: { roomId: docOffice.id, specialtyId: specialtyMap.get('dentist')! },
     },
@@ -546,7 +556,7 @@ async function main(): Promise<void> {
     create: { roomId: docOffice.id, specialtyId: specialtyMap.get('dentist')! },
   });
 
-  await prisma.roomSpecialty.upsert({
+  await schedulingPrisma.roomSpecialty.upsert({
     where: {
       roomId_specialtyId: {
         roomId: cardioOffice.id,
@@ -558,7 +568,7 @@ async function main(): Promise<void> {
   });
 
   // 7. Equipment
-  const usiScanner = await prisma.equipment.upsert({
+  const usiScanner = await schedulingPrisma.equipment.upsert({
     where: { tenantId_inventoryNumber: { tenantId: tenant.id, inventoryNumber: 'EQ-USI-001' } },
     update: {},
     create: {
@@ -676,10 +686,10 @@ async function main(): Promise<void> {
       },
     });
 
-    await prisma.employeeRoomAssignment.deleteMany({
+    await schedulingPrisma.employeeRoomAssignment.deleteMany({
       where: { tenantId: tenant.id, employeeId: seededEmployee.id },
     });
-    await prisma.employeeRoomAssignment.create({
+    await schedulingPrisma.employeeRoomAssignment.create({
       data: {
         tenantId: tenant.id,
         employeeId: seededEmployee.id,
@@ -735,10 +745,10 @@ async function main(): Promise<void> {
   });
 
   // Assign room
-  await prisma.employeeRoomAssignment.deleteMany({
+  await schedulingPrisma.employeeRoomAssignment.deleteMany({
     where: { tenantId: tenant.id, employeeId: employee.id },
   });
-  await prisma.employeeRoomAssignment.create({
+  await schedulingPrisma.employeeRoomAssignment.create({
     data: {
       tenantId: tenant.id,
       employeeId: employee.id,
@@ -752,7 +762,7 @@ async function main(): Promise<void> {
   // 9. Working Schedules
   // Branch Working Hours (weekday 1..5, 08:00 - 18:00)
   for (let i = 1; i <= 5; i++) {
-    await prisma.workingSchedule.create({
+    await schedulingPrisma.workingSchedule.create({
       data: {
         tenantId: tenant.id,
         entityType: 'branch',
@@ -765,7 +775,7 @@ async function main(): Promise<void> {
     });
   }
 
-  await prisma.workingSchedule.deleteMany({
+  await schedulingPrisma.workingSchedule.deleteMany({
     where: {
       tenantId: tenant.id,
       entityType: { in: ['employee', 'room'] },
@@ -785,7 +795,7 @@ async function main(): Promise<void> {
 
   for (let weekday = 1; weekday <= 5; weekday++) {
     for (const entityId of [employee.id, dentistEmployee.id, cardiologistEmployee.id]) {
-      await prisma.workingSchedule.create({
+      await schedulingPrisma.workingSchedule.create({
         data: {
           tenantId: tenant.id,
           entityType: 'employee',
@@ -798,7 +808,7 @@ async function main(): Promise<void> {
       });
     }
     for (const entityId of [docOffice.id, usiOffice.id, cardioOffice.id, treatmentRoom.id]) {
-      await prisma.workingSchedule.create({
+      await schedulingPrisma.workingSchedule.create({
         data: {
           tenantId: tenant.id,
           entityType: 'room',
@@ -911,7 +921,7 @@ async function main(): Promise<void> {
   };
 
   const deleteAppointmentByNumber = async (appointmentNumber: string) => {
-    const appointment = await prisma.appointment.findFirst({
+    const appointment = await schedulingPrisma.appointment.findFirst({
       where: { tenantId: tenant.id, appointmentNumber },
     });
     if (!appointment) return;
@@ -922,10 +932,16 @@ async function main(): Promise<void> {
     await prisma.patientDebt.deleteMany({ where: { invoice: { appointmentId: appointment.id } } });
     await prisma.invoiceItem.deleteMany({ where: { invoice: { appointmentId: appointment.id } } });
     await prisma.invoice.deleteMany({ where: { appointmentId: appointment.id } });
-    await prisma.appointmentStatusHistory.deleteMany({ where: { appointmentId: appointment.id } });
-    await prisma.appointmentResource.deleteMany({ where: { appointmentId: appointment.id } });
-    await prisma.appointmentVisitState.deleteMany({ where: { appointmentId: appointment.id } });
-    await prisma.visitQueue.deleteMany({ where: { appointmentId: appointment.id } });
+    await schedulingPrisma.appointmentStatusHistory.deleteMany({
+      where: { appointmentId: appointment.id },
+    });
+    await schedulingPrisma.appointmentResource.deleteMany({
+      where: { appointmentId: appointment.id },
+    });
+    await schedulingPrisma.appointmentVisitState.deleteMany({
+      where: { appointmentId: appointment.id },
+    });
+    await schedulingPrisma.visitQueue.deleteMany({ where: { appointmentId: appointment.id } });
 
     const encounters = await prisma.encounter.findMany({
       where: { appointmentId: appointment.id },
@@ -950,7 +966,7 @@ async function main(): Promise<void> {
     await prisma.prescription.deleteMany({ where: { encounterId: { in: encounterIds } } });
     await prisma.encounter.deleteMany({ where: { appointmentId: appointment.id } });
 
-    await prisma.appointment.delete({ where: { id: appointment.id } });
+    await schedulingPrisma.appointment.delete({ where: { id: appointment.id } });
   };
 
   // Patients (P-000001, P-000002, P-000003)
@@ -1440,7 +1456,7 @@ async function main(): Promise<void> {
   const catUsiScannerId = categoryMap.get('USI_SCANNER');
 
   if (roomTypeUsiId) {
-    await prisma.serviceRequiredResource.upsert({
+    await schedulingPrisma.serviceRequiredResource.upsert({
       where: {
         serviceId_resourceType_resourceCategoryId: {
           serviceId: serviceProcedure.id,
@@ -1459,7 +1475,7 @@ async function main(): Promise<void> {
   }
 
   if (catUsiScannerId) {
-    await prisma.serviceRequiredResource.upsert({
+    await schedulingPrisma.serviceRequiredResource.upsert({
       where: {
         serviceId_resourceType_resourceCategoryId: {
           serviceId: serviceProcedure.id,
@@ -1479,7 +1495,7 @@ async function main(): Promise<void> {
 
   // 12. Resource Buffers
   // Set 10-minute prep buffer for the USI scanner
-  await prisma.resourceBuffer.upsert({
+  await schedulingPrisma.resourceBuffer.upsert({
     where: {
       tenantId_resourceType_resourceId: {
         tenantId: tenant.id,
@@ -1501,7 +1517,7 @@ async function main(): Promise<void> {
   });
 
   // Set 5-minute buffer for Doctor (Demo Admin)
-  await prisma.resourceBuffer.upsert({
+  await schedulingPrisma.resourceBuffer.upsert({
     where: {
       tenantId_resourceType_resourceId: {
         tenantId: tenant.id,
@@ -1529,11 +1545,11 @@ async function main(): Promise<void> {
   const dateNextWeek = new Date();
   dateNextWeek.setDate(dateNextWeek.getDate() + 7);
 
-  await prisma.waitingList.deleteMany({
+  await schedulingPrisma.waitingList.deleteMany({
     where: { patientId: p2.id, tenantId: tenant.id },
   });
 
-  await prisma.waitingList.create({
+  await schedulingPrisma.waitingList.create({
     data: {
       tenantId: tenant.id,
       patientId: p2.id,
@@ -1550,7 +1566,7 @@ async function main(): Promise<void> {
   });
 
   // 14. Receptionist workplace dummy data (today's board cards, queue, call, invoice)
-  await prisma.receptionistDashboardCache.deleteMany({
+  await schedulingPrisma.receptionistDashboardCache.deleteMany({
     where: { tenantId: tenant.id, branchId: branch.id },
   });
 
@@ -1571,7 +1587,7 @@ async function main(): Promise<void> {
     await deleteAppointmentByNumber(appointmentNumber);
   }
 
-  const demoApp = await prisma.appointment.create({
+  const demoApp = await schedulingPrisma.appointment.create({
     data: {
       tenantId: tenant.id,
       branchId: branch.id,
@@ -1627,10 +1643,10 @@ async function main(): Promise<void> {
   });
 
   // Create corresponding queue ticket
-  await prisma.visitQueue.deleteMany({
+  await schedulingPrisma.visitQueue.deleteMany({
     where: { tenantId: tenant.id, appointmentId: demoApp.id },
   });
-  await prisma.visitQueue.create({
+  await schedulingPrisma.visitQueue.create({
     data: {
       tenantId: tenant.id,
       branchId: branch.id,
@@ -1643,10 +1659,10 @@ async function main(): Promise<void> {
   });
 
   // Create dummy incoming call for p1
-  await prisma.incomingCall.deleteMany({
+  await schedulingPrisma.incomingCall.deleteMany({
     where: { tenantId: tenant.id, phoneNumber: '+79991112233' },
   });
-  await prisma.incomingCall.create({
+  await schedulingPrisma.incomingCall.create({
     data: {
       tenantId: tenant.id,
       branchId: branch.id,
@@ -1720,7 +1736,7 @@ async function main(): Promise<void> {
   }) => {
     const startAt = atToday(input.startHour, input.startMinute ?? 0);
     const endAt = new Date(startAt.getTime() + input.durationMinutes * 60 * 1000);
-    const appointment = await prisma.appointment.create({
+    const appointment = await schedulingPrisma.appointment.create({
       data: {
         tenantId: tenant.id,
         branchId: branch.id,
@@ -1792,7 +1808,7 @@ async function main(): Promise<void> {
     });
 
     if (input.status === 'CHECKED_IN') {
-      await prisma.visitQueue.create({
+      await schedulingPrisma.visitQueue.create({
         data: {
           tenantId: tenant.id,
           branchId: branch.id,
@@ -2966,4 +2982,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await schedulingPrisma.$disconnect();
   });

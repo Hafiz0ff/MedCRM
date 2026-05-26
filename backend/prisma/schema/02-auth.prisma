@@ -18,15 +18,12 @@ model User {
   sessions            UserSession[]
   auditLogs           AuditLog[]
   managedPatients     Patient[]              @relation("PatientAssignedManager")
-  createdAppointments Appointment[]          @relation("AppointmentCreatedBy")
   twoFactorSettings   User2faSettings?
   employee            Employee?
   patientNotes        PatientNote[]
   signedDocuments     PatientLegalDocument[]
   credentials         UserCredential[]
 
-  changedVisitStates AppointmentVisitState[]
-  handledCalls       IncomingCall[]
   createdInvoices    Invoice[]
 
   signedEncounters     Encounter[]

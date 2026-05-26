@@ -1,4 +1,5 @@
 import { PrismaService } from '@core/database/prisma.service';
+import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import {
   BadRequestException,
   ForbiddenException,
@@ -20,6 +21,7 @@ import type {
 export class PortalBookingService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly schedulingPrisma: SchedulingPrismaService,
     private readonly scheduling: SmartSchedulingService,
   ) {}
 
@@ -169,7 +171,7 @@ export class PortalBookingService {
   async cancelBooking(portalUser: AuthenticatedPortalUser, dto: PortalCancelBookingDto) {
     const { tenant, grant } = await this.resolveGrant(portalUser.accountId, dto.tenantCode);
 
-    const appointment = await this.prisma.appointment.findFirst({
+    const appointment = await this.schedulingPrisma.appointment.findFirst({
       where: {
         id: dto.appointmentId,
         tenantId: tenant.id,
@@ -190,7 +192,7 @@ export class PortalBookingService {
       );
     }
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.schedulingPrisma.$transaction(async (tx) => {
       await tx.appointment.update({
         where: { id: dto.appointmentId },
         data: {
@@ -218,22 +220,51 @@ export class PortalBookingService {
   async getUpcomingAppointments(portalUser: AuthenticatedPortalUser, tenantCode: string) {
     const { tenant, grant } = await this.resolveGrant(portalUser.accountId, tenantCode);
 
-    return this.prisma.appointment.findMany({
+    const appointments = await this.schedulingPrisma.appointment.findMany({
       where: {
         tenantId: tenant.id,
         patientId: grant.patientId,
         startAt: { gte: new Date() },
         status: { in: ['SCHEDULED', 'CONFIRMED', 'CHECKED_IN'] },
       },
-      include: {
-        employee: {
-          select: { id: true, firstName: true, lastName: true, middleName: true },
-        },
-        service: { select: { id: true, name: true, durationMinutes: true } },
-        branch: { select: { id: true, name: true, address: true } },
-      },
       orderBy: { startAt: 'asc' },
       take: 20,
     });
+
+    if (appointments.length === 0) return [];
+
+    const employeeIds = Array.from(new Set(appointments.map((a) => a.employeeId)));
+    const serviceIds = Array.from(
+      new Set(appointments.map((a) => a.serviceId).filter(Boolean)),
+    ) as string[];
+    const branchIds = Array.from(new Set(appointments.map((a) => a.branchId)));
+
+    const [employees, services, branches] = await Promise.all([
+      this.prisma.employee.findMany({
+        where: { id: { in: employeeIds } },
+        select: { id: true, firstName: true, lastName: true, middleName: true },
+      }),
+      serviceIds.length > 0
+        ? this.prisma.service.findMany({
+            where: { id: { in: serviceIds } },
+            select: { id: true, name: true, durationMinutes: true },
+          })
+        : [],
+      this.prisma.branch.findMany({
+        where: { id: { in: branchIds } },
+        select: { id: true, name: true, address: true },
+      }),
+    ]);
+
+    const employeeMap = new Map(employees.map((e) => [e.id, e]));
+    const serviceMap = new Map(services.map((s) => [s.id, s]));
+    const branchMap = new Map(branches.map((b) => [b.id, b]));
+
+    return appointments.map((a) => ({
+      ...a,
+      employee: employeeMap.get(a.employeeId) || null,
+      service: a.serviceId ? serviceMap.get(a.serviceId) || null : null,
+      branch: branchMap.get(a.branchId) || null,
+    }));
   }
 }

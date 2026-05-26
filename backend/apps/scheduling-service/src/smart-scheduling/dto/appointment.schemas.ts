@@ -106,7 +106,9 @@ export const recurrenceRuleSchema = z.object({
 export const publicSlotsQuerySchema = z.object({
   branchId: z.string().uuid(),
   employeeId: z.string().uuid().optional(),
+  employeeIds: z.array(z.string().uuid()).optional(),
   serviceId: z.string().uuid().optional(),
+  durationMinutes: z.number().int().min(1).optional(),
   date: z.string().date(),
 });
 
