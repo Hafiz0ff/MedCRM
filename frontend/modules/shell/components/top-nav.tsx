@@ -1,12 +1,14 @@
 'use client';
 
 import {
+  Bell,
   CalendarDays,
   ClipboardList,
   FileText,
   LayoutDashboard,
   LogOut,
   Menu,
+  Search,
   Settings,
   Stethoscope,
   UserRoundCheck,
@@ -18,6 +20,7 @@ import { useEffect, useState, type ComponentType } from 'react';
 import { Link, usePathname } from '@/i18n/routing';
 import { can, moduleEnabled } from '@/shared/permissions/can';
 import { BootstrapPayload } from '@/shared/types/bootstrap';
+import { ThemeToggle } from '@/shared/ui/theme-toggle';
 
 type NavItem = {
   href: string;
@@ -30,7 +33,7 @@ type NavItem = {
 const primaryNav: NavItem[] = [
   {
     href: '/dashboard',
-    label: 'Операционная',
+    label: 'Дашборд',
     module: 'auth',
     permission: 'auth.bootstrap.read',
     icon: LayoutDashboard,
@@ -58,7 +61,7 @@ const primaryNav: NavItem[] = [
   },
   {
     href: '/doctors',
-    label: 'Врачи',
+    label: 'Врачи и услуги',
     module: 'auth',
     permission: 'auth.bootstrap.read',
     icon: UserRoundCheck,
@@ -79,6 +82,7 @@ function isActive(pathname: string, href: string): boolean {
 export function TopNav({ bootstrap }: { bootstrap: BootstrapPayload }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const branch = bootstrap.branches[0];
 
   useEffect(() => {
     setOpen(false);
@@ -174,6 +178,44 @@ export function TopNav({ bootstrap }: { bootstrap: BootstrapPayload }) {
         >
           {open ? <X size={18} /> : <Menu size={18} />}
         </button>
+
+        <div className="topnav-spacer" aria-hidden="true" />
+
+        <label className="topnav-search">
+          <Search size={16} />
+          <input placeholder="Поиск пациента, врача, услуги..." aria-label="Глобальный поиск" />
+          <kbd aria-hidden="true">⌘K</kbd>
+        </label>
+
+        <div className="topnav-actions">
+          <ThemeToggle />
+          <button
+            type="button"
+            className="topnav-action-button notification-button"
+            aria-label="Уведомления"
+            title="Уведомления"
+          >
+            <Bell size={16} />
+            <span className="notification-dot" aria-hidden="true" />
+          </button>
+          <div className="topnav-profile">
+            <button
+              className="topbar-avatar"
+              type="button"
+              aria-label="Профиль администратора"
+              title={bootstrap.tenant.subscriptionPlan}
+            >
+              АД
+            </button>
+            <div className="topnav-profile-text">
+              <strong>Администратор</strong>
+              <span>{branch ? branch.name : 'Филиал не выбран'}</span>
+            </div>
+            <button type="button" className="topnav-logout" aria-label="Выйти" title="Выйти">
+              <LogOut size={16} />
+            </button>
+          </div>
+        </div>
       </div>
 
       {open ? (
