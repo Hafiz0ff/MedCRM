@@ -1,7 +1,7 @@
 {
   "name": "@medcrm/backend",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "scripts": {
     "build": "nest build api-gateway && nest build auth-service && nest build scheduling-service && nest build integrations-service && nest build analytics-service && nest build billing-service && nest build worker",
     "build:api-gateway": "nest build api-gateway",
