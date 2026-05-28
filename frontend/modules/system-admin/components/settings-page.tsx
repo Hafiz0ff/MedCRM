@@ -7,10 +7,12 @@ import {
   Settings as SettingsIcon,
   ShieldCheck,
   Lock,
+  CreditCard,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useSystemAdminRealtime } from '../hooks/use-system-realtime';
 import { AuditTab } from './audit-tab';
+import { BillingPortalTab } from './billing-portal-tab';
 import { GeneralTab } from './general-tab';
 import { IntegrationsTab } from './integrations-tab';
 import { RbacTab } from './rbac-tab';
@@ -18,7 +20,7 @@ import { SecurityTab } from './security-tab';
 import { can } from '@/shared/permissions/can';
 import { BootstrapPayload } from '@/shared/types/bootstrap';
 
-type TabKey = 'general' | 'rbac' | 'security' | 'integrations' | 'audit';
+type TabKey = 'general' | 'rbac' | 'security' | 'integrations' | 'billing' | 'audit';
 
 type TabDef = {
   key: TabKey;
@@ -56,6 +58,14 @@ const tabs: TabDef[] = [
     icon: KeyRound,
     permission: 'integration.gateway.manage',
     description: 'Подключение внешних систем, ротация B2B-ключей',
+  },
+  {
+    key: 'billing',
+    label: 'Биллинг и Брендинг',
+    icon: CreditCard,
+    permission: 'system.settings.read',
+    description:
+      'Управление корпоративными подписками, лимитами ресурсов, внешним брендингом и SSO авторизацией',
   },
   {
     key: 'audit',
@@ -126,6 +136,7 @@ export function SettingsPage({ bootstrap }: { bootstrap: BootstrapPayload }) {
         {active === 'rbac' && <RbacTab bootstrap={bootstrap} />}
         {active === 'security' && <SecurityTab bootstrap={bootstrap} />}
         {active === 'integrations' && <IntegrationsTab bootstrap={bootstrap} />}
+        {active === 'billing' && <BillingPortalTab bootstrap={bootstrap} />}
         {active === 'audit' && <AuditTab />}
       </div>
     </section>

@@ -70,4 +70,40 @@ describe('createRateLimitMiddleware', () => {
 
     assert.equal(nextCount, 2);
   });
+
+  it('resolves correct policy based on route path', () => {
+    const middleware = createRateLimitMiddleware();
+
+    // Auth paths
+    let res = makeRes();
+    middleware(makeReq('127.0.0.1', '/api/v1/auth/login'), res, () => {});
+    assert.equal(res.headers['x-ratelimit-policy'], 'auth');
+
+    res = makeRes();
+    middleware(makeReq('127.0.0.1', '/auth/login'), res, () => {});
+    assert.equal(res.headers['x-ratelimit-policy'], 'auth');
+
+    res = makeRes();
+    middleware(makeReq('127.0.0.1', '/portal/v1/auth/otp/request'), res, () => {});
+    assert.equal(res.headers['x-ratelimit-policy'], 'auth');
+
+    // Public paths
+    res = makeRes();
+    middleware(makeReq('127.0.0.1', '/portal/v1/booking/slots'), res, () => {});
+    assert.equal(res.headers['x-ratelimit-policy'], 'public');
+
+    res = makeRes();
+    middleware(makeReq('127.0.0.1', '/api/v1/patients'), res, () => {});
+    assert.equal(res.headers['x-ratelimit-policy'], 'public');
+
+    // Internal paths
+    res = makeRes();
+    middleware(makeReq('127.0.0.1', '/internal/v1/auth'), res, () => {});
+    assert.equal(res.headers['x-ratelimit-policy'], 'internal');
+
+    // Websocket paths
+    res = makeRes();
+    middleware(makeReq('127.0.0.1', '/socket.io/'), res, () => {});
+    assert.equal(res.headers['x-ratelimit-policy'], 'websocket');
+  });
 });

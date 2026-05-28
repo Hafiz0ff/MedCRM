@@ -32,7 +32,13 @@
       "payNow": "Оплатить",
       "history": "История посещений",
       "profile": "Мой профиль",
-      "logout": "Выйти"
+      "logout": "Выйти",
+      "bookNow": "Записаться на прием",
+      "quickActions": "Быстрые действия",
+      "book": "Запись к врачу",
+      "viewHistory": "Мои визиты",
+      "documents": "Профиль и док.",
+      "connectedClinics": "Подключенные клиники"
     },
     "nav": {
       "dashboard": "Главная",
@@ -43,5 +49,66 @@
       "logout": "Выйти",
       "menu": "Меню"
     }
+  },
+  "booking": {
+    "confirmed": "Запись успешно подтверждена",
+    "confirmedDesc": "Вы можете посмотреть детали в личном кабинете.",
+    "step": "Шаг {current} из {total}",
+    "steps": {
+      "specialty": "Выберите специальность",
+      "doctor": "Выберите врача",
+      "datetime": "Выберите дату и время",
+      "confirm": "Подтверждение записи"
+    },
+    "searchSpecialty": "Поиск специальности...",
+    "noSpecialties": "Специальности не найдены",
+    "noDoctors": "Врачи не найдены",
+    "availableSlots": "Доступное время",
+    "noSlots": "Нет доступных слотов на этот день",
+    "reserveSlot": "Забронировать время",
+    "summary": "Информация о записи",
+    "branch": "Филиал",
+    "otpTitle": "Подтверждение записи",
+    "otpDesc": "Введите код, отправленный вам на телефон.",
+    "confirmBooking": "Подтвердить запись"
+  },
+  "visits": {
+    "title": "История визитов",
+    "filterAll": "Все",
+    "filterCompleted": "Завершенные",
+    "filterCancelled": "Отмененные",
+    "filterNoShow": "Неявка",
+    "searchPlaceholder": "Поиск по врачу или услуге...",
+    "noVisits": "Нет визитов",
+    "noVisitsDesc": "История посещений пуста",
+    "status": {
+      "completed": "Завершен",
+      "cancelled": "Отменен",
+      "no_show": "Неявка",
+      "scheduled": "Запланирован"
+    }
+  },
+  "profile": {
+    "male": "Мужской",
+    "female": "Женский",
+    "personalInfo": "Личная информация",
+    "fullName": "ФИО",
+    "phone": "Телефон",
+    "birthDate": "Дата рождения",
+    "gender": "Пол",
+    "connectedClinics": "Привязанные клиники",
+    "noClinics": "Нет привязанных клиник",
+    "disconnect": "Отключить",
+    "connectNew": "Привязать новую клинику",
+    "tenantCodePlaceholder": "Код клиники",
+    "connect": "Подключить",
+    "connectSuccess": "Клиника успешно подключена!",
+    "settings": "Настройки",
+    "theme": "Тема оформления",
+    "themeLight": "Светлая",
+    "themeDark": "Темная",
+    "exportData": "Экспорт данных",
+    "exportDesc": "Скачать архив со всей медицинской картой (PDF, CSV)",
+    "logout": "Выйти из аккаунта"
   }
 }

@@ -1063,7 +1063,7 @@ export class SmartSchedulingService {
       },
     });
 
-    const code = String(randomInt(1000, 9999));
+    const code = String(randomInt(100000, 999999));
     await this.redis.setex(`otp:${token}`, 600, code);
     return { token, code, expiresAt: new Date(Date.now() + 10 * 60 * 1000) };
   }

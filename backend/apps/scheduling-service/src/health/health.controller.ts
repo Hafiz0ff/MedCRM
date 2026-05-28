@@ -7,9 +7,19 @@ import { PrismaService } from '../prisma.service';
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}
 
-  @Get()
-  async health() {
+  @Get('live')
+  healthLive() {
+    return { status: 'ok', service: 'scheduling-service', timestamp: new Date().toISOString() };
+  }
+
+  @Get('ready')
+  async healthReady() {
     await this.prisma.$queryRaw`select 1`;
-    return { status: 'ok', service: 'scheduling-service' };
+    return {
+      status: 'ok',
+      service: 'scheduling-service',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+    };
   }
 }

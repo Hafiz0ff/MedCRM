@@ -47,6 +47,13 @@ model Patient {
   encounters     Encounter[]
   medicalFiles   MedicalFile[]
 
+  patientAllergies         PatientAllergy[]
+  patientChronicConditions PatientChronicCondition[]
+  patientPregnancyStates   PatientPregnancyState[]
+  vitalSigns               VitalSign[]
+  labReports               LabReport[]
+  dentalChartEntries       DentalChartEntry[]
+
   payments           Payment[]
   wallets            PatientWallet[]
   debts              PatientDebt[]

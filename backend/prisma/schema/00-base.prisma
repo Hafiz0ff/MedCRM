@@ -5,5 +5,5 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["public", "platform", "auth", "patients", "emr", "finance", "communications", "inventory", "hr", "analytics", "integrations", "billing"]
+  schemas  = ["public", "platform", "auth", "patients", "emr", "finance", "communications", "inventory", "hr", "analytics", "integrations", "billing", "reference", "scheduling"]
 }

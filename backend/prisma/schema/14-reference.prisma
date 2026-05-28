@@ -1,0 +1,130 @@
+model ReferenceIcdCode {
+  id         String   @id @default(uuid()) @db.Uuid
+  code       String   @unique @db.VarChar(80)
+  version    Int      @default(10)
+  parentCode String?  @map("parent_code") @db.VarChar(80)
+  title      String   @db.VarChar(500)
+  titleRu    String?  @map("title_ru") @db.VarChar(500)
+  titleTj    String?  @map("title_tj") @db.VarChar(500)
+  titleEn    String?  @map("title_en") @db.VarChar(500)
+  isLeaf     Boolean  @default(true) @map("is_leaf")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("reference_icd_codes")
+  @@schema("reference")
+}
+
+model ReferenceInn {
+  code                      String                      @id @db.VarChar(120) // МНН код
+  name                      String                      @db.VarChar(255)
+  nameRu                    String?                     @map("name_ru") @db.VarChar(255)
+  nameTj                    String?                     @map("name_tj") @db.VarChar(255)
+  atxCode                   String?                     @map("atx_code") @db.VarChar(40)
+  fdaPregnancyCategory      String?                     @map("fda_pregnancy_category") @db.VarChar(10) // A, B, C, D, X
+  requiresRenalAdjustment   Boolean                     @default(false) @map("requires_renal_adjustment")
+  requiresHepaticAdjustment Boolean                     @default(false) @map("requires_hepatic_adjustment")
+  isActive                  Boolean                     @default(true) @map("is_active")
+  createdAt                 DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  medicinalProducts         ReferenceMedicinalProduct[]
+  allergens                 ReferenceAllergen[]
+  prescriptionItems         PrescriptionItem[]
+
+  @@map("reference_inns")
+  @@schema("reference")
+}
+
+model ReferenceMedicinalProduct {
+  id                String             @id @default(uuid()) @db.Uuid
+  innCode           String             @map("inn_code") @db.VarChar(120)
+  tradeName         String             @map("trade_name") @db.VarChar(255)
+  manufacturer      String?            @db.VarChar(255)
+  dosageForm        String?            @map("dosage_form") @db.VarChar(120)
+  strength          String?            @db.VarChar(100) // e.g. "500 mg"
+  country           String?            @db.VarChar(100)
+  isActive          Boolean            @default(true) @map("is_active")
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  inn               ReferenceInn       @relation(fields: [innCode], references: [code])
+  prescriptionItems PrescriptionItem[]
+
+  @@map("reference_medicinal_products")
+  @@schema("reference")
+}
+
+model ReferenceAllergen {
+  code             String           @id @db.VarChar(80)
+  category         String           @db.VarChar(60) // drug, food, environment, other
+  title            String           @db.VarChar(255)
+  titleRu          String?          @map("title_ru") @db.VarChar(255)
+  innCode          String?          @map("inn_code") @db.VarChar(120)
+  isActive         Boolean          @default(true) @map("is_active")
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  inn              ReferenceInn?    @relation(fields: [innCode], references: [code])
+  patientAllergies PatientAllergy[]
+
+  @@map("reference_allergens")
+  @@schema("reference")
+}
+
+model ReferenceDdi {
+  id             String   @id @default(uuid()) @db.Uuid
+  innCodeA       String   @map("inn_code_a") @db.VarChar(120)
+  innCodeB       String   @map("inn_code_b") @db.VarChar(120)
+  severity       String   @db.VarChar(40) // contraindicated, major, moderate, minor
+  mechanism      String?  @db.Text
+  recommendation String?  @db.Text
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([innCodeA, innCodeB])
+  @@map("reference_ddis")
+  @@schema("reference")
+}
+
+model ReferenceUnit {
+  code      String   @id @db.VarChar(40) // UCUM code, e.g. "mg", "ml"
+  name      String   @db.VarChar(120)
+  nameRu    String?  @map("name_ru") @db.VarChar(120)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("reference_units")
+  @@schema("reference")
+}
+
+model ReferenceDosageForm {
+  code      String   @id @db.VarChar(40) // e.g. "tab", "cap"
+  name      String   @db.VarChar(120)
+  nameRu    String?  @map("name_ru") @db.VarChar(120)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("reference_dosage_forms")
+  @@schema("reference")
+}
+
+model ReferenceRoute {
+  code      String   @id @db.VarChar(40) // e.g. "PO", "IV"
+  name      String   @db.VarChar(120)
+  nameRu    String?  @map("name_ru") @db.VarChar(120)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("reference_routes")
+  @@schema("reference")
+}
+
+model ReferenceLoincCode {
+  code           String   @id @db.VarChar(40)
+  component      String   @db.VarChar(255)
+  system         String   @db.VarChar(100)
+  scale          String   @db.VarChar(40)
+  class          String   @db.VarChar(100)
+  titleRu        String?  @map("title_ru") @db.VarChar(255)
+  referenceRange String?  @map("reference_range") @db.VarChar(120)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("reference_loinc_codes")
+  @@schema("reference")
+}

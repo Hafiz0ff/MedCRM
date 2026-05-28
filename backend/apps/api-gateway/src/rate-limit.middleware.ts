@@ -19,7 +19,13 @@ const defaultMaxByPolicy: Record<GatewayRateLimitPolicy, number> = {
 };
 
 function policyForPath(path: string): GatewayRateLimitPolicy {
-  if (path.startsWith('/api/v1/auth') || path.startsWith('/auth')) return 'auth';
+  if (
+    path.startsWith('/api/v1/auth') ||
+    path.startsWith('/auth') ||
+    path.startsWith('/portal/v1/auth')
+  ) {
+    return 'auth';
+  }
   if (path.startsWith('/internal/v1')) return 'internal';
   if (path.startsWith('/socket.io') || path.startsWith('/realtime')) return 'websocket';
   return 'public';

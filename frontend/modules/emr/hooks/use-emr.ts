@@ -311,6 +311,17 @@ export function useCreatePrescription(patientId: string, encounterId: string) {
         quantity?: number | null;
         instructions?: string | null;
         linkedServiceId?: string | null;
+        innCode?: string | null;
+        medicinalProductId?: string | null;
+        dose?: number | null;
+        doseUnit?: string | null;
+        frequencyPerDay?: number | null;
+        intervalHours?: number | null;
+        durationDays?: number | null;
+        startDate?: string | null;
+        endDate?: string | null;
+        cdsOverridden?: boolean;
+        cdsOverrideReason?: string | null;
       }>;
     }) =>
       apiFetch<any>(`/emr/encounters/${encounterId}/prescriptions`, {
@@ -320,5 +331,155 @@ export function useCreatePrescription(patientId: string, encounterId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['encounter', encounterId] });
     },
+  });
+}
+
+export function usePatientAllergies(patientId: string) {
+  return useQuery({
+    queryKey: ['patient-allergies', patientId],
+    queryFn: () => apiFetch<any[]>(`/emr/patients/${patientId}/allergies`),
+  });
+}
+
+export function useAddPatientAllergy(patientId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      allergenCode: string;
+      severity: 'mild' | 'moderate' | 'severe';
+      notes?: string | null;
+    }) =>
+      apiFetch<any>(`/emr/patients/${patientId}/allergies`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patient-allergies', patientId] });
+    },
+  });
+}
+
+export function usePatientChronicConditions(patientId: string) {
+  return useQuery({
+    queryKey: ['patient-chronic-conditions', patientId],
+    queryFn: () => apiFetch<any[]>(`/emr/patients/${patientId}/chronic-conditions`),
+  });
+}
+
+export function useAddPatientChronicCondition(patientId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { icdCode: string; notes?: string | null }) =>
+      apiFetch<any>(`/emr/patients/${patientId}/chronic-conditions`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patient-chronic-conditions', patientId] });
+    },
+  });
+}
+
+export function usePatientPregnancy(patientId: string) {
+  return useQuery({
+    queryKey: ['patient-pregnancy', patientId],
+    queryFn: () => apiFetch<any>(`/emr/patients/${patientId}/pregnancy`),
+  });
+}
+
+export function useUpdatePatientPregnancy(patientId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      estimatedDeliveryDate?: string | null;
+      status: 'ACTIVE' | 'COMPLETED' | 'ABORTED';
+      notes?: string | null;
+    }) =>
+      apiFetch<any>(`/emr/patients/${patientId}/pregnancy`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patient-pregnancy', patientId] });
+    },
+  });
+}
+
+export function usePatientVitals(patientId: string) {
+  return useQuery({
+    queryKey: ['patient-vitals', patientId],
+    queryFn: () => apiFetch<any[]>(`/emr/vitals/patient/${patientId}`),
+  });
+}
+
+export function useLogVital(patientId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      encounterId?: string | null;
+      type: string;
+      value: number;
+      unit: string;
+      context?: string | null;
+    }) =>
+      apiFetch<any>(`/emr/vitals`, {
+        method: 'POST',
+        body: JSON.stringify({ ...input, patientId }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patient-vitals', patientId] });
+    },
+  });
+}
+
+export function useDentalChart(patientId: string) {
+  return useQuery({
+    queryKey: ['patient-dental-chart', patientId],
+    queryFn: () => apiFetch<any[]>(`/emr/patients/${patientId}/dental-chart`),
+  });
+}
+
+export function useAddDentalEntry(patientId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      toothCode: number;
+      surface?: string | null;
+      diagnosisCode?: string | null;
+      procedureCode?: string | null;
+      notes?: string | null;
+      encounterId?: string | null;
+    }) =>
+      apiFetch<any>(`/emr/patients/${patientId}/dental-chart`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patient-dental-chart', patientId] });
+    },
+  });
+}
+
+export function useDentalProcedures() {
+  return useQuery({
+    queryKey: ['dental-procedures'],
+    queryFn: () => apiFetch<any[]>('/emr/dental/procedures'),
+  });
+}
+
+export function usePatientLabReports(patientId: string) {
+  return useQuery({
+    queryKey: ['patient-lab-reports', patientId],
+    queryFn: () => apiFetch<any[]>(`/emr/patients/${patientId}/lab-reports`),
+  });
+}
+
+export function useCdsCheck(patientId: string) {
+  return useMutation({
+    mutationFn: (input: { items: any[] }) =>
+      apiFetch<any[]>('/emr/cds/check', {
+        method: 'POST',
+        body: JSON.stringify({ ...input, patientId }),
+      }),
   });
 }

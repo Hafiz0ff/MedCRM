@@ -2571,33 +2571,450 @@ async function main(): Promise<void> {
 
   // 15. EMR Clinical Subsystem Seeding
   // ICD-10 Dictionary codes
+  // Standard Units
+  const units = [
+    { code: 'mg', name: 'Milligram', nameRu: 'Миллиграмм' },
+    { code: 'ml', name: 'Milliliter', nameRu: 'Миллилитр' },
+    { code: 'tab', name: 'Tablet', nameRu: 'Таблетка' },
+    { code: 'drop', name: 'Drop', nameRu: 'Капля' },
+    { code: 'g', name: 'Gram', nameRu: 'Грамм' },
+    { code: 'IU', name: 'International Unit', nameRu: 'МЕ' },
+  ];
+  for (const u of units) {
+    await prisma.referenceUnit.upsert({
+      where: { code: u.code },
+      update: { name: u.name, nameRu: u.nameRu },
+      create: { code: u.code, name: u.name, nameRu: u.nameRu },
+    });
+  }
+
+  // Standard Routes
+  const routes = [
+    { code: 'PO', name: 'Oral', nameRu: 'Перорально' },
+    { code: 'IV', name: 'Intravenous', nameRu: 'Внутривенно' },
+    { code: 'IM', name: 'Intramuscular', nameRu: 'Внутримышечно' },
+    { code: 'SC', name: 'Subcutaneous', nameRu: 'Подкожно' },
+    { code: 'TOP', name: 'Topical', nameRu: 'Местно' },
+    { code: 'INH', name: 'Inhalation', nameRu: 'Ингаляционно' },
+  ];
+  for (const r of routes) {
+    await prisma.referenceRoute.upsert({
+      where: { code: r.code },
+      update: { name: r.name, nameRu: r.nameRu },
+      create: { code: r.code, name: r.name, nameRu: r.nameRu },
+    });
+  }
+
+  // Standard Dosage Forms
+  const forms = [
+    { code: 'tab', name: 'Tablet', nameRu: 'Таблетка' },
+    { code: 'cap', name: 'Capsule', nameRu: 'Капсула' },
+    { code: 'syrup', name: 'Syrup', nameRu: 'Сироп' },
+    { code: 'drops', name: 'Drops', nameRu: 'Капли' },
+    { code: 'injection', name: 'Injection solution', nameRu: 'Раствор для инъекций' },
+  ];
+  for (const f of forms) {
+    await prisma.referenceDosageForm.upsert({
+      where: { code: f.code },
+      update: { name: f.name, nameRu: f.nameRu },
+      create: { code: f.code, name: f.name, nameRu: f.nameRu },
+    });
+  }
+
+  // ICD-10 codes
   const commonIcdCodes = [
     {
       code: 'I10',
-      codeSystem: 'ICD-10',
-      nameRu: 'Эссенциальная [первичная] гипертензия',
-      nameEn: 'Essential (primary) hypertension',
+      title: 'Essential (primary) hypertension',
+      titleRu: 'Эссенциальная [первичная] гипертензия',
+      titleTj: 'Фишорбаландии эссенсиалӣ',
+      isLeaf: true,
     },
     {
       code: 'J00',
-      codeSystem: 'ICD-10',
-      nameRu: 'Острый назофарингит [насморк]',
-      nameEn: 'Acute nasopharyngitis (common cold)',
+      title: 'Acute nasopharyngitis (common cold)',
+      titleRu: 'Острый назофарингит [насморк]',
+      titleTj: 'Назофарингити шадид',
+      isLeaf: true,
     },
-    { code: 'K02', codeSystem: 'ICD-10', nameRu: 'Кариес зубов', nameEn: 'Dental caries' },
+    {
+      code: 'K02',
+      title: 'Dental caries',
+      titleRu: 'Кариес зубов',
+      titleTj: 'Кариеси дандон',
+      isLeaf: true,
+    },
+    {
+      code: 'E11',
+      title: 'Type 2 diabetes mellitus',
+      titleRu: 'Сахарный диабет 2 типа',
+      titleTj: 'Дябети қанди намуди 2',
+      isLeaf: true,
+    },
+    { code: 'J45', title: 'Asthma', titleRu: 'Астма', titleTj: 'Астма', isLeaf: true },
   ];
-
-  for (const diag of commonIcdCodes) {
-    await prisma.diagnosisDictionary.upsert({
-      where: { code: diag.code },
-      update: { nameRu: diag.nameRu, nameEn: diag.nameEn },
+  for (const icd of commonIcdCodes) {
+    await prisma.referenceIcdCode.upsert({
+      where: { code: icd.code },
+      update: { title: icd.title, titleRu: icd.titleRu, titleTj: icd.titleTj },
       create: {
-        code: diag.code,
-        codeSystem: diag.codeSystem,
-        nameRu: diag.nameRu,
-        nameEn: diag.nameEn,
+        code: icd.code,
+        title: icd.title,
+        titleRu: icd.titleRu,
+        titleTj: icd.titleTj,
+        version: 10,
+        isLeaf: true,
         isActive: true,
       },
+    });
+
+    // Seed back compatibility DiagnosisDictionary as well
+    await prisma.diagnosisDictionary.upsert({
+      where: { code: icd.code },
+      update: { nameRu: icd.titleRu, nameEn: icd.title },
+      create: {
+        code: icd.code,
+        codeSystem: 'ICD-10',
+        nameRu: icd.titleRu || '',
+        nameEn: icd.title,
+        nameTj: icd.titleTj,
+        isActive: true,
+      },
+    });
+  }
+
+  // Reference INNs
+  const inns = [
+    {
+      code: 'INN001',
+      name: 'Perindopril',
+      nameRu: 'Периндоприл',
+      nameTj: 'Периндоприл',
+      atxCode: 'C09AA04',
+      fdaPregnancyCategory: 'D',
+      requiresRenalAdjustment: true,
+      requiresHepaticAdjustment: false,
+    },
+    {
+      code: 'INN002',
+      name: 'Spironolactone',
+      nameRu: 'Спиронолактон',
+      nameTj: 'Спиронолактон',
+      atxCode: 'C03DA01',
+      fdaPregnancyCategory: 'C',
+      requiresRenalAdjustment: true,
+      requiresHepaticAdjustment: false,
+    },
+    {
+      code: 'INN003',
+      name: 'Paracetamol',
+      nameRu: 'Парацетамол',
+      nameTj: 'Парацетамол',
+      atxCode: 'N02BE01',
+      fdaPregnancyCategory: 'B',
+      requiresRenalAdjustment: false,
+      requiresHepaticAdjustment: true,
+    },
+    {
+      code: 'INN004',
+      name: 'Warfarin',
+      nameRu: 'Варфарин',
+      nameTj: 'Варфарин',
+      atxCode: 'B01AA03',
+      fdaPregnancyCategory: 'X',
+      requiresRenalAdjustment: false,
+      requiresHepaticAdjustment: false,
+    },
+    {
+      code: 'INN005',
+      name: 'Amoxicillin',
+      nameRu: 'Амоксициллин',
+      nameTj: 'Амоксисиллин',
+      atxCode: 'J01CA04',
+      fdaPregnancyCategory: 'B',
+      requiresRenalAdjustment: true,
+      requiresHepaticAdjustment: false,
+    },
+  ];
+  for (const inn of inns) {
+    await prisma.referenceInn.upsert({
+      where: { code: inn.code },
+      update: {
+        name: inn.name,
+        nameRu: inn.nameRu,
+        nameTj: inn.nameTj,
+        atxCode: inn.atxCode,
+        fdaPregnancyCategory: inn.fdaPregnancyCategory,
+        requiresRenalAdjustment: inn.requiresRenalAdjustment,
+        requiresHepaticAdjustment: inn.requiresHepaticAdjustment,
+      },
+      create: {
+        code: inn.code,
+        name: inn.name,
+        nameRu: inn.nameRu,
+        nameTj: inn.nameTj,
+        atxCode: inn.atxCode,
+        fdaPregnancyCategory: inn.fdaPregnancyCategory,
+        requiresRenalAdjustment: inn.requiresRenalAdjustment,
+        requiresHepaticAdjustment: inn.requiresHepaticAdjustment,
+        isActive: true,
+      },
+    });
+  }
+
+  // Medicinal Products
+  const meds = [
+    {
+      id: '11111111-1111-1111-1111-111111111111',
+      innCode: 'INN001',
+      tradeName: 'Престариум',
+      manufacturer: 'Servier',
+      dosageForm: 'tab',
+      strength: '5 mg',
+      country: 'France',
+    },
+    {
+      id: '22222222-2222-2222-2222-222222222222',
+      innCode: 'INN002',
+      tradeName: 'Верошпирон',
+      manufacturer: 'Gedeon Richter',
+      dosageForm: 'tab',
+      strength: '25 mg',
+      country: 'Hungary',
+    },
+    {
+      id: '33333333-3333-3333-3333-333333333333',
+      innCode: 'INN003',
+      tradeName: 'Панадол',
+      manufacturer: 'GSK',
+      dosageForm: 'tab',
+      strength: '500 mg',
+      country: 'UK',
+    },
+    {
+      id: '44444444-4444-4444-4444-444444444444',
+      innCode: 'INN005',
+      tradeName: 'Амоксиклав',
+      manufacturer: 'Lek',
+      dosageForm: 'tab',
+      strength: '500/125 mg',
+      country: 'Slovenia',
+    },
+  ];
+  for (const med of meds) {
+    await prisma.referenceMedicinalProduct.upsert({
+      where: { id: med.id },
+      update: {
+        innCode: med.innCode,
+        tradeName: med.tradeName,
+        manufacturer: med.manufacturer,
+        dosageForm: med.dosageForm,
+        strength: med.strength,
+        country: med.country,
+      },
+      create: {
+        id: med.id,
+        innCode: med.innCode,
+        tradeName: med.tradeName,
+        manufacturer: med.manufacturer,
+        dosageForm: med.dosageForm,
+        strength: med.strength,
+        country: med.country,
+        isActive: true,
+      },
+    });
+  }
+
+  // Allergens
+  const allergens = [
+    {
+      code: 'ALL001',
+      category: 'drug',
+      title: 'Пенициллины',
+      titleRu: 'Пенициллины',
+      innCode: 'INN005',
+    },
+    { code: 'ALL002', category: 'food', title: 'Арахис', titleRu: 'Арахис', innCode: null },
+  ];
+  for (const all of allergens) {
+    await prisma.referenceAllergen.upsert({
+      where: { code: all.code },
+      update: {
+        category: all.category,
+        title: all.title,
+        titleRu: all.titleRu,
+        innCode: all.innCode,
+      },
+      create: {
+        code: all.code,
+        category: all.category,
+        title: all.title,
+        titleRu: all.titleRu,
+        innCode: all.innCode,
+        isActive: true,
+      },
+    });
+  }
+
+  // DDIs
+  const ddis = [
+    {
+      innCodeA: 'INN001',
+      innCodeB: 'INN002',
+      severity: 'major',
+      mechanism: 'ACE inhibitors + aldosterone antagonists can cause severe hyperkalemia.',
+      recommendation: 'Monitor potassium levels closely or avoid co-administration.',
+    },
+    {
+      innCodeA: 'INN003',
+      innCodeB: 'INN004',
+      severity: 'moderate',
+      mechanism: 'Chronic paracetamol can enhance the hypoprothrombinemic effect of warfarin.',
+      recommendation: 'Monitor INR and adjust warfarin dose as needed.',
+    },
+  ];
+  for (const ddi of ddis) {
+    const existing = await prisma.referenceDdi.findFirst({
+      where: {
+        OR: [
+          { innCodeA: ddi.innCodeA, innCodeB: ddi.innCodeB },
+          { innCodeA: ddi.innCodeB, innCodeB: ddi.innCodeA },
+        ],
+      },
+    });
+    if (!existing) {
+      await prisma.referenceDdi.create({
+        data: {
+          innCodeA: ddi.innCodeA,
+          innCodeB: ddi.innCodeB,
+          severity: ddi.severity,
+          mechanism: ddi.mechanism,
+          recommendation: ddi.recommendation,
+        },
+      });
+    }
+  }
+
+  // LOINC Codes
+  const loincs = [
+    {
+      code: '8480-6',
+      component: 'Systolic blood pressure',
+      system: 'BP',
+      scale: 'Qn',
+      class: 'BP',
+      titleRu: 'Систолическое АД',
+      referenceRange: '90-139',
+    },
+    {
+      code: '8462-4',
+      component: 'Diastolic blood pressure',
+      system: 'BP',
+      scale: 'Qn',
+      class: 'BP',
+      titleRu: 'Диастолическое АД',
+      referenceRange: '60-89',
+    },
+    {
+      code: '8867-4',
+      component: 'Heart rate',
+      system: 'HR',
+      scale: 'Qn',
+      class: 'CARDIAC',
+      titleRu: 'Пульс / ЧСС',
+      referenceRange: '60-100',
+    },
+    {
+      code: '8310-5',
+      component: 'Body temperature',
+      system: 'Temp',
+      scale: 'Qn',
+      class: 'CLIN',
+      titleRu: 'Температура тела',
+      referenceRange: '35.5-37.2',
+    },
+    {
+      code: '2708-6',
+      component: 'Oxygen saturation',
+      system: 'SpO2',
+      scale: 'Qn',
+      class: 'PULM',
+      titleRu: 'Насыщение крови кислородом',
+      referenceRange: '95-100',
+    },
+  ];
+  for (const l of loincs) {
+    await prisma.referenceLoincCode.upsert({
+      where: { code: l.code },
+      update: {
+        component: l.component,
+        system: l.system,
+        scale: l.scale,
+        class: l.class,
+        titleRu: l.titleRu,
+        referenceRange: l.referenceRange,
+      },
+      create: {
+        code: l.code,
+        component: l.component,
+        system: l.system,
+        scale: l.scale,
+        class: l.class,
+        titleRu: l.titleRu,
+        referenceRange: l.referenceRange,
+        isActive: true,
+      },
+    });
+  }
+
+  // Vital Alert Rules
+  const alertRules = [
+    { vitalType: 'BP_SYS', minNormal: 90, maxNormal: 139, minCritical: 80, maxCritical: 180 },
+    { vitalType: 'BP_DIA', minNormal: 60, maxNormal: 89, minCritical: 50, maxCritical: 110 },
+    { vitalType: 'HR', minNormal: 60, maxNormal: 100, minCritical: 45, maxCritical: 140 },
+    { vitalType: 'TEMP', minNormal: 35.5, maxNormal: 37.2, minCritical: 35.0, maxCritical: 39.5 },
+    { vitalType: 'SPO2', minNormal: 95, maxNormal: 100, minCritical: 90, maxCritical: 100 },
+  ];
+  for (const ar of alertRules) {
+    const existing = await prisma.vitalAlertRule.findFirst({
+      where: { vitalType: ar.vitalType, tenantId: null },
+    });
+    if (!existing) {
+      await prisma.vitalAlertRule.create({
+        data: {
+          vitalType: ar.vitalType,
+          minNormal: ar.minNormal,
+          maxNormal: ar.maxNormal,
+          minCritical: ar.minCritical,
+          maxCritical: ar.maxCritical,
+          tenantId: null,
+          isActive: true,
+        },
+      });
+    }
+  }
+
+  // Dental Procedure Templates
+  const dentTemplates = [
+    { code: 'DENT001', name: 'Dental caries treatment', nameRu: 'Лечение кариеса' },
+    {
+      code: 'DENT002',
+      name: 'Pulpitis endodontic treatment',
+      nameRu: 'Лечение пульпита (эндодонтия)',
+    },
+    { code: 'DENT003', name: 'Tooth extraction', nameRu: 'Удаление зуба' },
+    { code: 'DENT004', name: 'Implantation', nameRu: 'Имплантация зуба' },
+    {
+      code: 'DENT005',
+      name: 'Professional oral hygiene',
+      nameRu: 'Профессиональная гигиена полости рта',
+    },
+  ];
+  for (const dt of dentTemplates) {
+    await prisma.dentalProcedureTemplate.upsert({
+      where: { code: dt.code },
+      update: { name: dt.name, nameRu: dt.nameRu },
+      create: { code: dt.code, name: dt.name, nameRu: dt.nameRu, isActive: true },
     });
   }
 

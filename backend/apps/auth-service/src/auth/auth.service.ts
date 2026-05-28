@@ -34,6 +34,12 @@ type BootstrapPayload = {
     name: string;
     locale: string;
     subscriptionPlan: string;
+    customDomain?: string | null;
+    brandColor?: string | null;
+    accentColor?: string | null;
+    logoUrl?: string | null;
+    faviconUrl?: string | null;
+    region?: string | null;
   };
   enabledModules: string[];
   permissions: string[];
@@ -414,6 +420,12 @@ export class AuthService {
         name: tenant.name,
         locale: tenant.defaultLocale,
         subscriptionPlan: tenant.subscriptionPlan,
+        customDomain: tenant.customDomain,
+        brandColor: tenant.brandColor,
+        accentColor: tenant.accentColor,
+        logoUrl: tenant.logoUrl,
+        faviconUrl: tenant.faviconUrl,
+        region: tenant.region,
       },
       enabledModules: tenantModules.map((item) => item.module.code).sort(),
       permissions: context.permissions,

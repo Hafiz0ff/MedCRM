@@ -10,7 +10,13 @@ export type GatewayRouteConfig = {
     | 'AUTH_SERVICE_URL'
     | 'AUTH_SERVICE_INTERNAL_URL'
     | 'SCHEDULING_SERVICE_URL'
-    | 'SCHEDULING_SERVICE_INTERNAL_URL';
+    | 'SCHEDULING_SERVICE_INTERNAL_URL'
+    | 'INTEGRATIONS_SERVICE_URL'
+    | 'INTEGRATIONS_SERVICE_INTERNAL_URL'
+    | 'ANALYTICS_SERVICE_URL'
+    | 'ANALYTICS_SERVICE_INTERNAL_URL'
+    | 'BILLING_SERVICE_URL'
+    | 'BILLING_SERVICE_INTERNAL_URL';
   rateLimitPolicy: GatewayRateLimitPolicy;
   requiresAuth: boolean;
   description: string;
@@ -20,9 +26,15 @@ const authTarget = 'AUTH_SERVICE_URL' as const;
 const internalTarget = 'AUTH_SERVICE_INTERNAL_URL' as const;
 const schedulingTarget = 'SCHEDULING_SERVICE_URL' as const;
 const schedulingInternalTarget = 'SCHEDULING_SERVICE_INTERNAL_URL' as const;
+const integrationsTarget = 'INTEGRATIONS_SERVICE_URL' as const;
+const integrationsInternalTarget = 'INTEGRATIONS_SERVICE_INTERNAL_URL' as const;
+const analyticsTarget = 'ANALYTICS_SERVICE_URL' as const;
+const analyticsInternalTarget = 'ANALYTICS_SERVICE_INTERNAL_URL' as const;
+const billingTarget = 'BILLING_SERVICE_URL' as const;
+const billingInternalTarget = 'BILLING_SERVICE_INTERNAL_URL' as const;
 
 const publicDomainPrefixes = [
-  ['analytics', '/analytics', true, authTarget],
+  ['analytics', '/analytics', true, analyticsTarget],
   ['appointments', '/appointments', true, schedulingTarget],
   ['auth', '/auth', false, authTarget],
   ['availability', '/availability', true, schedulingTarget],
@@ -35,7 +47,7 @@ const publicDomainPrefixes = [
   ['emr', '/emr', true, authTarget],
   ['equipment', '/equipment', true, schedulingTarget],
   ['finance', '/finance', true, authTarget],
-  ['integration', '/integration', true, authTarget],
+  ['integration', '/integration', true, integrationsTarget],
   ['inventory', '/inventory', true, authTarget],
   ['online-booking', '/online-booking', true, schedulingTarget],
   ['patients', '/patients', true, authTarget],
@@ -49,17 +61,35 @@ const publicDomainPrefixes = [
   ['waiting-list', '/waiting-list', true, schedulingTarget],
 ] satisfies Array<[string, string, boolean, GatewayRouteConfig['targetEnv']]>;
 
-export const publicRoutes: GatewayRouteConfig[] = publicDomainPrefixes.map(
-  ([name, upstreamPrefix, requiresAuth, target]) => ({
-    kind: 'public',
+export const publicRoutes: GatewayRouteConfig[] = [
+  ...publicDomainPrefixes.map(([name, upstreamPrefix, requiresAuth, target]) => ({
+    kind: 'public' as GatewayRouteKind,
     gatewayPrefix: `/api/v1/${name}`,
     upstreamPrefix,
-    targetEnv: target,
-    rateLimitPolicy: name === 'auth' ? 'auth' : 'public',
+    targetEnv: target as GatewayRouteConfig['targetEnv'],
+    rateLimitPolicy: (name === 'auth' ? 'auth' : 'public') as GatewayRateLimitPolicy,
     requiresAuth,
     description: `Public v1 proxy for ${upstreamPrefix}`,
-  }),
-);
+  })),
+  {
+    kind: 'public' as GatewayRouteKind,
+    gatewayPrefix: '/api/v1/billing/webhooks',
+    upstreamPrefix: '/billing/webhooks',
+    targetEnv: billingTarget as GatewayRouteConfig['targetEnv'],
+    rateLimitPolicy: 'public' as GatewayRateLimitPolicy,
+    requiresAuth: false,
+    description: 'Billing microservice public webhooks',
+  },
+  {
+    kind: 'public' as GatewayRouteKind,
+    gatewayPrefix: '/api/v1/billing',
+    upstreamPrefix: '/billing',
+    targetEnv: billingTarget as GatewayRouteConfig['targetEnv'],
+    rateLimitPolicy: 'public' as GatewayRateLimitPolicy,
+    requiresAuth: true,
+    description: 'Billing microservice main endpoints',
+  },
+];
 
 const compatibilityPrefixes = [
   ['/auth', authTarget],
@@ -75,6 +105,8 @@ const compatibilityPrefixes = [
   ['/resource-buffers', schedulingTarget],
   ['/online-booking', schedulingTarget],
   ['/rooms', schedulingTarget],
+  ['/portal/v1', authTarget],
+  ['/fhir', integrationsTarget],
 ] satisfies Array<[string, GatewayRouteConfig['targetEnv']]>;
 
 export const compatibilityRoutes: GatewayRouteConfig[] = compatibilityPrefixes.map(
@@ -84,7 +116,7 @@ export const compatibilityRoutes: GatewayRouteConfig[] = compatibilityPrefixes.m
     upstreamPrefix: prefix,
     targetEnv: target,
     rateLimitPolicy: prefix === '/auth' ? 'auth' : 'public',
-    requiresAuth: prefix !== '/auth',
+    requiresAuth: prefix !== '/auth' && prefix !== '/fhir',
     description: `Backward-compatible unversioned proxy for ${prefix}`,
   }),
 );
@@ -152,6 +184,60 @@ export const internalRoutes: GatewayRouteConfig[] = [
     rateLimitPolicy: 'internal',
     requiresAuth: false,
     description: 'Internal scheduling-service OpenAPI JSON proxy',
+  },
+  {
+    kind: 'internal',
+    gatewayPrefix: '/internal/v1/health/analytics-service',
+    upstreamPrefix: '/health',
+    targetEnv: analyticsInternalTarget,
+    rateLimitPolicy: 'internal',
+    requiresAuth: false,
+    description: 'Internal analytics-service health proxy',
+  },
+  {
+    kind: 'internal',
+    gatewayPrefix: '/internal/v1/analytics-service/docs',
+    upstreamPrefix: '/docs',
+    targetEnv: analyticsInternalTarget,
+    rateLimitPolicy: 'internal',
+    requiresAuth: false,
+    description: 'Internal analytics-service Swagger UI proxy',
+  },
+  {
+    kind: 'internal',
+    gatewayPrefix: '/internal/v1/analytics-service/docs-json',
+    upstreamPrefix: '/docs-json',
+    targetEnv: analyticsInternalTarget,
+    rateLimitPolicy: 'internal',
+    requiresAuth: false,
+    description: 'Internal analytics-service OpenAPI JSON proxy',
+  },
+  {
+    kind: 'internal',
+    gatewayPrefix: '/internal/v1/health/billing-service',
+    upstreamPrefix: '/health',
+    targetEnv: billingInternalTarget,
+    rateLimitPolicy: 'internal',
+    requiresAuth: false,
+    description: 'Internal billing-service health proxy',
+  },
+  {
+    kind: 'internal',
+    gatewayPrefix: '/internal/v1/billing-service/docs',
+    upstreamPrefix: '/docs',
+    targetEnv: billingInternalTarget,
+    rateLimitPolicy: 'internal',
+    requiresAuth: false,
+    description: 'Internal billing-service Swagger UI proxy',
+  },
+  {
+    kind: 'internal',
+    gatewayPrefix: '/internal/v1/billing-service/docs-json',
+    upstreamPrefix: '/docs-json',
+    targetEnv: billingInternalTarget,
+    rateLimitPolicy: 'internal',
+    requiresAuth: false,
+    description: 'Internal billing-service OpenAPI JSON proxy',
   },
 ];
 

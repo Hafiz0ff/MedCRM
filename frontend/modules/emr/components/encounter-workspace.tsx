@@ -11,6 +11,9 @@ import {
   Trash2,
   Search,
   History,
+  AlertTriangle,
+  Activity,
+  Heart,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import {
@@ -23,7 +26,11 @@ import {
   useCreatePrescription,
   useClinicalTemplates,
   Encounter,
+  useCdsCheck,
 } from '../hooks/use-emr';
+import { AllergyList } from './allergy-list';
+import { DentalChart } from './dental-chart';
+import { VitalPanel } from './vital-panel';
 import { apiFetch } from '@/shared/api/client-api';
 import { useToast } from '@/shared/ui/toast';
 
@@ -35,9 +42,9 @@ interface EncounterWorkspaceProps {
 
 export function EncounterWorkspace({ patientId, encounterId, onClose }: EncounterWorkspaceProps) {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'editor' | 'prescriptions' | 'fhir' | 'versions'>(
-    'editor',
-  );
+  const [activeTab, setActiveTab] = useState<
+    'editor' | 'prescriptions' | 'vitals' | 'allergies' | 'dental' | 'fhir' | 'versions'
+  >('editor');
 
   // Loading and mutations
   const templatesQuery = useClinicalTemplates();
@@ -48,6 +55,7 @@ export function EncounterWorkspace({ patientId, encounterId, onClose }: Encounte
   const amendEncounter = useAmendEncounter(patientId, encounterId || '');
   const assignDiagnosis = useAssignDiagnosis(patientId, encounterId || '');
   const createPrescription = useCreatePrescription(patientId, encounterId || '');
+  const cdsCheck = useCdsCheck(patientId);
 
   // Form states
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
@@ -79,6 +87,16 @@ export function EncounterWorkspace({ patientId, encounterId, onClose }: Encounte
       frequency?: string;
       duration?: string;
       instructions?: string;
+      innCode?: string | null;
+      medicinalProductId?: string | null;
+      dose?: number | null;
+      doseUnit?: string | null;
+      frequencyPerDay?: number | null;
+      durationDays?: number | null;
+      startDate?: string | null;
+      endDate?: string | null;
+      cdsOverridden?: boolean;
+      cdsOverrideReason?: string | null;
     }>
   >([]);
   const [itemCode, setItemCode] = useState('');
@@ -86,6 +104,23 @@ export function EncounterWorkspace({ patientId, encounterId, onClose }: Encounte
   const [itemDosage, setItemDosage] = useState('');
   const [itemFrequency, setItemFrequency] = useState('');
   const [itemDuration, setItemDuration] = useState('');
+
+  // Structured prescription states
+  const [itemDose, setItemDose] = useState<string>('');
+  const [itemDoseUnit, setItemDoseUnit] = useState<string>('mg');
+  const [itemFrequencyPerDay, setItemFrequencyPerDay] = useState<string>('3');
+  const [itemDurationDays, setItemDurationDays] = useState<string>('7');
+  const [innCode, setInnCode] = useState<string>('');
+  const [medicinalProductId, setMedicinalProductId] = useState<string>('');
+
+  // Medication Autocomplete state
+  const [drugSearch, setDrugSearch] = useState('');
+  const [drugResults, setDrugResults] = useState<any[]>([]);
+
+  // CDS Engine state
+  const [cdsAlerts, setCdsAlerts] = useState<any[]>([]);
+  const [cdsOverridden, setCdsOverridden] = useState(false);
+  const [cdsOverrideReason, setCdsOverrideReason] = useState('');
 
   // Digital Signature state
   const [showSignModal, setShowSignModal] = useState(false);
@@ -165,6 +200,59 @@ export function EncounterWorkspace({ patientId, encounterId, onClose }: Encounte
 
     return () => clearTimeout(delayDebounce);
   }, [diagSearch]);
+
+  // Debounced search for medications (INNs & Trade Names)
+  useEffect(() => {
+    if (presType !== 'MEDICATION' || drugSearch.length < 2) {
+      setDrugResults([]);
+      return;
+    }
+    const delayDebounce = setTimeout(async () => {
+      try {
+        const [inns, meds] = await Promise.all([
+          apiFetch<any[]>(`/emr/dicts/inn?q=${encodeURIComponent(drugSearch)}`),
+          apiFetch<any[]>(`/emr/dicts/medicinal-product?q=${encodeURIComponent(drugSearch)}`),
+        ]);
+        const combined = [
+          ...(inns || []).map((x) => ({ ...x, type: 'inn' })),
+          ...(meds || []).map((x) => ({ ...x, type: 'med' })),
+        ];
+        setDrugResults(combined);
+      } catch {
+        setDrugResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [drugSearch, presType]);
+
+  // Run real-time CDS Check when prescription draft items change
+  useEffect(() => {
+    if (presItems.length > 0) {
+      cdsCheck.mutate(
+        {
+          items: presItems.map((item) => ({
+            innCode: item.innCode,
+            medicinalProductId: item.medicinalProductId,
+            itemName: item.itemName,
+            dose: item.dose,
+            doseUnit: item.doseUnit,
+            frequencyPerDay: item.frequencyPerDay,
+          })),
+        },
+        {
+          onSuccess: (data) => {
+            setCdsAlerts(data || []);
+          },
+          onError: () => {
+            setCdsAlerts([]);
+          },
+        },
+      );
+    } else {
+      setCdsAlerts([]);
+    }
+  }, [presItems]);
 
   const handleFieldChange = (sectionCode: string, fieldCode: string, val: any) => {
     setFormValues((prev) => ({
@@ -278,9 +366,20 @@ export function EncounterWorkspace({ patientId, encounterId, onClose }: Encounte
       {
         itemCode,
         itemName,
-        dosage: itemDosage,
-        frequency: itemFrequency,
-        duration: itemDuration,
+        dosage: itemDose ? `${itemDose} ${itemDoseUnit}` : itemDosage,
+        frequency: itemFrequencyPerDay ? `${itemFrequencyPerDay} раза в день` : itemFrequency,
+        duration: itemDurationDays ? `${itemDurationDays} дней` : itemDuration,
+        // structured fields
+        innCode: innCode || null,
+        medicinalProductId: medicinalProductId || null,
+        dose: itemDose ? Number(itemDose) : null,
+        doseUnit: itemDoseUnit || null,
+        frequencyPerDay: itemFrequencyPerDay ? Number(itemFrequencyPerDay) : null,
+        durationDays: itemDurationDays ? Number(itemDurationDays) : null,
+        startDate: new Date().toISOString(),
+        endDate: itemDurationDays
+          ? new Date(Date.now() + Number(itemDurationDays) * 24 * 60 * 60 * 1000).toISOString()
+          : null,
       },
     ]);
     setItemCode('');
@@ -288,6 +387,13 @@ export function EncounterWorkspace({ patientId, encounterId, onClose }: Encounte
     setItemDosage('');
     setItemFrequency('');
     setItemDuration('');
+    setItemDose('');
+    setItemDoseUnit('mg');
+    setItemFrequencyPerDay('3');
+    setItemDurationDays('7');
+    setInnCode('');
+    setMedicinalProductId('');
+    setDrugSearch('');
   };
 
   const handleRemovePrescriptionItem = (idx: number) => {
@@ -306,13 +412,20 @@ export function EncounterWorkspace({ patientId, encounterId, onClose }: Encounte
       {
         prescriptionType: presType as any,
         notes: presNotes,
-        items: presItems,
+        items: presItems.map((item) => ({
+          ...item,
+          cdsOverridden,
+          cdsOverrideReason: cdsOverridden ? cdsOverrideReason : null,
+        })),
       },
       {
         onSuccess: () => {
           toast('success', 'Назначение успешно добавлено к протоколу');
           setPresNotes('');
           setPresItems([]);
+          setCdsOverridden(false);
+          setCdsOverrideReason('');
+          setCdsAlerts([]);
           detailsQuery.refetch();
         },
         onError: (err: any) => {
@@ -493,6 +606,60 @@ export function EncounterWorkspace({ patientId, encounterId, onClose }: Encounte
             type="button"
           >
             Протокол приема
+          </button>
+          <button
+            onClick={() => setActiveTab('vitals')}
+            style={{
+              padding: '12px 4px',
+              borderBottom:
+                activeTab === 'vitals' ? '2px solid var(--brand)' : '2px solid transparent',
+              color: activeTab === 'vitals' ? 'var(--brand)' : 'var(--muted)',
+              fontWeight: activeTab === 'vitals' ? 600 : 500,
+              background: 'transparent',
+              borderTop: 'none',
+              borderLeft: 'none',
+              borderRight: 'none',
+              cursor: 'pointer',
+            }}
+            type="button"
+          >
+            Виталы
+          </button>
+          <button
+            onClick={() => setActiveTab('allergies')}
+            style={{
+              padding: '12px 4px',
+              borderBottom:
+                activeTab === 'allergies' ? '2px solid var(--brand)' : '2px solid transparent',
+              color: activeTab === 'allergies' ? 'var(--brand)' : 'var(--muted)',
+              fontWeight: activeTab === 'allergies' ? 600 : 500,
+              background: 'transparent',
+              borderTop: 'none',
+              borderLeft: 'none',
+              borderRight: 'none',
+              cursor: 'pointer',
+            }}
+            type="button"
+          >
+            Аллергии и Анамнез
+          </button>
+          <button
+            onClick={() => setActiveTab('dental')}
+            style={{
+              padding: '12px 4px',
+              borderBottom:
+                activeTab === 'dental' ? '2px solid var(--brand)' : '2px solid transparent',
+              color: activeTab === 'dental' ? 'var(--brand)' : 'var(--muted)',
+              fontWeight: activeTab === 'dental' ? 600 : 500,
+              background: 'transparent',
+              borderTop: 'none',
+              borderLeft: 'none',
+              borderRight: 'none',
+              cursor: 'pointer',
+            }}
+            type="button"
+          >
+            Одонтограмма
           </button>
           <button
             onClick={() => setActiveTab('prescriptions')}
@@ -907,6 +1074,14 @@ export function EncounterWorkspace({ patientId, encounterId, onClose }: Encounte
             </div>
           )}
 
+          {activeTab === 'vitals' && <VitalPanel patientId={patientId} encounterId={encounterId} />}
+
+          {activeTab === 'allergies' && <AllergyList patientId={patientId} />}
+
+          {activeTab === 'dental' && (
+            <DentalChart patientId={patientId} encounterId={encounterId} />
+          )}
+
           {/* TAB 2: Prescriptions and Orders */}
           {activeTab === 'prescriptions' && (
             <div
@@ -962,40 +1137,213 @@ export function EncounterWorkspace({ patientId, encounterId, onClose }: Encounte
                     >
                       <h4 style={{ margin: '0 0 12px 0' }}>Элементы назначения</h4>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <div className="field">
-                          <label htmlFor="itemCode">Код препарата/анализа</label>
-                          <input
-                            id="itemCode"
-                            placeholder="Например: AMX-500, GLUCOSE"
-                            value={itemCode}
-                            onChange={(e) => setItemCode(e.target.value)}
-                            style={{
-                              padding: '6px',
-                              border: '1px solid var(--border)',
-                              borderRadius: '6px',
-                              background: 'var(--surface)',
-                            }}
-                          />
+                      {presType === 'MEDICATION' ? (
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '12px',
+                            position: 'relative',
+                          }}
+                        >
+                          <div className="field">
+                            <label htmlFor="drugSearch">
+                              Поиск препарата (МНН или Торговое наименование)
+                            </label>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <input
+                                id="drugSearch"
+                                placeholder="Введите название препарата (например: Периндоприл, Варфарин, Панадол)..."
+                                value={drugSearch}
+                                onChange={(e) => setDrugSearch(e.target.value)}
+                                style={{
+                                  padding: '8px 12px',
+                                  border: '1px solid var(--border)',
+                                  borderRadius: '6px',
+                                  background: 'var(--surface)',
+                                  width: '100%',
+                                }}
+                              />
+                            </div>
+                            {drugResults.length > 0 && (
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  left: 0,
+                                  right: 0,
+                                  zIndex: 100,
+                                  marginTop: '4px',
+                                  maxHeight: '200px',
+                                  overflowY: 'auto',
+                                  border: '1px solid var(--border)',
+                                  background: 'var(--surface)',
+                                  borderRadius: '8px',
+                                  boxShadow: 'var(--shadow-lg)',
+                                }}
+                              >
+                                {drugResults.map((drug) => (
+                                  <button
+                                    key={drug.code || drug.id}
+                                    type="button"
+                                    onClick={() => {
+                                      if (drug.type === 'inn') {
+                                        setItemCode(drug.code);
+                                        setItemName(drug.nameRu || drug.name);
+                                        setInnCode(drug.code);
+                                        setMedicinalProductId('');
+                                      } else {
+                                        setItemCode(drug.id);
+                                        setItemName(`${drug.tradeName} (${drug.strength})`);
+                                        setInnCode(drug.innCode);
+                                        setMedicinalProductId(drug.id);
+                                      }
+                                      setDrugSearch(
+                                        drug.type === 'inn'
+                                          ? drug.nameRu || drug.name
+                                          : drug.tradeName,
+                                      );
+                                      setDrugResults([]);
+                                    }}
+                                    style={{
+                                      width: '100%',
+                                      textAlign: 'left',
+                                      padding: '10px 12px',
+                                      borderBottom: '1px solid var(--border)',
+                                      background: 'var(--surface)',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      fontSize: '13px',
+                                      color: 'var(--ink)',
+                                    }}
+                                  >
+                                    <strong style={{ color: 'var(--brand)' }}>
+                                      {drug.type === 'inn'
+                                        ? drug.nameRu || drug.name
+                                        : drug.tradeName}
+                                    </strong>
+                                    <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                                      {drug.type === 'inn'
+                                        ? `МНН: ${drug.code} | FDA: ${drug.fdaPregnancyCategory}`
+                                        : `Торговое имя | МНН: ${drug.innCode} | Производитель: ${drug.manufacturer}`}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="field">
-                          <label htmlFor="itemName">Название препарата/исследования</label>
-                          <input
-                            id="itemName"
-                            placeholder="Амоксициллин 500мг, Глюкоза крови"
-                            value={itemName}
-                            onChange={(e) => setItemName(e.target.value)}
-                            style={{
-                              padding: '6px',
-                              border: '1px solid var(--border)',
-                              borderRadius: '6px',
-                              background: 'var(--surface)',
-                            }}
-                          />
+                      ) : (
+                        <div
+                          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}
+                        >
+                          <div className="field">
+                            <label htmlFor="itemCode">Код препарата/исследования</label>
+                            <input
+                              id="itemCode"
+                              placeholder="Например: AMX-500, GLUCOSE"
+                              value={itemCode}
+                              onChange={(e) => setItemCode(e.target.value)}
+                              style={{
+                                padding: '6px',
+                                border: '1px solid var(--border)',
+                                borderRadius: '6px',
+                                background: 'var(--surface)',
+                              }}
+                            />
+                          </div>
+                          <div className="field">
+                            <label htmlFor="itemName">Название препарата/исследования</label>
+                            <input
+                              id="itemName"
+                              placeholder="Амоксициллин 500мг, Глюкоза крови"
+                              value={itemName}
+                              onChange={(e) => setItemName(e.target.value)}
+                              style={{
+                                padding: '6px',
+                                border: '1px solid var(--border)',
+                                borderRadius: '6px',
+                                background: 'var(--surface)',
+                              }}
+                            />
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      {presType === 'MEDICATION' && (
+                      {presType === 'MEDICATION' ? (
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr 1fr 1fr',
+                            gap: '12px',
+                            marginTop: '12px',
+                          }}
+                        >
+                          <div className="field">
+                            <label htmlFor="itemDose">Разовая Доза</label>
+                            <input
+                              id="itemDose"
+                              type="number"
+                              placeholder="Напр. 5"
+                              value={itemDose}
+                              onChange={(e) => setItemDose(e.target.value)}
+                              style={{
+                                padding: '6px',
+                                border: '1px solid var(--border)',
+                                borderRadius: '6px',
+                                background: 'var(--surface)',
+                              }}
+                            />
+                          </div>
+                          <div className="field">
+                            <label htmlFor="itemDoseUnit">Ед. измерения</label>
+                            <input
+                              id="itemDoseUnit"
+                              placeholder="mg, ml, капсула"
+                              value={itemDoseUnit}
+                              onChange={(e) => setItemDoseUnit(e.target.value)}
+                              style={{
+                                padding: '6px',
+                                border: '1px solid var(--border)',
+                                borderRadius: '6px',
+                                background: 'var(--surface)',
+                              }}
+                            />
+                          </div>
+                          <div className="field">
+                            <label htmlFor="itemFrequencyPerDay">Частота в день</label>
+                            <input
+                              id="itemFrequencyPerDay"
+                              type="number"
+                              placeholder="3"
+                              value={itemFrequencyPerDay}
+                              onChange={(e) => setItemFrequencyPerDay(e.target.value)}
+                              style={{
+                                padding: '6px',
+                                border: '1px solid var(--border)',
+                                borderRadius: '6px',
+                                background: 'var(--surface)',
+                              }}
+                            />
+                          </div>
+                          <div className="field">
+                            <label htmlFor="itemDurationDays">Продолжительность (дней)</label>
+                            <input
+                              id="itemDurationDays"
+                              type="number"
+                              placeholder="7"
+                              value={itemDurationDays}
+                              onChange={(e) => setItemDurationDays(e.target.value)}
+                              style={{
+                                padding: '6px',
+                                border: '1px solid var(--border)',
+                                borderRadius: '6px',
+                                background: 'var(--surface)',
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
                         <div
                           style={{
                             display: 'grid',
@@ -1108,6 +1456,130 @@ export function EncounterWorkspace({ patientId, encounterId, onClose }: Encounte
                       )}
                     </div>
 
+                    {/* Real-time CDS alerts warnings banner */}
+                    {cdsAlerts.length > 0 && (
+                      <div
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.05)',
+                          border: '1px solid rgba(239, 68, 68, 0.2)',
+                          borderRadius: '12px',
+                          padding: '14px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            color: '#ef4444',
+                          }}
+                        >
+                          <AlertTriangle size={18} />
+                          <strong style={{ fontSize: '14px' }}>Предупреждение CDS</strong>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {cdsAlerts.map((alert, idx) => (
+                            <div
+                              key={idx}
+                              style={{
+                                padding: '8px 10px',
+                                borderRadius: '6px',
+                                background:
+                                  alert.severity === 'block'
+                                    ? 'rgba(239, 68, 68, 0.1)'
+                                    : 'rgba(245, 158, 11, 0.08)',
+                                borderLeft: `3px solid ${alert.severity === 'block' ? '#ef4444' : '#f59e0b'}`,
+                                fontSize: '12.5px',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontWeight: 600,
+                                  color: alert.severity === 'block' ? '#ef4444' : '#d97706',
+                                }}
+                              >
+                                [{alert.severity.toUpperCase()}] {alert.title}
+                              </div>
+                              <div style={{ marginTop: '2px', color: 'var(--ink)' }}>
+                                {alert.message}
+                              </div>
+                              {alert.recommendation && (
+                                <div
+                                  style={{
+                                    marginTop: '3px',
+                                    fontSize: '11px',
+                                    opacity: 0.85,
+                                    fontStyle: 'italic',
+                                  }}
+                                >
+                                  Рекомендация: {alert.recommendation}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Override Flow */}
+                    {cdsAlerts.some((a) => a.severity === 'block') && (
+                      <div
+                        style={{
+                          padding: '12px',
+                          background: 'rgba(239, 68, 68, 0.04)',
+                          border: '1px dashed rgba(239, 68, 68, 0.25)',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '8px',
+                        }}
+                      >
+                        <label
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={cdsOverridden}
+                            onChange={(e) => setCdsOverridden(e.target.checked)}
+                          />
+                          <span>Подтвердить назначение вопреки предупреждениям (CDS Override)</span>
+                        </label>
+                        {cdsOverridden && (
+                          <div className="field">
+                            <label
+                              htmlFor="cdsOverrideReasonInput"
+                              style={{ fontSize: '11px', fontWeight: 500 }}
+                            >
+                              Обоснуйте решение (обязательно для блокирующих предупреждений):
+                            </label>
+                            <input
+                              id="cdsOverrideReasonInput"
+                              placeholder="Укажите клиническую причину override..."
+                              value={cdsOverrideReason}
+                              onChange={(e) => setCdsOverrideReason(e.target.value)}
+                              style={{
+                                padding: '6px 10px',
+                                border: '1px solid var(--border)',
+                                borderRadius: '6px',
+                                background: 'var(--surface)',
+                                width: '100%',
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="field">
                       <label htmlFor="presNotes">Инструкция / Комментарий врача</label>
                       <textarea
@@ -1128,7 +1600,12 @@ export function EncounterWorkspace({ patientId, encounterId, onClose }: Encounte
                     <button
                       type="submit"
                       className="button"
-                      disabled={createPrescription.isPending || presItems.length === 0}
+                      disabled={
+                        createPrescription.isPending ||
+                        presItems.length === 0 ||
+                        (cdsAlerts.some((a) => a.severity === 'block') &&
+                          (!cdsOverridden || !cdsOverrideReason.trim()))
+                      }
                     >
                       {createPrescription.isPending ? 'Добавление...' : 'Записать назначение'}
                     </button>

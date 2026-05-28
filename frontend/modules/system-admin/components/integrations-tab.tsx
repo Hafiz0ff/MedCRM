@@ -21,6 +21,7 @@ import {
   useUpdateIntegration,
 } from '../hooks/use-system-admin';
 import { ApiKeyRevealDialog, ApiKeyRevealPayload } from './api-key-reveal';
+import { IntegrationHub } from './integration-hub';
 import { can } from '@/shared/permissions/can';
 import { BootstrapPayload } from '@/shared/types/bootstrap';
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
@@ -378,6 +379,8 @@ export function IntegrationsTab({ bootstrap }: { bootstrap: BootstrapPayload }) 
           требует роли с правом `integration.gateway.manage`.
         </div>
       ) : null}
+
+      <IntegrationHub providers={providers} />
     </section>
   );
 }

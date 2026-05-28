@@ -45,6 +45,33 @@
       "compilerOptions": {
         "tsConfigPath": "tsconfig.build.json"
       }
+    },
+    "integrations-service": {
+      "type": "application",
+      "root": "apps/integrations-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/integrations-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.build.json"
+      }
+    },
+    "analytics-service": {
+      "type": "application",
+      "root": "apps/analytics-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/analytics-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.build.json"
+      }
+    },
+    "billing-service": {
+      "type": "application",
+      "root": "apps/billing-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/billing-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.build.json"
+      }
     }
   }
 }

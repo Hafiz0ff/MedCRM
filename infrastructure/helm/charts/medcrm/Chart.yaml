@@ -1,0 +1,6 @@
+apiVersion: v2
+name: medcrm
+description: Umbrella Helm chart for deploying the MedCRM enterprise microservices platform on Kubernetes
+type: application
+version: 1.0.0
+appVersion: '1.0.0'

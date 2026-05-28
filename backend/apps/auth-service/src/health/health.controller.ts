@@ -7,9 +7,19 @@ import { ApiTags } from '@nestjs/swagger';
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}
 
-  @Get()
-  async health() {
+  @Get('live')
+  healthLive() {
+    return { status: 'ok', service: 'auth-service', timestamp: new Date().toISOString() };
+  }
+
+  @Get('ready')
+  async healthReady() {
     await this.prisma.$queryRaw`select 1`;
-    return { status: 'ok', service: 'auth-service' };
+    return {
+      status: 'ok',
+      service: 'auth-service',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+    };
   }
 }

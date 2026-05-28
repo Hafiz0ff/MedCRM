@@ -7,3 +7,6 @@ backend/prisma/generated
 **/*.d.ts
 **/storybook-static/**
 docs/superpowers/plans/*.html
+docs/anything/**
+infrastructure/helm/**
+

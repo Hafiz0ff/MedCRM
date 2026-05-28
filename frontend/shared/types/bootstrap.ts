@@ -5,6 +5,12 @@ export type BootstrapPayload = {
     name: string;
     locale: string;
     subscriptionPlan: string;
+    branding?: {
+      brandColor?: string;
+      accentColor?: string;
+      logoUrl?: string;
+      faviconUrl?: string;
+    };
   };
   enabledModules: string[];
   permissions: string[];

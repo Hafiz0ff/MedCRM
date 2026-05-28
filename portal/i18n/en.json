@@ -32,7 +32,83 @@
       "payNow": "Pay Now",
       "history": "Visits History",
       "profile": "My Profile",
-      "logout": "Logout"
+      "logout": "Logout",
+      "bookNow": "Book Now",
+      "quickActions": "Quick Actions",
+      "book": "Book Appointment",
+      "viewHistory": "My Visits",
+      "documents": "Profile & Doc.",
+      "connectedClinics": "Connected Clinics"
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "booking": "Book Appointment",
+      "history": "My Visits",
+      "profile": "Profile",
+      "selectClinic": "Select Clinic",
+      "logout": "Logout",
+      "menu": "Menu"
     }
+  },
+  "booking": {
+    "confirmed": "Appointment Successfully Confirmed",
+    "confirmedDesc": "You can view the details in your personal account.",
+    "step": "Step {current} of {total}",
+    "steps": {
+      "specialty": "Select Specialty",
+      "doctor": "Select Doctor",
+      "datetime": "Select Date & Time",
+      "confirm": "Confirm Appointment"
+    },
+    "searchSpecialty": "Search specialty...",
+    "noSpecialties": "No specialties found",
+    "noDoctors": "No doctors found",
+    "availableSlots": "Available Time Slots",
+    "noSlots": "No available slots on this day",
+    "reserveSlot": "Reserve Time Slot",
+    "summary": "Appointment Details",
+    "branch": "Branch",
+    "otpTitle": "Confirm Booking",
+    "otpDesc": "Enter the code sent to your phone.",
+    "confirmBooking": "Confirm Appointment"
+  },
+  "visits": {
+    "title": "Visits History",
+    "filterAll": "All",
+    "filterCompleted": "Completed",
+    "filterCancelled": "Cancelled",
+    "filterNoShow": "No Show",
+    "searchPlaceholder": "Search by doctor or service...",
+    "noVisits": "No visits",
+    "noVisitsDesc": "Visits history is empty",
+    "status": {
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "No Show",
+      "scheduled": "Scheduled"
+    }
+  },
+  "profile": {
+    "male": "Male",
+    "female": "Female",
+    "personalInfo": "Personal Information",
+    "fullName": "Full Name",
+    "phone": "Phone Number",
+    "birthDate": "Date of Birth",
+    "gender": "Gender",
+    "connectedClinics": "Connected Clinics",
+    "noClinics": "No connected clinics",
+    "disconnect": "Disconnect",
+    "connectNew": "Connect New Clinic",
+    "tenantCodePlaceholder": "Clinic Code",
+    "connect": "Connect",
+    "connectSuccess": "Clinic connected successfully!",
+    "settings": "Settings",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "exportData": "Export Data",
+    "exportDesc": "Download archive of all medical records (PDF, CSV)",
+    "logout": "Log Out"
   }
 }

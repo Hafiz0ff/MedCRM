@@ -14,6 +14,7 @@ import {
   UserRoundCheck,
   Users,
   WalletCards,
+  TrendingUp,
   X,
 } from 'lucide-react';
 import { useEffect, useState, type ComponentType } from 'react';
@@ -33,7 +34,7 @@ type NavItem = {
 const primaryNav: NavItem[] = [
   {
     href: '/dashboard',
-    label: 'Дашборд',
+    label: 'Операционная',
     module: 'auth',
     permission: 'auth.bootstrap.read',
     icon: LayoutDashboard,
@@ -61,7 +62,7 @@ const primaryNav: NavItem[] = [
   },
   {
     href: '/doctors',
-    label: 'Врачи и услуги',
+    label: 'Врачи',
     module: 'auth',
     permission: 'auth.bootstrap.read',
     icon: UserRoundCheck,
@@ -116,7 +117,7 @@ export function TopNav({ bootstrap }: { bootstrap: BootstrapPayload }) {
             </span>
             <span className="brand-text">
               <strong>{bootstrap.tenant.name}</strong>
-              <span className="brand-sub">{bootstrap.tenant.subscriptionPlan}</span>
+              <span className="brand-sub">Частная клиника</span>
             </span>
           </Link>
         </div>
@@ -139,13 +140,12 @@ export function TopNav({ bootstrap }: { bootstrap: BootstrapPayload }) {
           })}
           <span className="topnav-divider" aria-hidden="true" />
           <Link
-            href="/dashboard"
-            className="topnav-link is-muted"
-            aria-disabled="true"
-            tabIndex={-1}
+            href="/analytics"
+            className={`topnav-link${isActive(pathname, '/analytics') ? ' is-active' : ''}`}
+            aria-current={isActive(pathname, '/analytics') ? 'page' : undefined}
           >
-            <FileText size={16} strokeWidth={2} />
-            <span>Отчёты</span>
+            <TrendingUp size={16} strokeWidth={2} />
+            <span>Аналитика</span>
           </Link>
           {hasSettings ? (
             <Link

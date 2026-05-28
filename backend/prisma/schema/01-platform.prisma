@@ -6,6 +6,12 @@ model Tenant {
   defaultLocale    String   @default("ru") @map("default_locale") @db.VarChar(10)
   timezone         String   @default("Europe/Moscow") @db.VarChar(80)
   status           String   @default("active") @db.VarChar(40)
+  customDomain     String?  @map("custom_domain") @db.VarChar(255)
+  brandColor       String?  @map("brand_color") @db.VarChar(40)
+  accentColor      String?  @map("accent_color") @db.VarChar(40)
+  logoUrl          String?  @map("logo_url") @db.VarChar(2048)
+  faviconUrl       String?  @map("favicon_url") @db.VarChar(2048)
+  region           String?  @db.VarChar(80)
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -41,6 +47,14 @@ model Tenant {
   digitalSignatures    DigitalSignature[]
   encounterVersions    EncounterVersion[]
 
+  patientAllergies         PatientAllergy[]
+  patientChronicConditions PatientChronicCondition[]
+  patientPregnancyStates   PatientPregnancyState[]
+  vitalSigns               VitalSign[]
+  labReports               LabReport[]
+  dentalChartEntries       DentalChartEntry[]
+  vitalAlertRules          VitalAlertRule[]
+
   payments                 Payment[]
   paymentAllocations       PaymentAllocation[]
   refunds                  Refund[]
@@ -73,6 +87,8 @@ model Tenant {
   integrationProviders     IntegrationProvider[]
   webhookEvents            WebhookEvent[]
   integrationLogs          IntegrationLog[]
+  integrationInboxes       IntegrationInbox[]
+  externalIdMaps           ExternalIdMap[]
   laboratoryProviders      LaboratoryProvider[]
   labResults               LabResult[]
   clinicalObservations     ClinicalObservation[]

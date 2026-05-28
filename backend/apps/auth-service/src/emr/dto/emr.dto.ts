@@ -117,6 +117,18 @@ export const CreatePrescriptionSchema = z.object({
         quantity: z.number().optional().nullable(),
         instructions: z.string().optional().nullable(),
         linkedServiceId: z.string().uuid().optional().nullable(),
+        // New structured fields
+        innCode: z.string().max(120).optional().nullable(),
+        medicinalProductId: z.string().uuid().optional().nullable(),
+        dose: z.number().optional().nullable(),
+        doseUnit: z.string().max(40).optional().nullable(),
+        frequencyPerDay: z.number().int().optional().nullable(),
+        intervalHours: z.number().int().optional().nullable(),
+        durationDays: z.number().int().optional().nullable(),
+        startDate: z.string().datetime().optional().nullable(),
+        endDate: z.string().datetime().optional().nullable(),
+        cdsOverridden: z.boolean().optional().default(false),
+        cdsOverrideReason: z.string().optional().nullable(),
       }),
     )
     .min(1),
@@ -136,3 +148,59 @@ export const CreateProcedureOrderSchema = z.object({
   scheduledAppointmentId: z.string().uuid().optional().nullable(),
 });
 export type CreateProcedureOrderDto = z.infer<typeof CreateProcedureOrderSchema>;
+
+export const AddPatientAllergySchema = z.object({
+  allergenCode: z.string().min(1).max(80),
+  severity: z.enum(['mild', 'moderate', 'severe']),
+  criticality: z.enum(['low', 'high', 'unable-to-assess']).optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
+export type AddPatientAllergyDto = z.infer<typeof AddPatientAllergySchema>;
+
+export const AddChronicConditionSchema = z.object({
+  icdCode: z.string().min(1).max(80),
+  notes: z.string().optional().nullable(),
+});
+export type AddChronicConditionDto = z.infer<typeof AddChronicConditionSchema>;
+
+export const UpdatePregnancyStateSchema = z.object({
+  estimatedDeliveryDate: z.string().datetime().optional().nullable(),
+  status: z.enum(['ACTIVE', 'COMPLETED', 'ABORTED']),
+  notes: z.string().optional().nullable(),
+});
+export type UpdatePregnancyStateDto = z.infer<typeof UpdatePregnancyStateSchema>;
+
+export const LogVitalSignSchema = z.object({
+  patientId: z.string().uuid(),
+  encounterId: z.string().uuid().optional().nullable(),
+  type: z.string().min(1).max(40),
+  value: z.number(),
+  unit: z.string().min(1).max(20),
+  context: z.string().optional().nullable(),
+});
+export type LogVitalSignDto = z.infer<typeof LogVitalSignSchema>;
+
+export const CdsCheckSchema = z.object({
+  patientId: z.string().uuid(),
+  items: z.array(
+    z.object({
+      innCode: z.string().max(120).optional().nullable(),
+      medicinalProductId: z.string().uuid().optional().nullable(),
+      itemName: z.string().min(1).max(255),
+      dose: z.number().optional().nullable(),
+      doseUnit: z.string().max(40).optional().nullable(),
+      frequencyPerDay: z.number().int().optional().nullable(),
+    }),
+  ),
+});
+export type CdsCheckDto = z.infer<typeof CdsCheckSchema>;
+
+export const AddDentalChartEntrySchema = z.object({
+  toothCode: z.number().int().min(11).max(85),
+  surface: z.string().max(20).optional().nullable(),
+  diagnosisCode: z.string().max(80).optional().nullable(),
+  procedureCode: z.string().max(120).optional().nullable(),
+  notes: z.string().optional().nullable(),
+  encounterId: z.string().uuid().optional().nullable(),
+});
+export type AddDentalChartEntryDto = z.infer<typeof AddDentalChartEntrySchema>;

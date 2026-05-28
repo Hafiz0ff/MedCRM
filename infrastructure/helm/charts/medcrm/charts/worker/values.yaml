@@ -1,0 +1,32 @@
+replicaCount: 2
+image:
+  repository: medcrm/worker
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  enabled: false
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: false
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+env: {}

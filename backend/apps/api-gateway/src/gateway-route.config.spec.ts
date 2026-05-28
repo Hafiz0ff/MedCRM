@@ -16,6 +16,8 @@ describe('gateway route config', () => {
       '/api/v1/appointments',
       '/api/v1/auth',
       '/api/v1/availability',
+      '/api/v1/billing',
+      '/api/v1/billing/webhooks',
       '/api/v1/branches',
       '/api/v1/communications',
       '/api/v1/departments',
@@ -44,6 +46,7 @@ describe('gateway route config', () => {
     assert.ok(compatibilityRoutes.some((route) => route.gatewayPrefix === '/patients'));
     assert.ok(compatibilityRoutes.some((route) => route.gatewayPrefix === '/reception'));
     assert.ok(compatibilityRoutes.some((route) => route.gatewayPrefix === '/appointments'));
+    assert.ok(compatibilityRoutes.some((route) => route.gatewayPrefix === '/portal/v1'));
   });
 
   it('routes clinic directory endpoints to auth-service until scheduling owns the catalog', () => {

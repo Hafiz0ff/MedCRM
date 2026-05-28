@@ -1,0 +1,44 @@
+replicaCount: 2
+image:
+  repository: medcrm/analytics-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  enabled: true
+  port: 3007
+  tcpPort: 3008
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+      ports:
+        - protocol: TCP
+          port: 3007
+        - protocol: TCP
+          port: 3008
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+env: {}

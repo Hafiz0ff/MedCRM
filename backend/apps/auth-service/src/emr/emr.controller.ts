@@ -20,6 +20,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ModuleEnabledGuard } from '../auth/guards/module-enabled.guard';
 import { RbacGuard } from '../auth/guards/rbac.guard';
+import { CdsEngine } from './cds/cds.engine';
 import {
   UpdateMedicalRecordSchema,
   UpdateMedicalRecordDto,
@@ -39,6 +40,18 @@ import {
   AssignDiagnosisDto,
   CreatePrescriptionSchema,
   CreatePrescriptionDto,
+  AddPatientAllergySchema,
+  AddPatientAllergyDto,
+  AddChronicConditionSchema,
+  AddChronicConditionDto,
+  UpdatePregnancyStateSchema,
+  UpdatePregnancyStateDto,
+  LogVitalSignSchema,
+  LogVitalSignDto,
+  CdsCheckSchema,
+  CdsCheckDto,
+  AddDentalChartEntrySchema,
+  AddDentalChartEntryDto,
 } from './dto/emr.dto';
 import { FhirExportQueryDto, FhirExportQuerySchema } from './dto/fhir-export.dto';
 import { EmrService } from './emr.service';
@@ -53,6 +66,7 @@ export class EmrController {
   constructor(
     private readonly emr: EmrService,
     private readonly fhirExport: FhirExportService,
+    private readonly cds: CdsEngine,
   ) {}
 
   @Get('medical-records/patient/:patientId')
@@ -225,5 +239,149 @@ export class EmrController {
     @Query(new ZodValidationPipe(FhirExportQuerySchema)) query: FhirExportQueryDto,
   ) {
     return this.fhirExport.exportPatientBundle(user, patientId, query);
+  }
+
+  // --- DICTIONARIES ---
+  @Get('dicts/icd')
+  @RequirePermissions('emr.records.read')
+  searchIcd(@Query('q') query: string) {
+    return this.emr.searchIcd(query || '');
+  }
+
+  @Get('dicts/inn')
+  @RequirePermissions('emr.records.read')
+  searchInn(@Query('q') query: string) {
+    return this.emr.searchInn(query || '');
+  }
+
+  @Get('dicts/medicinal-product')
+  @RequirePermissions('emr.records.read')
+  searchMedicinalProduct(@Query('q') query: string) {
+    return this.emr.searchMedicinalProduct(query || '');
+  }
+
+  @Get('dicts/allergen')
+  @RequirePermissions('emr.records.read')
+  searchAllergen(@Query('q') query: string) {
+    return this.emr.searchAllergen(query || '');
+  }
+
+  // --- VITALS ---
+  @Post('vitals')
+  @RequirePermissions('emr.encounters.write')
+  @UsePipes(new ZodValidationPipe(LogVitalSignSchema))
+  logVitalSign(@CurrentUser() user: AuthenticatedUser, @Body() dto: LogVitalSignDto) {
+    return this.emr.logVitalSign(user, dto);
+  }
+
+  @Get('vitals/patient/:patientId')
+  @RequirePermissions('emr.records.read')
+  getPatientVitals(@CurrentUser() user: AuthenticatedUser, @Param('patientId') patientId: string) {
+    return this.emr.getPatientVitals(user, patientId);
+  }
+
+  // --- ALLERGIES ---
+  @Post('patients/:patientId/allergies')
+  @RequirePermissions('emr.records.manage')
+  @UsePipes(new ZodValidationPipe(AddPatientAllergySchema))
+  addPatientAllergy(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('patientId') patientId: string,
+    @Body() dto: AddPatientAllergyDto,
+  ) {
+    return this.emr.addPatientAllergy(user, patientId, dto);
+  }
+
+  @Get('patients/:patientId/allergies')
+  @RequirePermissions('emr.records.read')
+  getPatientAllergies(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('patientId') patientId: string,
+  ) {
+    return this.emr.getPatientAllergies(user, patientId);
+  }
+
+  // --- CHRONIC CONDITIONS ---
+  @Post('patients/:patientId/chronic-conditions')
+  @RequirePermissions('emr.records.manage')
+  @UsePipes(new ZodValidationPipe(AddChronicConditionSchema))
+  addPatientChronicCondition(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('patientId') patientId: string,
+    @Body() dto: AddChronicConditionDto,
+  ) {
+    return this.emr.addPatientChronicCondition(user, patientId, dto);
+  }
+
+  @Get('patients/:patientId/chronic-conditions')
+  @RequirePermissions('emr.records.read')
+  getPatientChronicConditions(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('patientId') patientId: string,
+  ) {
+    return this.emr.getPatientChronicConditions(user, patientId);
+  }
+
+  // --- PREGNANCY STATE ---
+  @Post('patients/:patientId/pregnancy')
+  @RequirePermissions('emr.records.manage')
+  @UsePipes(new ZodValidationPipe(UpdatePregnancyStateSchema))
+  updatePatientPregnancyState(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('patientId') patientId: string,
+    @Body() dto: UpdatePregnancyStateDto,
+  ) {
+    return this.emr.updatePatientPregnancyState(user, patientId, dto);
+  }
+
+  @Get('patients/:patientId/pregnancy')
+  @RequirePermissions('emr.records.read')
+  getPatientPregnancyState(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('patientId') patientId: string,
+  ) {
+    return this.emr.getPatientPregnancyState(user, patientId);
+  }
+
+  // --- DENTAL CHART ---
+  @Post('patients/:patientId/dental-chart')
+  @RequirePermissions('emr.records.manage')
+  @UsePipes(new ZodValidationPipe(AddDentalChartEntrySchema))
+  addDentalChartEntry(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('patientId') patientId: string,
+    @Body() dto: AddDentalChartEntryDto,
+  ) {
+    return this.emr.addDentalChartEntry(user, patientId, dto);
+  }
+
+  @Get('patients/:patientId/dental-chart')
+  @RequirePermissions('emr.records.read')
+  getDentalChart(@CurrentUser() user: AuthenticatedUser, @Param('patientId') patientId: string) {
+    return this.emr.getDentalChart(user, patientId);
+  }
+
+  @Get('dental/procedures')
+  @RequirePermissions('emr.records.read')
+  getDentalProcedures() {
+    return this.emr.getDentalProcedureTemplates();
+  }
+
+  // --- CDS ENGINE ---
+  @Post('cds/check')
+  @RequirePermissions('emr.records.read')
+  @UsePipes(new ZodValidationPipe(CdsCheckSchema))
+  checkCds(@CurrentUser() user: AuthenticatedUser, @Body() dto: CdsCheckDto) {
+    return this.cds.check(user.tenantId, dto);
+  }
+
+  // --- LAB REPORTS ---
+  @Get('patients/:patientId/lab-reports')
+  @RequirePermissions('emr.records.read')
+  getPatientLabReports(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('patientId') patientId: string,
+  ) {
+    return this.emr.getPatientLabReports(user, patientId);
   }
 }

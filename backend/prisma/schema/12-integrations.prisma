@@ -14,6 +14,8 @@ model IntegrationProvider {
   webhookEvents WebhookEvent[]
   logs          IntegrationLog[]
   metrics       IntegrationMetric[]
+  inboxMessages IntegrationInbox[]
+  externalIds   ExternalIdMap[]
 
   @@map("integration_providers")
   @@schema("integrations")
@@ -276,5 +278,44 @@ model IntegrationOutbox {
   @@index([state, scheduledAt])
   @@index([tenantId, aggregateType, aggregateId])
   @@map("integration_outbox")
+  @@schema("integrations")
+}
+
+model IntegrationInbox {
+  id          String    @id @default(uuid()) @db.Uuid
+  providerId  String    @map("provider_id") @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  externalId  String    @map("external_id") @db.VarChar(255)
+  messageType String    @map("message_type") @db.VarChar(120)
+  payloadRaw  String    @map("payload_raw")
+  payloadJson Json?     @map("payload_json")
+  receivedAt  DateTime  @default(now()) @map("received_at") @db.Timestamptz(6)
+  processedAt DateTime? @map("processed_at") @db.Timestamptz(6)
+  status      String    @db.VarChar(20) // RECEIVED | PROCESSED | FAILED | IGNORED
+  lastError   String?   @map("last_error")
+
+  provider IntegrationProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  tenant   Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, externalId])
+  @@map("integration_inbox")
+  @@schema("integrations")
+}
+
+model ExternalIdMap {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  providerId String   @map("provider_id") @db.Uuid
+  entityType String   @map("entity_type") @db.VarChar(60) // Patient | Encounter | Order | Payment
+  internalId String   @map("internal_id") @db.VarChar(255)
+  externalId String   @map("external_id") @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  provider IntegrationProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  tenant   Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, entityType, externalId])
+  @@index([tenantId, entityType, internalId])
+  @@map("external_id_map")
   @@schema("integrations")
 }

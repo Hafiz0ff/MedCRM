@@ -22,7 +22,7 @@ export type PortalReserveSlotDto = z.infer<typeof PortalReserveSlotSchema>;
 export const PortalConfirmBookingSchema = z.object({
   tenantCode: z.string().min(2),
   token: z.string().min(10),
-  code: z.string().length(4),
+  code: z.string().length(6),
 });
 export type PortalConfirmBookingDto = z.infer<typeof PortalConfirmBookingSchema>;
 

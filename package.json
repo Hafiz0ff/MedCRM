@@ -13,6 +13,9 @@
   "scripts": {
     "backend:dev:auth": "npm --workspace backend run start:dev:auth",
     "backend:dev:gateway": "npm --workspace backend run start:dev:gateway",
+    "backend:dev:integrations": "npm --workspace backend run start:dev:integrations",
+    "backend:dev:analytics": "npm --workspace backend run start:dev:analytics",
+    "backend:dev:billing": "npm --workspace backend run start:dev:billing",
     "frontend:dev": "npm --workspace frontend run dev",
     "prisma:generate": "npm --workspace backend run prisma:generate",
     "prisma:migrate": "npm --workspace backend run prisma:migrate",

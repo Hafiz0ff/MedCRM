@@ -1,0 +1,6 @@
+apiVersion: v2
+name: worker
+description: A Helm chart for MedCRM worker microservice
+type: application
+version: 1.0.0
+appVersion: '1.0.0'

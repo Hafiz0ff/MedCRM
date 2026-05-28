@@ -22,6 +22,33 @@ function resolveTarget(config: ConfigService, route: GatewayRouteConfig): string
       config.get<string>('SCHEDULING_SERVICE_URL', 'http://localhost:3003')
     );
   }
+  if (route.targetEnv === 'INTEGRATIONS_SERVICE_URL') {
+    return config.get<string>('INTEGRATIONS_SERVICE_URL', 'http://localhost:3005');
+  }
+  if (route.targetEnv === 'INTEGRATIONS_SERVICE_INTERNAL_URL') {
+    return (
+      config.get<string>('INTEGRATIONS_SERVICE_INTERNAL_URL') ??
+      config.get<string>('INTEGRATIONS_SERVICE_URL', 'http://localhost:3005')
+    );
+  }
+  if (route.targetEnv === 'ANALYTICS_SERVICE_URL') {
+    return config.get<string>('ANALYTICS_SERVICE_URL', 'http://localhost:3007');
+  }
+  if (route.targetEnv === 'ANALYTICS_SERVICE_INTERNAL_URL') {
+    return (
+      config.get<string>('ANALYTICS_SERVICE_INTERNAL_URL') ??
+      config.get<string>('ANALYTICS_SERVICE_URL', 'http://localhost:3007')
+    );
+  }
+  if (route.targetEnv === 'BILLING_SERVICE_URL') {
+    return config.get<string>('BILLING_SERVICE_URL', 'http://localhost:3009');
+  }
+  if (route.targetEnv === 'BILLING_SERVICE_INTERNAL_URL') {
+    return (
+      config.get<string>('BILLING_SERVICE_INTERNAL_URL') ??
+      config.get<string>('BILLING_SERVICE_URL', 'http://localhost:3009')
+    );
+  }
 
   return config.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001');
 }

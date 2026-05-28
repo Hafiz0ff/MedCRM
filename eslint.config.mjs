@@ -43,6 +43,7 @@ export default tseslint.config(
       '**/.next/**',
       '**/generated/**',
       '**/storybook-static/**',
+      'docs/anything/**',
       'frontend/next-env.d.ts',
       'eslint.config.mjs',
       '**/commitlint.config.cjs',

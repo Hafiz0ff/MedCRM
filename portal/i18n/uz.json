@@ -32,7 +32,83 @@
       "payNow": "To'lash",
       "history": "Tashriflar tarixi",
       "profile": "Mening profilim",
-      "logout": "Chiqish"
+      "logout": "Chiqish",
+      "bookNow": "Qabulga yozilish",
+      "quickActions": "Tezkor harakatlar",
+      "book": "Shifokor qabuliga yozilish",
+      "viewHistory": "Mening tashriflarim",
+      "documents": "Profil va hujjatlar",
+      "connectedClinics": "Ulangan klinikalar"
+    },
+    "nav": {
+      "dashboard": "Asosiy",
+      "booking": "Qabulga yozilish",
+      "history": "Mening tashriflarim",
+      "profile": "Profil",
+      "selectClinic": "Klinikani tanlang",
+      "logout": "Chiqish",
+      "menu": "Menyu"
     }
+  },
+  "booking": {
+    "confirmed": "Qabul muvaffaqiyatli tasdiqlandi",
+    "confirmedDesc": "Tafsilotlarni shaxsiy kabinetingizda ko'rishingiz mumkin.",
+    "step": "{total} dan {current}-qadam",
+    "steps": {
+      "specialty": "Mutaxassislikni tanlang",
+      "doctor": "Shifokorni tanlang",
+      "datetime": "Sana va vaqtni tanlang",
+      "confirm": "Qabulni tasdiqlash"
+    },
+    "searchSpecialty": "Mutaxassislikni qidirish...",
+    "noSpecialties": "Mutaxassisliklar topilmadi",
+    "noDoctors": "Shifokorlar topilmadi",
+    "availableSlots": "Mavjud vaqtlar",
+    "noSlots": "Ushbu kunda bo'sh vaqtlar yo'q",
+    "reserveSlot": "Vaqtni band qilish",
+    "summary": "Qabul ma'lumotlari",
+    "branch": "Filial",
+    "otpTitle": "Qabulni tasdiqlash",
+    "otpDesc": "Telefoningizga yuborilgan kodni kiriting.",
+    "confirmBooking": "Qabulni tasdiqlash"
+  },
+  "visits": {
+    "title": "Tashriflar tarixi",
+    "filterAll": "Barchasi",
+    "filterCompleted": "Yakunlangan",
+    "filterCancelled": "Bekor qilingan",
+    "filterNoShow": "Kelmagan",
+    "searchPlaceholder": "Shifokor yoki xizmat bo'yicha qidirish...",
+    "noVisits": "Tashriflar yo'q",
+    "noVisitsDesc": "Tashriflar tarixi bo'sh",
+    "status": {
+      "completed": "Yakunlangan",
+      "cancelled": "Bekor qilingan",
+      "no_show": "Kelmagan",
+      "scheduled": "Rejalashtirilgan"
+    }
+  },
+  "profile": {
+    "male": "Erkak",
+    "female": "Ayol",
+    "personalInfo": "Shaxsiy ma'lumotlar",
+    "fullName": "F.I.SH.",
+    "phone": "Telefon",
+    "birthDate": "Tug'ilgan sana",
+    "gender": "Jins",
+    "connectedClinics": "Ulangan klinikalar",
+    "noClinics": "Ulangan klinikalar yo'q",
+    "disconnect": "Ulanishni uzish",
+    "connectNew": "Yangi klinikani ulash",
+    "tenantCodePlaceholder": "Klinika kodi",
+    "connect": "Ulash",
+    "connectSuccess": "Klinika muvaffaqiyatli ulandi!",
+    "settings": "Sozlamalar",
+    "theme": "Mavzu",
+    "themeLight": "Yorug'",
+    "themeDark": "Qorong'i",
+    "exportData": "Ma'lumotlarni eksport qilish",
+    "exportDesc": "Barcha tibbiy yozuvlar arxivini yuklab olish (PDF, CSV)",
+    "logout": "Tizimdan chiqish"
   }
 }
