@@ -71,6 +71,7 @@ services:
     environment:
       PORT: ${AUTH_SERVICE_PORT:-3001}
       DATABASE_URL: ${DATABASE_URL:-postgresql://medcrm:medcrm_password@postgres:5432/medcrm?schema=public}
+      SCHEDULING_DATABASE_URL: ${SCHEDULING_DATABASE_URL:-postgresql://medcrm:medcrm_password@postgres:5432/medcrm_scheduling?schema=public}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       NATS_URL: ${NATS_URL:-nats://nats:4222}
       SCHEDULING_SERVICE_HOST: ${SCHEDULING_SERVICE_HOST:-scheduling-service}

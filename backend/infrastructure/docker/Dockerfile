@@ -19,6 +19,7 @@ COPY package.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/apps/scheduling-service/src/generated/prisma-client ./dist/apps/scheduling-service/src/generated/prisma-client
+COPY --from=builder /app/apps/scheduling-service/src/generated/prisma-client ./apps/scheduling-service/src/generated/prisma-client
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/apps/scheduling-service/prisma ./apps/scheduling-service/prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma

@@ -364,6 +364,78 @@ async function main(): Promise<void> {
     },
   });
 
+  const servicePediatricConsultation = await prisma.service.upsert({
+    where: { tenantId_code: { tenantId: tenant.id, code: 'pediatric-consultation' } },
+    update: {
+      basePrice: new Prisma.Decimal(1800),
+      durationMinutes: 30,
+      color: '#f97316',
+    },
+    create: {
+      tenantId: tenant.id,
+      code: 'pediatric-consultation',
+      name: 'Прием педиатра',
+      durationMinutes: 30,
+      color: '#f97316',
+      isOnlineBookable: true,
+      basePrice: new Prisma.Decimal(1800),
+    },
+  });
+
+  const serviceGynecologyConsultation = await prisma.service.upsert({
+    where: { tenantId_code: { tenantId: tenant.id, code: 'gynecology-consultation' } },
+    update: {
+      basePrice: new Prisma.Decimal(2400),
+      durationMinutes: 40,
+      color: '#db2777',
+    },
+    create: {
+      tenantId: tenant.id,
+      code: 'gynecology-consultation',
+      name: 'Прием гинеколога',
+      durationMinutes: 40,
+      color: '#db2777',
+      isOnlineBookable: true,
+      basePrice: new Prisma.Decimal(2400),
+    },
+  });
+
+  const serviceUltrasoundAbdomen = await prisma.service.upsert({
+    where: { tenantId_code: { tenantId: tenant.id, code: 'ultrasound-abdomen' } },
+    update: {
+      basePrice: new Prisma.Decimal(2200),
+      durationMinutes: 30,
+      color: '#14b8a6',
+    },
+    create: {
+      tenantId: tenant.id,
+      code: 'ultrasound-abdomen',
+      name: 'УЗИ органов брюшной полости',
+      durationMinutes: 30,
+      color: '#14b8a6',
+      isOnlineBookable: true,
+      basePrice: new Prisma.Decimal(2200),
+    },
+  });
+
+  const serviceDentalHygiene = await prisma.service.upsert({
+    where: { tenantId_code: { tenantId: tenant.id, code: 'dental-hygiene' } },
+    update: {
+      basePrice: new Prisma.Decimal(3200),
+      durationMinutes: 50,
+      color: '#0891b2',
+    },
+    create: {
+      tenantId: tenant.id,
+      code: 'dental-hygiene',
+      name: 'Профессиональная гигиена полости рта',
+      durationMinutes: 50,
+      color: '#0891b2',
+      isOnlineBookable: true,
+      basePrice: new Prisma.Decimal(3200),
+    },
+  });
+
   // 1. Specialties
   const specialtiesData = [
     { code: 'dentist', name: 'Стоматолог', internationalCode: 'DENT' },
@@ -386,6 +458,7 @@ async function main(): Promise<void> {
   // 2. Positions
   const positionsData = [
     { code: 'CHIEF_DOCTOR', name: 'Главный врач', isMedicalStaff: true },
+    { code: 'DOCTOR', name: 'Врач-специалист', isMedicalStaff: true },
     { code: 'DOCTOR_USI', name: 'Врач УЗИ', isMedicalStaff: true },
     { code: 'NURSE', name: 'Медсестра', isMedicalStaff: true },
     { code: 'REGISTRAR', name: 'Регистратор/Администратор', isMedicalStaff: false },
@@ -470,6 +543,36 @@ async function main(): Promise<void> {
     },
   });
 
+  const pediatricsDept = await prisma.department.upsert({
+    where: {
+      tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'pediatrics' },
+    },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      branchId: branch.id,
+      code: 'pediatrics',
+      name: 'Педиатрия',
+      description: 'Педиатрическое отделение и вакцинация',
+      color: '#f97316',
+    },
+  });
+
+  const womensHealthDept = await prisma.department.upsert({
+    where: {
+      tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'womens-health' },
+    },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      branchId: branch.id,
+      code: 'womens-health',
+      name: 'Женское здоровье',
+      description: 'Гинекология, наблюдение беременности и профилактические осмотры',
+      color: '#db2777',
+    },
+  });
+
   // 6. Rooms
   const docOffice = await schedulingPrisma.room.upsert({
     where: {
@@ -539,6 +642,40 @@ async function main(): Promise<void> {
     },
   });
 
+  const gynecologyOffice = await schedulingPrisma.room.upsert({
+    where: {
+      tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'room-105' },
+    },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      branchId: branch.id,
+      departmentId: womensHealthDept.id,
+      roomTypeId: roomTypeMap.get('DOCTOR_OFFICE')!,
+      code: 'room-105',
+      name: 'Кабинет гинеколога 105',
+      floor: 1,
+      capacity: 1,
+    },
+  });
+
+  const pediatricOffice = await schedulingPrisma.room.upsert({
+    where: {
+      tenantId_branchId_code: { tenantId: tenant.id, branchId: branch.id, code: 'room-106' },
+    },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      branchId: branch.id,
+      departmentId: pediatricsDept.id,
+      roomTypeId: roomTypeMap.get('DOCTOR_OFFICE')!,
+      code: 'room-106',
+      name: 'Кабинет педиатра 106',
+      floor: 1,
+      capacity: 1,
+    },
+  });
+
   // Allowed specialties in room-102
   await schedulingPrisma.roomSpecialty.upsert({
     where: {
@@ -565,6 +702,34 @@ async function main(): Promise<void> {
     },
     update: {},
     create: { roomId: cardioOffice.id, specialtyId: specialtyMap.get('cardiologist')! },
+  });
+
+  await schedulingPrisma.roomSpecialty.upsert({
+    where: {
+      roomId_specialtyId: {
+        roomId: gynecologyOffice.id,
+        specialtyId: specialtyMap.get('gynecologist')!,
+      },
+    },
+    update: {},
+    create: {
+      roomId: gynecologyOffice.id,
+      specialtyId: specialtyMap.get('gynecologist')!,
+    },
+  });
+
+  await schedulingPrisma.roomSpecialty.upsert({
+    where: {
+      roomId_specialtyId: {
+        roomId: pediatricOffice.id,
+        specialtyId: specialtyMap.get('pediatrician')!,
+      },
+    },
+    update: {},
+    create: {
+      roomId: pediatricOffice.id,
+      specialtyId: specialtyMap.get('pediatrician')!,
+    },
   });
 
   // 7. Equipment
@@ -727,6 +892,42 @@ async function main(): Promise<void> {
     roomId: cardioOffice.id,
   });
 
+  const pediatricianEmployee = await seedEmployeeWithUser({
+    employeeNumber: 'EMP-000004',
+    email: 'pediatric@demo.clinic',
+    firstName: 'Саид',
+    lastName: 'Мирзоев',
+    phone: '+992900550066',
+    departmentId: pediatricsDept.id,
+    positionCode: 'DOCTOR',
+    specialtyCode: 'pediatrician',
+    roomId: pediatricOffice.id,
+  });
+
+  const gynecologistEmployee = await seedEmployeeWithUser({
+    employeeNumber: 'EMP-000005',
+    email: 'gynecology@demo.clinic',
+    firstName: 'Муниса',
+    lastName: 'Хакимова',
+    phone: '+992900770088',
+    departmentId: womensHealthDept.id,
+    positionCode: 'DOCTOR',
+    specialtyCode: 'gynecologist',
+    roomId: gynecologyOffice.id,
+  });
+
+  const radiologistEmployee = await seedEmployeeWithUser({
+    employeeNumber: 'EMP-000006',
+    email: 'ultrasound@demo.clinic',
+    firstName: 'Алишер',
+    lastName: 'Юсупов',
+    phone: '+992900990011',
+    departmentId: cardiologyDept.id,
+    positionCode: 'DOCTOR_USI',
+    specialtyCode: 'radiologist',
+    roomId: usiOffice.id,
+  });
+
   // Assign position
   await prisma.employeePosition.deleteMany({
     where: { tenantId: tenant.id, employeeId: employee.id },
@@ -760,8 +961,11 @@ async function main(): Promise<void> {
   });
 
   // 9. Working Schedules
-  // Branch Working Hours (weekday 1..5, 08:00 - 18:00)
-  for (let i = 1; i <= 5; i++) {
+  // Branch Working Hours (weekday 1..6, 08:00 - 18:00)
+  await schedulingPrisma.workingSchedule.deleteMany({
+    where: { tenantId: tenant.id, entityType: 'branch', entityId: branch.id },
+  });
+  for (let i = 1; i <= 6; i++) {
     await schedulingPrisma.workingSchedule.create({
       data: {
         tenantId: tenant.id,
@@ -784,17 +988,39 @@ async function main(): Promise<void> {
           employee.id,
           dentistEmployee.id,
           cardiologistEmployee.id,
+          pediatricianEmployee.id,
+          gynecologistEmployee.id,
+          radiologistEmployee.id,
           docOffice.id,
           usiOffice.id,
           cardioOffice.id,
           treatmentRoom.id,
+          gynecologyOffice.id,
+          pediatricOffice.id,
         ],
       },
     },
   });
 
-  for (let weekday = 1; weekday <= 5; weekday++) {
-    for (const entityId of [employee.id, dentistEmployee.id, cardiologistEmployee.id]) {
+  const demoDoctorIds = [
+    employee.id,
+    dentistEmployee.id,
+    cardiologistEmployee.id,
+    pediatricianEmployee.id,
+    gynecologistEmployee.id,
+    radiologistEmployee.id,
+  ];
+  const demoRoomIds = [
+    docOffice.id,
+    usiOffice.id,
+    cardioOffice.id,
+    treatmentRoom.id,
+    gynecologyOffice.id,
+    pediatricOffice.id,
+  ];
+
+  for (let weekday = 1; weekday <= 6; weekday++) {
+    for (const entityId of demoDoctorIds) {
       await schedulingPrisma.workingSchedule.create({
         data: {
           tenantId: tenant.id,
@@ -807,7 +1033,7 @@ async function main(): Promise<void> {
         },
       });
     }
-    for (const entityId of [docOffice.id, usiOffice.id, cardioOffice.id, treatmentRoom.id]) {
+    for (const entityId of demoRoomIds) {
       await schedulingPrisma.workingSchedule.create({
         data: {
           tenantId: tenant.id,
@@ -967,6 +1193,38 @@ async function main(): Promise<void> {
     await prisma.encounter.deleteMany({ where: { appointmentId: appointment.id } });
 
     await schedulingPrisma.appointment.delete({ where: { id: appointment.id } });
+  };
+
+  const deleteInvoicesByNumbers = async (invoiceNumbers: string[]) => {
+    await prisma.paymentAllocation.deleteMany({
+      where: {
+        invoiceItem: {
+          invoice: {
+            tenantId: tenant.id,
+            invoiceNumber: { in: invoiceNumbers },
+          },
+        },
+      },
+    });
+    await prisma.patientDebt.deleteMany({
+      where: {
+        invoice: {
+          tenantId: tenant.id,
+          invoiceNumber: { in: invoiceNumbers },
+        },
+      },
+    });
+    await prisma.invoiceItem.deleteMany({
+      where: {
+        invoice: {
+          tenantId: tenant.id,
+          invoiceNumber: { in: invoiceNumbers },
+        },
+      },
+    });
+    await prisma.invoice.deleteMany({
+      where: { tenantId: tenant.id, invoiceNumber: { in: invoiceNumbers } },
+    });
   };
 
   // Patients (P-000001, P-000002, P-000003)
@@ -1212,6 +1470,114 @@ async function main(): Promise<void> {
     addressLine: 'мкр. 82, д. 9',
   });
 
+  const p8 = await seedPatient({
+    code: 'P-000008',
+    firstName: 'Мехрона',
+    lastName: 'Сатторова',
+    middleName: 'Бахтиёровна',
+    birthDate: '1991-04-09',
+    gender: 'FEMALE',
+    status: 'ACTIVE',
+    phone: '+992918222334',
+    city: 'Душанбе',
+    addressLine: 'ул. Айни, 44',
+  });
+
+  const p9 = await seedPatient({
+    code: 'P-000009',
+    firstName: 'Бехруз',
+    lastName: 'Курбонов',
+    middleName: 'Нуриддинович',
+    birthDate: '1984-10-30',
+    gender: 'MALE',
+    status: 'ACTIVE',
+    phone: '+992935334455',
+    city: 'Душанбе',
+    addressLine: 'ул. Турсунзаде, 18',
+  });
+
+  const p10 = await seedPatient({
+    code: 'P-000010',
+    firstName: 'Самира',
+    lastName: 'Рахмонова',
+    middleName: 'Одиловна',
+    birthDate: '2019-01-27',
+    gender: 'FEMALE',
+    status: 'NEW',
+    phone: '+992907123456',
+    city: 'Гиссар',
+    addressLine: 'ул. Навруз, 5',
+  });
+
+  const p11 = await seedPatient({
+    code: 'P-000011',
+    firstName: 'Комрон',
+    lastName: 'Умаров',
+    middleName: 'Абдурахмонович',
+    birthDate: '1972-07-16',
+    gender: 'MALE',
+    status: 'ACTIVE',
+    phone: '+992900222333',
+    city: 'Душанбе',
+    addressLine: 'проспект Исмоили Сомони, 31',
+  });
+
+  const p12 = await seedPatient({
+    code: 'P-000012',
+    firstName: 'Нигора',
+    lastName: 'Файзиева',
+    middleName: 'Шарифовна',
+    birthDate: '1994-11-03',
+    gender: 'FEMALE',
+    status: 'ACTIVE',
+    phone: '+992918765432',
+    city: 'Душанбе',
+    addressLine: 'ул. Бухоро, 22',
+  });
+
+  const p13 = await seedPatient({
+    code: 'P-000013',
+    firstName: 'Далер',
+    lastName: 'Махмудов',
+    middleName: 'Фирдавсович',
+    birthDate: '1989-02-21',
+    gender: 'MALE',
+    status: 'ACTIVE',
+    phone: '+992935777888',
+    city: 'Душанбе',
+    addressLine: 'мкр. Зарафшон, 12',
+  });
+
+  const p14 = await seedPatient({
+    code: 'P-000014',
+    firstName: 'Шахноза',
+    lastName: 'Абдуллоева',
+    middleName: 'Муродовна',
+    birthDate: '1986-06-05',
+    gender: 'FEMALE',
+    status: 'VIP',
+    phone: '+992900808080',
+    city: 'Душанбе',
+    addressLine: 'ул. Саъди Шерози, 63',
+  });
+
+  const demoPatientIds = [
+    p1.id,
+    p2.id,
+    p3.id,
+    p4.id,
+    p5.id,
+    p6.id,
+    p7.id,
+    p8.id,
+    p9.id,
+    p10.id,
+    p11.id,
+    p12.id,
+    p13.id,
+    p14.id,
+  ];
+
   // Family Group and Ties
   await prisma.familyMember.deleteMany({
     where: { patientId: { in: [p1.id, p2.id, p3.id] } },
@@ -1319,6 +1685,42 @@ async function main(): Promise<void> {
       loyaltyPoints: 110,
       lastVisitAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
     },
+    {
+      patientId: p8.id,
+      totalVisits: 2,
+      totalRevenue: 4800,
+      ltv: 4800,
+      averageCheck: 2400,
+      loyaltyPoints: 45,
+      lastVisitAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000),
+    },
+    {
+      patientId: p9.id,
+      totalVisits: 6,
+      totalRevenue: 18600,
+      ltv: 18600,
+      averageCheck: 3100,
+      loyaltyPoints: 190,
+      lastVisitAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+    },
+    {
+      patientId: p10.id,
+      totalVisits: 1,
+      totalRevenue: 1800,
+      ltv: 1800,
+      averageCheck: 1800,
+      loyaltyPoints: 15,
+      lastVisitAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+    },
+    {
+      patientId: p14.id,
+      totalVisits: 9,
+      totalRevenue: 42100,
+      ltv: 42100,
+      averageCheck: 4678,
+      loyaltyPoints: 520,
+      lastVisitAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    },
   ]) {
     await prisma.patientCrmMetric.upsert({
       where: { patientId: metric.patientId },
@@ -1345,7 +1747,7 @@ async function main(): Promise<void> {
 
   // Tag Assignments
   await prisma.patientTag.deleteMany({
-    where: { patientId: { in: [p1.id, p2.id, p3.id, p4.id, p5.id, p6.id, p7.id] } },
+    where: { patientId: { in: demoPatientIds } },
   });
   await prisma.patientTag.create({
     data: {
@@ -1384,6 +1786,22 @@ async function main(): Promise<void> {
       tenantId: tenant.id,
       patientId: p3.id,
       tagId: tagChild.id,
+      assignedBy: admin.id,
+    },
+  });
+  await prisma.patientTag.create({
+    data: {
+      tenantId: tenant.id,
+      patientId: p10.id,
+      tagId: tagChild.id,
+      assignedBy: admin.id,
+    },
+  });
+  await prisma.patientTag.create({
+    data: {
+      tenantId: tenant.id,
+      patientId: p14.id,
+      tagId: tagVip.id,
       assignedBy: admin.id,
     },
   });
@@ -1575,7 +1993,7 @@ async function main(): Promise<void> {
   const todayEnd = new Date();
   todayEnd.setHours(10, 30, 0, 0);
 
-  for (const appointmentNumber of [
+  const demoAppointmentNumbers = [
     'A-SEED-001',
     'A-DEMO-002',
     'A-DEMO-003',
@@ -1583,9 +2001,29 @@ async function main(): Promise<void> {
     'A-DEMO-005',
     'A-DEMO-006',
     'A-DEMO-007',
-  ]) {
+    'A-DEMO-008',
+    'A-DEMO-009',
+    'A-DEMO-010',
+    'A-DEMO-011',
+    'A-DEMO-012',
+    'A-DEMO-013',
+    'A-DEMO-014',
+    'A-DEMO-015',
+    'A-DEMO-016',
+    'A-DEMO-017',
+    'A-DEMO-018',
+    'A-DEMO-019',
+    'A-DEMO-020',
+    'A-DEMO-021',
+  ];
+  const demoInvoiceNumbers = demoAppointmentNumbers.map(
+    (appointmentNumber) => `INV-${appointmentNumber}`,
+  );
+
+  for (const appointmentNumber of demoAppointmentNumbers) {
     await deleteAppointmentByNumber(appointmentNumber);
   }
+  await deleteInvoicesByNumbers(demoInvoiceNumbers);
 
   const demoApp = await schedulingPrisma.appointment.create({
     data: {
@@ -1714,8 +2152,9 @@ async function main(): Promise<void> {
     },
   });
 
-  const atToday = (hour: number, minute = 0) => {
+  const atDemoDay = (dayOffset: number, hour: number, minute = 0) => {
     const value = new Date();
+    value.setDate(value.getDate() + dayOffset);
     value.setHours(hour, minute, 0, 0);
     return value;
   };
@@ -1726,6 +2165,7 @@ async function main(): Promise<void> {
     employeeId: string;
     serviceId: string;
     roomId: string;
+    dayOffset: number;
     startHour: number;
     startMinute?: number;
     durationMinutes: number;
@@ -1734,7 +2174,7 @@ async function main(): Promise<void> {
     notes: string;
     invoiceStatus?: 'PENDING_PAYMENT' | 'PAID';
   }) => {
-    const startAt = atToday(input.startHour, input.startMinute ?? 0);
+    const startAt = atDemoDay(input.dayOffset, input.startHour, input.startMinute ?? 0);
     const endAt = new Date(startAt.getTime() + input.durationMinutes * 60 * 1000);
     const appointment = await schedulingPrisma.appointment.create({
       data: {
@@ -1751,6 +2191,15 @@ async function main(): Promise<void> {
         startAt,
         endAt,
         durationMinutes: input.durationMinutes,
+        confirmedAt: [
+          'CONFIRMED',
+          'CHECKED_IN',
+          'IN_PROGRESS',
+          'COMPLETED_PENDING_PAYMENT',
+          'COMPLETED',
+        ].includes(input.status)
+          ? startAt
+          : null,
         checkedInAt: [
           'CHECKED_IN',
           'IN_PROGRESS',
@@ -1862,84 +2311,263 @@ async function main(): Promise<void> {
     return appointment;
   };
 
-  await createDemoAppointment({
-    appointmentNumber: 'A-DEMO-002',
-    patientId: p4.id,
-    employeeId: dentistEmployee.id,
-    serviceId: serviceDentalTherapy.id,
-    roomId: docOffice.id,
-    startHour: 9,
-    durationMinutes: 45,
-    status: 'CONFIRMED',
-    priority: 'VIP',
-    notes: 'VIP пациент, просит отдельный расчет после приема',
-  });
+  const weeklyAppointments: Parameters<typeof createDemoAppointment>[0][] = [
+    {
+      appointmentNumber: 'A-DEMO-002',
+      patientId: p4.id,
+      employeeId: dentistEmployee.id,
+      serviceId: serviceDentalTherapy.id,
+      roomId: docOffice.id,
+      dayOffset: 0,
+      startHour: 9,
+      durationMinutes: 45,
+      status: 'CONFIRMED',
+      priority: 'VIP',
+      notes: 'VIP пациент, контроль после терапевтического лечения',
+    },
+    {
+      appointmentNumber: 'A-DEMO-003',
+      patientId: p5.id,
+      employeeId: cardiologistEmployee.id,
+      serviceId: serviceCardioDiagnostics.id,
+      roomId: cardioOffice.id,
+      dayOffset: 0,
+      startHour: 9,
+      startMinute: 30,
+      durationMinutes: 30,
+      status: 'SCHEDULED',
+      notes: 'Первичная кардиологическая диагностика',
+    },
+    {
+      appointmentNumber: 'A-DEMO-004',
+      patientId: p6.id,
+      employeeId: dentistEmployee.id,
+      serviceId: serviceConsultation.id,
+      roomId: treatmentRoom.id,
+      dayOffset: 0,
+      startHour: 10,
+      startMinute: 30,
+      durationMinutes: 30,
+      status: 'IN_PROGRESS',
+      notes: 'Пациент уже в кабинете, идет прием',
+    },
+    {
+      appointmentNumber: 'A-DEMO-005',
+      patientId: p7.id,
+      employeeId: pediatricianEmployee.id,
+      serviceId: servicePediatricConsultation.id,
+      roomId: pediatricOffice.id,
+      dayOffset: 0,
+      startHour: 11,
+      startMinute: 30,
+      durationMinutes: 30,
+      status: 'COMPLETED_PENDING_PAYMENT',
+      notes: 'Осмотр после ОРВИ, ожидается оплата в кассе',
+      invoiceStatus: 'PENDING_PAYMENT',
+    },
+    {
+      appointmentNumber: 'A-DEMO-006',
+      patientId: p2.id,
+      employeeId: radiologistEmployee.id,
+      serviceId: serviceUltrasoundAbdomen.id,
+      roomId: usiOffice.id,
+      dayOffset: 0,
+      startHour: 12,
+      startMinute: 30,
+      durationMinutes: 30,
+      status: 'COMPLETED',
+      notes: 'УЗИ выполнено, прием закрыт',
+      invoiceStatus: 'PAID',
+    },
+    {
+      appointmentNumber: 'A-DEMO-007',
+      patientId: p3.id,
+      employeeId: dentistEmployee.id,
+      serviceId: serviceConsultation.id,
+      roomId: docOffice.id,
+      dayOffset: 0,
+      startHour: 14,
+      durationMinutes: 30,
+      status: 'CANCELLED',
+      notes: 'Отмена по просьбе родителя',
+    },
+    {
+      appointmentNumber: 'A-DEMO-008',
+      patientId: p8.id,
+      employeeId: gynecologistEmployee.id,
+      serviceId: serviceGynecologyConsultation.id,
+      roomId: gynecologyOffice.id,
+      dayOffset: 1,
+      startHour: 9,
+      durationMinutes: 40,
+      status: 'CONFIRMED',
+      notes: 'Плановый профилактический прием',
+    },
+    {
+      appointmentNumber: 'A-DEMO-009',
+      patientId: p9.id,
+      employeeId: dentistEmployee.id,
+      serviceId: serviceDentalHygiene.id,
+      roomId: docOffice.id,
+      dayOffset: 1,
+      startHour: 10,
+      durationMinutes: 50,
+      status: 'CONFIRMED',
+      notes: 'Профессиональная гигиена перед ортопедическим лечением',
+    },
+    {
+      appointmentNumber: 'A-DEMO-010',
+      patientId: p10.id,
+      employeeId: pediatricianEmployee.id,
+      serviceId: servicePediatricConsultation.id,
+      roomId: pediatricOffice.id,
+      dayOffset: 1,
+      startHour: 12,
+      durationMinutes: 30,
+      status: 'SCHEDULED',
+      notes: 'Первичный прием ребенка, жалобы на кашель',
+    },
+    {
+      appointmentNumber: 'A-DEMO-011',
+      patientId: p11.id,
+      employeeId: cardiologistEmployee.id,
+      serviceId: serviceCardioDiagnostics.id,
+      roomId: cardioOffice.id,
+      dayOffset: 2,
+      startHour: 8,
+      startMinute: 30,
+      durationMinutes: 30,
+      status: 'CONFIRMED',
+      priority: 'HIGH',
+      notes: 'Контроль АД, пациент принимает терапию',
+    },
+    {
+      appointmentNumber: 'A-DEMO-012',
+      patientId: p12.id,
+      employeeId: radiologistEmployee.id,
+      serviceId: serviceUltrasoundAbdomen.id,
+      roomId: usiOffice.id,
+      dayOffset: 2,
+      startHour: 10,
+      durationMinutes: 30,
+      status: 'CONFIRMED',
+      notes: 'УЗИ по направлению гинеколога',
+    },
+    {
+      appointmentNumber: 'A-DEMO-013',
+      patientId: p13.id,
+      employeeId: dentistEmployee.id,
+      serviceId: serviceDentalTherapy.id,
+      roomId: docOffice.id,
+      dayOffset: 3,
+      startHour: 9,
+      durationMinutes: 45,
+      status: 'SCHEDULED',
+      notes: 'Лечение кариеса 36 зуба',
+    },
+    {
+      appointmentNumber: 'A-DEMO-014',
+      patientId: p14.id,
+      employeeId: gynecologistEmployee.id,
+      serviceId: serviceGynecologyConsultation.id,
+      roomId: gynecologyOffice.id,
+      dayOffset: 3,
+      startHour: 11,
+      durationMinutes: 40,
+      status: 'CONFIRMED',
+      priority: 'VIP',
+      notes: 'VIP пациент, наблюдение беременности',
+    },
+    {
+      appointmentNumber: 'A-DEMO-015',
+      patientId: p1.id,
+      employeeId: cardiologistEmployee.id,
+      serviceId: serviceCardioDiagnostics.id,
+      roomId: cardioOffice.id,
+      dayOffset: 4,
+      startHour: 9,
+      startMinute: 30,
+      durationMinutes: 30,
+      status: 'CONFIRMED',
+      notes: 'Повторная ЭКГ после коррекции терапии',
+    },
+    {
+      appointmentNumber: 'A-DEMO-016',
+      patientId: p6.id,
+      employeeId: radiologistEmployee.id,
+      serviceId: serviceUltrasoundAbdomen.id,
+      roomId: usiOffice.id,
+      dayOffset: 4,
+      startHour: 13,
+      durationMinutes: 30,
+      status: 'SCHEDULED',
+      notes: 'Контрольное УЗИ перед консультацией',
+    },
+    {
+      appointmentNumber: 'A-DEMO-017',
+      patientId: p7.id,
+      employeeId: pediatricianEmployee.id,
+      serviceId: servicePediatricConsultation.id,
+      roomId: pediatricOffice.id,
+      dayOffset: 5,
+      startHour: 10,
+      durationMinutes: 30,
+      status: 'CONFIRMED',
+      notes: 'Плановый осмотр школьника',
+    },
+    {
+      appointmentNumber: 'A-DEMO-018',
+      patientId: p5.id,
+      employeeId: dentistEmployee.id,
+      serviceId: serviceDentalHygiene.id,
+      roomId: docOffice.id,
+      dayOffset: 5,
+      startHour: 12,
+      durationMinutes: 50,
+      status: 'SCHEDULED',
+      notes: 'Профилактическая чистка',
+    },
+    {
+      appointmentNumber: 'A-DEMO-019',
+      patientId: p12.id,
+      employeeId: gynecologistEmployee.id,
+      serviceId: serviceGynecologyConsultation.id,
+      roomId: gynecologyOffice.id,
+      dayOffset: 6,
+      startHour: 9,
+      durationMinutes: 40,
+      status: 'CONFIRMED',
+      notes: 'Повторный прием по результатам УЗИ',
+    },
+    {
+      appointmentNumber: 'A-DEMO-020',
+      patientId: p11.id,
+      employeeId: radiologistEmployee.id,
+      serviceId: serviceUltrasoundAbdomen.id,
+      roomId: usiOffice.id,
+      dayOffset: 6,
+      startHour: 11,
+      durationMinutes: 30,
+      status: 'SCHEDULED',
+      notes: 'Плановая диагностика органов брюшной полости',
+    },
+    {
+      appointmentNumber: 'A-DEMO-021',
+      patientId: p9.id,
+      employeeId: cardiologistEmployee.id,
+      serviceId: serviceConsultation.id,
+      roomId: cardioOffice.id,
+      dayOffset: 6,
+      startHour: 15,
+      durationMinutes: 30,
+      status: 'SCHEDULED',
+      notes: 'Консультация по результатам анализов',
+    },
+  ];
 
-  await createDemoAppointment({
-    appointmentNumber: 'A-DEMO-003',
-    patientId: p5.id,
-    employeeId: cardiologistEmployee.id,
-    serviceId: serviceCardioDiagnostics.id,
-    roomId: cardioOffice.id,
-    startHour: 9,
-    startMinute: 30,
-    durationMinutes: 30,
-    status: 'SCHEDULED',
-    notes: 'Первичная кардиологическая диагностика',
-  });
-
-  await createDemoAppointment({
-    appointmentNumber: 'A-DEMO-004',
-    patientId: p6.id,
-    employeeId: dentistEmployee.id,
-    serviceId: serviceConsultation.id,
-    roomId: treatmentRoom.id,
-    startHour: 10,
-    startMinute: 30,
-    durationMinutes: 30,
-    status: 'IN_PROGRESS',
-    notes: 'Пациент уже в кабинете, идет прием',
-  });
-
-  await createDemoAppointment({
-    appointmentNumber: 'A-DEMO-005',
-    patientId: p7.id,
-    employeeId: cardiologistEmployee.id,
-    serviceId: serviceCardioDiagnostics.id,
-    roomId: cardioOffice.id,
-    startHour: 11,
-    startMinute: 30,
-    durationMinutes: 30,
-    status: 'COMPLETED_PENDING_PAYMENT',
-    notes: 'Прием завершен, ожидается оплата в кассе',
-    invoiceStatus: 'PENDING_PAYMENT',
-  });
-
-  await createDemoAppointment({
-    appointmentNumber: 'A-DEMO-006',
-    patientId: p2.id,
-    employeeId: employee.id,
-    serviceId: serviceProcedure.id,
-    roomId: usiOffice.id,
-    startHour: 12,
-    startMinute: 30,
-    durationMinutes: 45,
-    status: 'COMPLETED',
-    notes: 'УЗИ выполнено, прием закрыт',
-    invoiceStatus: 'PAID',
-  });
-
-  await createDemoAppointment({
-    appointmentNumber: 'A-DEMO-007',
-    patientId: p3.id,
-    employeeId: dentistEmployee.id,
-    serviceId: serviceConsultation.id,
-    roomId: docOffice.id,
-    startHour: 14,
-    durationMinutes: 30,
-    status: 'CANCELLED',
-    notes: 'Отмена по просьбе родителя',
-  });
+  for (const appointment of weeklyAppointments) {
+    await createDemoAppointment(appointment);
+  }
 
   // 15. EMR Clinical Subsystem Seeding
   // ICD-10 Dictionary codes
@@ -2799,14 +3427,14 @@ async function main(): Promise<void> {
 
   const roomWarehouse = await prisma.warehouse.upsert({
     where: { tenantId_code: { tenantId: tenant.id, code: 'USI-OFFICE-ROOM' } },
-    update: {},
+    update: { roomId: null },
     create: {
       tenantId: tenant.id,
       branchId: branch.id,
-      roomId: usiOffice.id,
+      roomId: null,
       warehouseType: 'ROOM',
       code: 'USI-OFFICE-ROOM',
-      name: 'Шкаф УЗИ-кабинета',
+      name: 'Шкаф диагностического кабинета',
     },
   });
 
@@ -2858,6 +3486,23 @@ async function main(): Promise<void> {
       reorderLevel: 100.0,
       defaultSupplierId: supplier.id,
     },
+  });
+
+  const demoInventoryItemIds = [lidoItem.id, gelItem.id];
+  await prisma.stockAlertRule.deleteMany({
+    where: { tenantId: tenant.id, itemId: { in: demoInventoryItemIds } },
+  });
+  await prisma.serviceBomItem.deleteMany({
+    where: { bomTemplate: { tenantId: tenant.id, serviceId: serviceProcedure.id } },
+  });
+  await prisma.serviceBomTemplate.deleteMany({
+    where: { tenantId: tenant.id, serviceId: serviceProcedure.id },
+  });
+  await prisma.inventoryBalance.deleteMany({
+    where: { tenantId: tenant.id, itemId: { in: demoInventoryItemIds } },
+  });
+  await prisma.inventoryBatch.deleteMany({
+    where: { tenantId: tenant.id, itemId: { in: demoInventoryItemIds } },
   });
 
   // K. Seed Expiring Batches for Lidocaine
