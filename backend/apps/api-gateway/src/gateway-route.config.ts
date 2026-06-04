@@ -19,6 +19,7 @@ export type GatewayRouteConfig = {
     | 'BILLING_SERVICE_INTERNAL_URL';
   rateLimitPolicy: GatewayRateLimitPolicy;
   requiresAuth: boolean;
+  tenantRequirement: 'none' | 'optional' | 'required';
   description: string;
 };
 
@@ -69,6 +70,10 @@ export const publicRoutes: GatewayRouteConfig[] = [
     targetEnv: target as GatewayRouteConfig['targetEnv'],
     rateLimitPolicy: (name === 'auth' ? 'auth' : 'public') as GatewayRateLimitPolicy,
     requiresAuth,
+    tenantRequirement: (name === 'auth' ? 'optional' : 'required') as
+      | 'none'
+      | 'optional'
+      | 'required',
     description: `Public v1 proxy for ${upstreamPrefix}`,
   })),
   {
@@ -78,6 +83,7 @@ export const publicRoutes: GatewayRouteConfig[] = [
     targetEnv: billingTarget as GatewayRouteConfig['targetEnv'],
     rateLimitPolicy: 'public' as GatewayRateLimitPolicy,
     requiresAuth: false,
+    tenantRequirement: 'optional',
     description: 'Billing microservice public webhooks',
   },
   {
@@ -87,12 +93,14 @@ export const publicRoutes: GatewayRouteConfig[] = [
     targetEnv: billingTarget as GatewayRouteConfig['targetEnv'],
     rateLimitPolicy: 'public' as GatewayRateLimitPolicy,
     requiresAuth: true,
+    tenantRequirement: 'required',
     description: 'Billing microservice main endpoints',
   },
 ];
 
 const compatibilityPrefixes = [
   ['/auth', authTarget],
+  ['/portal/v1/auth', authTarget],
   ['/patients', authTarget],
   ['/appointments', schedulingTarget],
   ['/availability', schedulingTarget],
@@ -115,8 +123,12 @@ export const compatibilityRoutes: GatewayRouteConfig[] = compatibilityPrefixes.m
     gatewayPrefix: prefix,
     upstreamPrefix: prefix,
     targetEnv: target,
-    rateLimitPolicy: prefix === '/auth' ? 'auth' : 'public',
-    requiresAuth: prefix !== '/auth' && prefix !== '/fhir',
+    rateLimitPolicy: prefix === '/auth' || prefix === '/portal/v1/auth' ? 'auth' : 'public',
+    requiresAuth: prefix !== '/auth' && prefix !== '/portal/v1/auth' && prefix !== '/fhir',
+    tenantRequirement:
+      prefix === '/auth' || prefix === '/portal/v1/auth' || prefix === '/fhir'
+        ? 'optional'
+        : 'required',
     description: `Backward-compatible unversioned proxy for ${prefix}`,
   }),
 );
@@ -129,6 +141,7 @@ export const internalRoutes: GatewayRouteConfig[] = [
     targetEnv: internalTarget,
     rateLimitPolicy: 'internal',
     requiresAuth: true,
+    tenantRequirement: 'none',
     description: 'Internal auth service contract',
   },
   {
@@ -138,6 +151,7 @@ export const internalRoutes: GatewayRouteConfig[] = [
     targetEnv: internalTarget,
     rateLimitPolicy: 'internal',
     requiresAuth: false,
+    tenantRequirement: 'none',
     description: 'Internal auth-service health proxy',
   },
   {
@@ -146,7 +160,8 @@ export const internalRoutes: GatewayRouteConfig[] = [
     upstreamPrefix: '/docs',
     targetEnv: internalTarget,
     rateLimitPolicy: 'internal',
-    requiresAuth: false,
+    requiresAuth: true,
+    tenantRequirement: 'none',
     description: 'Internal auth-service Swagger UI proxy',
   },
   {
@@ -155,7 +170,8 @@ export const internalRoutes: GatewayRouteConfig[] = [
     upstreamPrefix: '/docs-json',
     targetEnv: internalTarget,
     rateLimitPolicy: 'internal',
-    requiresAuth: false,
+    requiresAuth: true,
+    tenantRequirement: 'none',
     description: 'Internal auth-service OpenAPI JSON proxy',
   },
   {
@@ -165,6 +181,7 @@ export const internalRoutes: GatewayRouteConfig[] = [
     targetEnv: schedulingInternalTarget,
     rateLimitPolicy: 'internal',
     requiresAuth: false,
+    tenantRequirement: 'none',
     description: 'Internal scheduling-service health proxy',
   },
   {
@@ -173,7 +190,8 @@ export const internalRoutes: GatewayRouteConfig[] = [
     upstreamPrefix: '/docs',
     targetEnv: schedulingInternalTarget,
     rateLimitPolicy: 'internal',
-    requiresAuth: false,
+    requiresAuth: true,
+    tenantRequirement: 'none',
     description: 'Internal scheduling-service Swagger UI proxy',
   },
   {
@@ -182,7 +200,8 @@ export const internalRoutes: GatewayRouteConfig[] = [
     upstreamPrefix: '/docs-json',
     targetEnv: schedulingInternalTarget,
     rateLimitPolicy: 'internal',
-    requiresAuth: false,
+    requiresAuth: true,
+    tenantRequirement: 'none',
     description: 'Internal scheduling-service OpenAPI JSON proxy',
   },
   {
@@ -192,6 +211,7 @@ export const internalRoutes: GatewayRouteConfig[] = [
     targetEnv: analyticsInternalTarget,
     rateLimitPolicy: 'internal',
     requiresAuth: false,
+    tenantRequirement: 'none',
     description: 'Internal analytics-service health proxy',
   },
   {
@@ -200,7 +220,8 @@ export const internalRoutes: GatewayRouteConfig[] = [
     upstreamPrefix: '/docs',
     targetEnv: analyticsInternalTarget,
     rateLimitPolicy: 'internal',
-    requiresAuth: false,
+    requiresAuth: true,
+    tenantRequirement: 'none',
     description: 'Internal analytics-service Swagger UI proxy',
   },
   {
@@ -209,7 +230,8 @@ export const internalRoutes: GatewayRouteConfig[] = [
     upstreamPrefix: '/docs-json',
     targetEnv: analyticsInternalTarget,
     rateLimitPolicy: 'internal',
-    requiresAuth: false,
+    requiresAuth: true,
+    tenantRequirement: 'none',
     description: 'Internal analytics-service OpenAPI JSON proxy',
   },
   {
@@ -219,6 +241,7 @@ export const internalRoutes: GatewayRouteConfig[] = [
     targetEnv: billingInternalTarget,
     rateLimitPolicy: 'internal',
     requiresAuth: false,
+    tenantRequirement: 'none',
     description: 'Internal billing-service health proxy',
   },
   {
@@ -227,7 +250,8 @@ export const internalRoutes: GatewayRouteConfig[] = [
     upstreamPrefix: '/docs',
     targetEnv: billingInternalTarget,
     rateLimitPolicy: 'internal',
-    requiresAuth: false,
+    requiresAuth: true,
+    tenantRequirement: 'none',
     description: 'Internal billing-service Swagger UI proxy',
   },
   {
@@ -236,7 +260,8 @@ export const internalRoutes: GatewayRouteConfig[] = [
     upstreamPrefix: '/docs-json',
     targetEnv: billingInternalTarget,
     rateLimitPolicy: 'internal',
-    requiresAuth: false,
+    requiresAuth: true,
+    tenantRequirement: 'none',
     description: 'Internal billing-service OpenAPI JSON proxy',
   },
 ];
@@ -249,6 +274,7 @@ export const websocketRoutes: GatewayRouteConfig[] = [
     targetEnv: authTarget,
     rateLimitPolicy: 'websocket',
     requiresAuth: true,
+    tenantRequirement: 'required',
     description: 'Socket.IO transport proxy',
   },
   {
@@ -258,6 +284,7 @@ export const websocketRoutes: GatewayRouteConfig[] = [
     targetEnv: authTarget,
     rateLimitPolicy: 'websocket',
     requiresAuth: true,
+    tenantRequirement: 'required',
     description: 'Direct realtime namespace proxy',
   },
 ];

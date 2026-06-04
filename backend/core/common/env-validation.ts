@@ -7,6 +7,13 @@ export const envSchema = z.object({
   PORTAL_JWT_ACCESS_SECRET: z.string().min(32).optional(),
   DATABASE_URL: z.string().url().optional(),
   MINIO_ROOT_PASSWORD: z.string().optional(),
+  ENABLE_SWAGGER: z.string().optional(),
+  INTERNAL_DOCS_AUTH_MODE: z
+    .enum(['api-key', 'ip-allowlist', 'jwt-admin', 'none'])
+    .optional()
+    .default('none'),
+  INTERNAL_DOCS_API_KEY_HASH: z.string().optional(),
+  INTERNAL_DOCS_ALLOWED_IPS: z.string().optional(),
 });
 
 export function validateEnv(): void {
@@ -36,6 +43,24 @@ export function validateEnv(): void {
         env.MINIO_ROOT_PASSWORD === 'minioadmin')
     ) {
       throw new Error('Unsafe production MINIO_ROOT_PASSWORD default password detected');
+    }
+    if (
+      env.ENABLE_SWAGGER === 'true' &&
+      (!env.INTERNAL_DOCS_AUTH_MODE || env.INTERNAL_DOCS_AUTH_MODE === 'none')
+    ) {
+      throw new Error(
+        'Unsafe production config: ENABLE_SWAGGER is enabled but INTERNAL_DOCS_AUTH_MODE is not configured or set to none',
+      );
+    }
+    if (env.INTERNAL_DOCS_AUTH_MODE === 'api-key' && !env.INTERNAL_DOCS_API_KEY_HASH) {
+      throw new Error(
+        'Unsafe production config: INTERNAL_DOCS_API_KEY_HASH must be configured when auth mode is api-key',
+      );
+    }
+    if (env.INTERNAL_DOCS_AUTH_MODE === 'ip-allowlist' && !env.INTERNAL_DOCS_ALLOWED_IPS) {
+      throw new Error(
+        'Unsafe production config: INTERNAL_DOCS_ALLOWED_IPS must be configured when auth mode is ip-allowlist',
+      );
     }
   }
 }

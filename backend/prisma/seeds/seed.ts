@@ -174,6 +174,16 @@ const permissions = [
 ] as const;
 
 async function main(): Promise<void> {
+  const nodeEnv = process.env.NODE_ENV;
+  const appEnv = process.env.APP_ENV;
+  const isLocal =
+    nodeEnv === 'development' || nodeEnv === 'test' || appEnv === 'local' || appEnv === 'test';
+
+  if (!isLocal) {
+    console.error('FATAL: Database seeding is restricted and disabled in production environments.');
+    process.exit(1);
+  }
+
   const tenant = await prisma.tenant.upsert({
     where: { code: 'demo-clinic' },
     update: {},

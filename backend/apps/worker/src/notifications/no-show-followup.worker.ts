@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { REDIS_CLIENT } from '@core/cache/redis.module';
 import { PrismaService } from '@core/database/prisma.service';
+import { PatientRepository } from '@core/database/repositories/patient.repository';
 import { SchedulingPrismaService } from '@core/database/scheduling-prisma.service';
 import { QueueNames } from '@core/queue/queue-names';
 import { QueueService } from '@core/queue/queue.module';
@@ -23,6 +24,7 @@ export class NoShowFollowupWorker implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly schedulingPrisma: SchedulingPrismaService,
     private readonly queueService: QueueService,
+    private readonly patientRepository: PatientRepository,
   ) {}
 
   onModuleInit() {
@@ -87,8 +89,8 @@ export class NoShowFollowupWorker implements OnModuleInit {
     }
 
     // 2. Identify preferred channel based on contacts
-    const patient = await this.prisma.patient.findFirst({
-      where: { id: app.patientId, tenantId },
+    const patient = await this.patientRepository.findFirst(tenantId, {
+      where: { id: app.patientId },
       include: { contacts: true },
     });
 

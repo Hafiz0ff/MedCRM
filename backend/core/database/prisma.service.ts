@@ -242,6 +242,32 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     // Attach lifecycle hooks to the extended client
     (extended as any).onModuleInit = async () => {
       await client.$connect();
+
+      const nodeEnv = process.env.NODE_ENV;
+      const appEnv = process.env.APP_ENV;
+      const isProd = nodeEnv === 'production' && appEnv !== 'local' && appEnv !== 'test';
+      if (isProd) {
+        try {
+          const demoUserCount = await client.user.count({
+            where: {
+              email: {
+                endsWith: '@demo.clinic',
+              },
+            },
+          });
+          if (demoUserCount > 0) {
+            throw new Error(
+              'FATAL: Production database contains demo accounts ending in @demo.clinic. Access blocked.',
+            );
+          }
+        } catch (err: any) {
+          if (err.message?.includes('FATAL: Production database contains')) {
+            console.error(err.message);
+            process.exit(1);
+          }
+          throw err;
+        }
+      }
     };
     (extended as any).onModuleDestroy = async () => {
       await client.$disconnect();
@@ -252,6 +278,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async onModuleInit(): Promise<void> {
     await this.$connect();
+    const nodeEnv = process.env.NODE_ENV;
+    const appEnv = process.env.APP_ENV;
+    const isProd = nodeEnv === 'production' && appEnv !== 'local' && appEnv !== 'test';
+    if (isProd) {
+      const demoUserCount = await this.user.count({
+        where: {
+          email: {
+            endsWith: '@demo.clinic',
+          },
+        },
+      });
+      if (demoUserCount > 0) {
+        console.error(
+          'FATAL: Production database contains demo accounts ending in @demo.clinic. Access blocked.',
+        );
+        process.exit(1);
+      }
+    }
   }
 
   async onModuleDestroy(): Promise<void> {

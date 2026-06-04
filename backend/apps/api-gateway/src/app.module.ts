@@ -6,12 +6,19 @@ import { HealthController } from './health.controller';
 import { BrandingMiddleware } from './middleware/branding.middleware';
 import { OpenApiAggregatorService } from './openapi-aggregator.service';
 import { OpenApiController } from './openapi.controller';
+import { GatewayJwtVerifierService } from './security/gateway-jwt-verifier.service';
 import { TenantAwareMiddleware } from './tenant-aware.middleware';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, RedisModule.forRoot()],
   controllers: [HealthController, OpenApiController],
-  providers: [OpenApiAggregatorService, TenantAwareMiddleware, BrandingMiddleware],
+  providers: [
+    OpenApiAggregatorService,
+    TenantAwareMiddleware,
+    BrandingMiddleware,
+    GatewayJwtVerifierService,
+  ],
+  exports: [GatewayJwtVerifierService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

@@ -1,47 +1,35 @@
+import * as crypto from 'node:crypto';
 import { NextFunction, Request, Response } from 'express';
 import Redis from 'ioredis';
-import { GatewayRateLimitPolicy } from './gateway-route.config';
+import { GatewayRouteConfig, gatewayRoutes } from './gateway-route.config';
+import { getClientIp } from './rate-limit/client-ip';
+import { RateLimitPolicy, RateLimitOptions } from './rate-limit/rate-limit.types';
 
-type RateLimitOptions = {
-  windowMs: number;
-  maxByPolicy: Partial<Record<GatewayRateLimitPolicy, number>>;
-};
-
-type Bucket = {
-  count: number;
-  resetAt: number;
-};
-
-const defaultMaxByPolicy: Record<GatewayRateLimitPolicy, number> = {
+const defaultMaxByPolicy: Record<RateLimitPolicy, number> = {
   auth: 20,
   public: 300,
   internal: 1000,
   websocket: 120,
 };
 
-function policyForPath(path: string): GatewayRateLimitPolicy {
-  if (
-    path.startsWith('/api/v1/auth') ||
-    path.startsWith('/auth') ||
-    path.startsWith('/portal/v1/auth')
-  ) {
-    return 'auth';
-  }
-  if (path.startsWith('/internal/v1')) return 'internal';
-  if (path.startsWith('/socket.io') || path.startsWith('/realtime')) return 'websocket';
-  return 'public';
-}
-
-function clientKey(req: Request, policy: GatewayRateLimitPolicy): string {
-  const forwarded = req.headers['x-forwarded-for'];
-  const forwardedIp = typeof forwarded === 'string' ? forwarded.split(',')[0]?.trim() : undefined;
-  return `${policy}:${forwardedIp || req.ip || 'unknown'}`;
-}
-
+/**
+ * Creates a production-grade fail-closed rate limiting middleware.
+ * @param options RateLimitOptions configuration.
+ * @param redis Optional Redis connection client.
+ */
 export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>, redis?: Redis) {
   const windowMs = options?.windowMs ?? 60_000;
-  const maxByPolicy = { ...defaultMaxByPolicy, ...options?.maxByPolicy };
-  const buckets = new Map<string, Bucket>();
+  const maxByPolicy = {
+    auth: options?.maxByPolicy?.auth ?? defaultMaxByPolicy.auth,
+    public: options?.maxByPolicy?.public ?? defaultMaxByPolicy.public,
+    internal: options?.maxByPolicy?.internal ?? defaultMaxByPolicy.internal,
+    websocket: options?.maxByPolicy?.websocket ?? defaultMaxByPolicy.websocket,
+  };
+  const failOpenPolicies = options?.failOpenPolicies ?? ['public'];
+  const trustedProxyCidrs = options?.trustedProxyCidrs ?? [];
+
+  // Memory fallback bucket storage (local/development only)
+  const memoryBuckets = new Map<string, { count: number; resetAt: number }>();
 
   return async function rateLimitMiddleware(
     req: Request,
@@ -49,23 +37,66 @@ export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>, r
     next: NextFunction,
   ): Promise<void> {
     const now = Date.now();
-    const policy = policyForPath(req.path || req.originalUrl || '');
-    const max = maxByPolicy[policy];
-    const key = clientKey(req, policy);
 
+    // 1. Resolve matched route and policy
+    const matchedRoute = [...gatewayRoutes]
+      .sort((a, b) => b.gatewayPrefix.length - a.gatewayPrefix.length)
+      .find((r) => req.path.startsWith(r.gatewayPrefix));
+    const policy = (matchedRoute?.rateLimitPolicy ?? 'public') as RateLimitPolicy;
+    const max = maxByPolicy[policy];
+
+    // 2. Resolve client IP address
+    const clientIp = getClientIp(req, trustedProxyCidrs);
+
+    // 3. Resolve tenant context from headers
+    const tenantId = req.headers['x-tenant-id'] || (req.query && req.query['tenantId']) || 'public';
+
+    // 4. Construct rate limiting key
+    let key = `gateway:rate-limit:${policy}:${tenantId}:${clientIp}`;
+
+    // 5. Append auth payload hashes if present
+    if (policy === 'auth' && req.body && typeof req.body === 'object') {
+      if (req.body.email) {
+        const emailHash = crypto
+          .createHash('sha256')
+          .update(String(req.body.email))
+          .digest('hex')
+          .slice(0, 16);
+        key += `:email:${emailHash}`;
+      }
+      if (req.body.tenantCode) {
+        const codeHash = crypto
+          .createHash('sha256')
+          .update(String(req.body.tenantCode))
+          .digest('hex')
+          .slice(0, 16);
+        key += `:tenant:${codeHash}`;
+      }
+    }
+
+    const envNode = process.env.NODE_ENV;
+    const envApp = process.env.APP_ENV;
+    const isLocalEnv = envNode === 'development' || envApp === 'local' || envNode === 'test';
+
+    // 6. Redis Rate Limiter (with Fail-Closed enforcement)
     if (redis) {
       const minute = Math.floor(now / 60000);
-      const redisKey = `gateway:rate_limit:${key}:${minute}`;
+      const redisKey = `${key}:${minute}`;
 
       try {
-        const [incrResult] = (await redis
+        const results = await redis
           .multi()
           .incr(redisKey)
           .expire(redisKey, Math.ceil(windowMs / 1000))
-          .exec()) as Array<[Error | null, any]>;
+          .exec();
 
+        if (!results || !results[0]) {
+          throw new Error('Redis transaction returned empty result');
+        }
+
+        const incrResult = results[0];
         if (incrResult[0]) {
-          return next();
+          throw incrResult[0]; // Throw the connection/command execution error
         }
 
         const count = Number(incrResult[1]);
@@ -92,42 +123,79 @@ export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>, r
           });
           return;
         }
-      } catch (err) {
-        console.error('Redis Rate Limiting Error:', err);
-      }
-      next();
-    } else {
-      const existing = buckets.get(key);
-      const bucket =
-        existing && existing.resetAt > now ? existing : { count: 0, resetAt: now + windowMs };
 
-      bucket.count += 1;
-      buckets.set(key, bucket);
+        return next();
+      } catch (err: any) {
+        console.error(`Rate limit Redis failure for policy ${policy}:`, err.message || err);
 
-      res.setHeader('X-RateLimit-Policy', policy);
-      res.setHeader('X-RateLimit-Limit', String(max));
-      res.setHeader('X-RateLimit-Remaining', String(Math.max(0, max - bucket.count)));
-      res.setHeader('X-RateLimit-Reset', String(bucket.resetAt));
+        // If Redis failed, verify if the policy is configured to fail open
+        if (failOpenPolicies.includes(policy)) {
+          return next();
+        }
 
-      if (bucket.count > max) {
-        res.status(429).json({
+        res.status(503).json({
           success: false,
           error: {
-            code: 'RATE_LIMITED',
-            message: 'Too many requests',
-            details: {
-              policy,
-              limit: max,
-              resetAt: new Date(bucket.resetAt).toISOString(),
-            },
+            code: 'RATE_LIMIT_UNAVAILABLE',
+            message: 'Rate limiting service is temporarily unavailable',
             requestId: req.headers['x-request-id'] || 'unknown',
             timestamp: new Date().toISOString(),
           },
         });
         return;
       }
-
-      next();
     }
+
+    // 7. Memory fallback (strict check: local/development only)
+    if (!isLocalEnv) {
+      // If we are in production but Redis is not configured, we must fail closed for security
+      if (failOpenPolicies.includes(policy)) {
+        return next();
+      }
+
+      res.status(503).json({
+        success: false,
+        error: {
+          code: 'RATE_LIMIT_UNAVAILABLE',
+          message: 'Distributed rate limiting service is required in production',
+          requestId: req.headers['x-request-id'] || 'unknown',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // In-memory bucket counting for local environments
+    const existing = memoryBuckets.get(key);
+    const bucket =
+      existing && existing.resetAt > now ? existing : { count: 0, resetAt: now + windowMs };
+
+    bucket.count += 1;
+    memoryBuckets.set(key, bucket);
+
+    res.setHeader('X-RateLimit-Policy', policy);
+    res.setHeader('X-RateLimit-Limit', String(max));
+    res.setHeader('X-RateLimit-Remaining', String(Math.max(0, max - bucket.count)));
+    res.setHeader('X-RateLimit-Reset', String(bucket.resetAt));
+
+    if (bucket.count > max) {
+      res.status(429).json({
+        success: false,
+        error: {
+          code: 'RATE_LIMITED',
+          message: 'Too many requests',
+          details: {
+            policy,
+            limit: max,
+            resetAt: new Date(bucket.resetAt).toISOString(),
+          },
+          requestId: req.headers['x-request-id'] || 'unknown',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    next();
   };
 }

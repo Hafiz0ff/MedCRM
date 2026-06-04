@@ -3,6 +3,7 @@ import { validateEnv } from '@core/common/env-validation';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import express from 'express';
 import helmet from 'helmet';
 import Redis from 'ioredis';
 import { AppModule } from './app.module';
@@ -16,6 +17,9 @@ import {
 import { createGatewayProxy } from './proxy.factory';
 import { createRateLimitMiddleware } from './rate-limit.middleware';
 import { requestCorrelationMiddleware } from './request-correlation.middleware';
+import { createGatewayAuthMiddleware } from './security/gateway-auth.middleware';
+import { GatewayJwtVerifierService } from './security/gateway-jwt-verifier.service';
+import { createInternalDocsMiddleware } from './security/internal-docs.middleware';
 
 async function bootstrap(): Promise<void> {
   validateEnv();
@@ -26,6 +30,7 @@ async function bootstrap(): Promise<void> {
 
   // 1. PUBLIC GATEWAY (Port 3000)
   publicApp.use(requestCorrelationMiddleware);
+  publicApp.use(express.json());
   publicApp.use(
     createRateLimitMiddleware(
       {
@@ -55,9 +60,15 @@ async function bootstrap(): Promise<void> {
   });
   publicApp.useGlobalFilters(new CentralizedExceptionFilter());
 
+  const verifier = publicApp.get(GatewayJwtVerifierService);
+
   // Bind only public, compatibility, and websocket routes
   for (const route of [...publicRoutes, ...compatibilityRoutes, ...websocketRoutes]) {
-    publicApp.use(route.gatewayPrefix, createGatewayProxy(config, route));
+    publicApp.use(
+      route.gatewayPrefix,
+      createGatewayAuthMiddleware(route, verifier),
+      createGatewayProxy(config, route),
+    );
   }
 
   const publicPort = config.get<number>('PORT', config.get<number>('API_GATEWAY_PORT', 3000));
@@ -68,6 +79,7 @@ async function bootstrap(): Promise<void> {
   const privateApp = await NestFactory.create(AppModule, { bufferLogs: true });
   const privateRedis = privateApp.get<Redis>(REDIS_CLIENT);
   privateApp.use(requestCorrelationMiddleware);
+  privateApp.use(express.json());
   privateApp.use(
     createRateLimitMiddleware(
       {
@@ -97,9 +109,21 @@ async function bootstrap(): Promise<void> {
   });
   privateApp.useGlobalFilters(new CentralizedExceptionFilter());
 
+  const privateVerifier = privateApp.get(GatewayJwtVerifierService);
+  const docsMiddleware = createInternalDocsMiddleware(config, privateVerifier);
+
+  // Bind internal docs middleware to Swagger and aggregated JSON endpoints
+  privateApp.use('/docs', docsMiddleware);
+  privateApp.use('/docs-json', docsMiddleware);
+  privateApp.use('/gateway/openapi/aggregated', docsMiddleware);
+
   // Bind only internal routes
   for (const route of internalRoutes) {
-    privateApp.use(route.gatewayPrefix, createGatewayProxy(config, route));
+    privateApp.use(
+      route.gatewayPrefix,
+      createGatewayAuthMiddleware(route, privateVerifier),
+      createGatewayProxy(config, route),
+    );
   }
 
   // Setup Swagger Aggregated UI strictly on the Private Gateway

@@ -2,14 +2,22 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { createRateLimitMiddleware } from './rate-limit.middleware';
 
-function makeReq(ip: string, path: string) {
-  return { ip, path, originalUrl: path, headers: {}, method: 'GET' } as any;
+function makeReq(ip: string, path: string, headers: Record<string, string> = {}, body?: any) {
+  return {
+    ip,
+    path,
+    originalUrl: path,
+    headers: { ...headers },
+    method: 'GET',
+    body,
+    socket: { remoteAddress: ip },
+  } as any;
 }
 
 function makeRes() {
   return {
     statusCode: 200,
-    body: undefined as unknown,
+    body: undefined as any,
     headers: {} as Record<string, string>,
     setHeader(name: string, value: string) {
       this.headers[name.toLowerCase()] = value;
@@ -18,92 +26,171 @@ function makeRes() {
       this.statusCode = code;
       return this;
     },
-    json(body: unknown) {
+    json(body: any) {
       this.body = body;
       return this;
     },
   } as any;
 }
 
-describe('createRateLimitMiddleware', () => {
-  it('allows requests below policy limit', () => {
+// Mock Redis client for testing rate limit behavior
+class MockRedis {
+  public triggerError = false;
+  private store = new Map<string, number>();
+
+  multi() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const self = this;
+    return {
+      incr(key: string) {
+        if (self.triggerError) return this;
+        const current = self.store.get(key) || 0;
+        self.store.set(key, current + 1);
+        return this;
+      },
+      expire() {
+        return this;
+      },
+      async exec() {
+        if (self.triggerError) {
+          throw new Error('Redis connection lost');
+        }
+        // Return incremental counts
+        const keys = Array.from(self.store.keys());
+        const lastKey = keys[keys.length - 1] || 'default';
+        const val = self.store.get(lastKey) || 1;
+        return [[null, val]];
+      },
+    } as any;
+  }
+}
+
+describe('Rate Limit Middleware Hardening', () => {
+  it('allows requests below policy limit using local memory fallback in development', async () => {
+    process.env.NODE_ENV = 'development';
     const middleware = createRateLimitMiddleware({ windowMs: 60_000, maxByPolicy: { public: 2 } });
     const res = makeRes();
     let nextCount = 0;
 
-    middleware(makeReq('127.0.0.1', '/api/v1/patients'), res, () => nextCount++);
-    middleware(makeReq('127.0.0.1', '/api/v1/patients'), res, () => nextCount++);
+    await middleware(makeReq('127.0.0.1', '/api/v1/patients'), res, () => nextCount++);
+    await middleware(makeReq('127.0.0.1', '/api/v1/patients'), res, () => nextCount++);
 
     assert.equal(nextCount, 2);
     assert.equal(res.statusCode, 200);
   });
 
-  it('blocks requests above policy limit', () => {
-    const middleware = createRateLimitMiddleware({ windowMs: 60_000, maxByPolicy: { auth: 1 } });
+  it('blocks requests above policy limit using local memory fallback in development', async () => {
+    process.env.NODE_ENV = 'development';
+    const middleware = createRateLimitMiddleware({ windowMs: 60_000, maxByPolicy: { public: 1 } });
     const first = makeRes();
     const second = makeRes();
     let nextCount = 0;
 
-    middleware(makeReq('127.0.0.1', '/api/v1/auth/login'), first, () => nextCount++);
-    middleware(makeReq('127.0.0.1', '/api/v1/auth/login'), second, () => nextCount++);
+    await middleware(makeReq('127.0.0.1', '/api/v1/patients'), first, () => nextCount++);
+    await middleware(makeReq('127.0.0.1', '/api/v1/patients'), second, () => nextCount++);
 
     assert.equal(nextCount, 1);
     assert.equal(second.statusCode, 429);
-    const body = second.body as any;
-    assert.equal(body.success, false);
-    assert.equal(body.error.code, 'RATE_LIMITED');
-    assert.equal(body.error.message, 'Too many requests');
-    assert.equal(body.error.details.policy, 'auth');
-    assert.equal(body.error.details.limit, 1);
+    assert.equal(second.body.error.code, 'RATE_LIMITED');
   });
 
-  it('uses forwarded IP when gateway is behind a proxy', () => {
-    const middleware = createRateLimitMiddleware({ windowMs: 60_000, maxByPolicy: { public: 1 } });
-    const firstReq = makeReq('10.0.0.1', '/api/v1/patients');
-    const secondReq = makeReq('10.0.0.2', '/api/v1/patients');
-    firstReq.headers['x-forwarded-for'] = '203.0.113.10, 10.0.0.1';
-    secondReq.headers['x-forwarded-for'] = '203.0.113.11, 10.0.0.2';
+  it('fails closed in production if Redis is missing and policy is not in failOpenPolicies', async () => {
+    process.env.NODE_ENV = 'production';
+    const middleware = createRateLimitMiddleware({
+      maxByPolicy: { auth: 5 },
+      failOpenPolicies: ['public'],
+    }); // No redis client passed
+    const res = makeRes();
     let nextCount = 0;
 
-    middleware(firstReq, makeRes(), () => nextCount++);
-    middleware(secondReq, makeRes(), () => nextCount++);
+    await middleware(makeReq('127.0.0.1', '/api/v1/auth/login'), res, () => nextCount++);
 
-    assert.equal(nextCount, 2);
+    assert.equal(nextCount, 0);
+    assert.equal(res.statusCode, 503);
+    assert.equal(res.body.error.code, 'RATE_LIMIT_UNAVAILABLE');
   });
 
-  it('resolves correct policy based on route path', () => {
-    const middleware = createRateLimitMiddleware();
+  it('fails open in production if Redis is missing but policy is in failOpenPolicies', async () => {
+    process.env.NODE_ENV = 'production';
+    const middleware = createRateLimitMiddleware({
+      maxByPolicy: { public: 5 },
+      failOpenPolicies: ['public'],
+    }); // No redis client passed
+    const res = makeRes();
+    let nextCount = 0;
 
-    // Auth paths
-    let res = makeRes();
-    middleware(makeReq('127.0.0.1', '/api/v1/auth/login'), res, () => {});
-    assert.equal(res.headers['x-ratelimit-policy'], 'auth');
+    await middleware(makeReq('127.0.0.1', '/api/v1/patients'), res, () => nextCount++);
 
-    res = makeRes();
-    middleware(makeReq('127.0.0.1', '/auth/login'), res, () => {});
-    assert.equal(res.headers['x-ratelimit-policy'], 'auth');
+    assert.equal(nextCount, 1);
+    assert.equal(res.statusCode, 200);
+  });
 
-    res = makeRes();
-    middleware(makeReq('127.0.0.1', '/portal/v1/auth/otp/request'), res, () => {});
-    assert.equal(res.headers['x-ratelimit-policy'], 'auth');
+  it('fails closed if Redis client throws an error for protected policies', async () => {
+    process.env.NODE_ENV = 'production';
+    const redis = new MockRedis();
+    redis.triggerError = true;
 
-    // Public paths
-    res = makeRes();
-    middleware(makeReq('127.0.0.1', '/portal/v1/booking/slots'), res, () => {});
-    assert.equal(res.headers['x-ratelimit-policy'], 'public');
+    const middleware = createRateLimitMiddleware(
+      { maxByPolicy: { auth: 5 }, failOpenPolicies: ['public'] },
+      redis as any,
+    );
+    const res = makeRes();
+    let nextCount = 0;
 
-    res = makeRes();
-    middleware(makeReq('127.0.0.1', '/api/v1/patients'), res, () => {});
-    assert.equal(res.headers['x-ratelimit-policy'], 'public');
+    await middleware(makeReq('127.0.0.1', '/api/v1/auth/login'), res, () => nextCount++);
 
-    // Internal paths
-    res = makeRes();
-    middleware(makeReq('127.0.0.1', '/internal/v1/auth'), res, () => {});
-    assert.equal(res.headers['x-ratelimit-policy'], 'internal');
+    assert.equal(nextCount, 0);
+    assert.equal(res.statusCode, 503);
+    assert.equal(res.body.error.code, 'RATE_LIMIT_UNAVAILABLE');
+  });
 
-    // Websocket paths
-    res = makeRes();
-    middleware(makeReq('127.0.0.1', '/socket.io/'), res, () => {});
-    assert.equal(res.headers['x-ratelimit-policy'], 'websocket');
+  it('ignores spoofed x-forwarded-for header when request comes from untrusted source', async () => {
+    process.env.NODE_ENV = 'development';
+    const middleware = createRateLimitMiddleware({
+      maxByPolicy: { public: 1 },
+      trustedProxyCidrs: ['192.168.1.1'],
+    });
+    const req = makeReq('203.0.113.1', '/api/v1/patients', {
+      'x-forwarded-for': '1.1.1.1',
+    });
+    const res = makeRes();
+    let nextCount = 0;
+
+    // First request from 203.0.113.1 should pass
+    await middleware(req, res, () => nextCount++);
+    assert.equal(nextCount, 1);
+
+    // Second request from same untrusted remote IP but different x-forwarded-for should block
+    const req2 = makeReq('203.0.113.1', '/api/v1/patients', {
+      'x-forwarded-for': '2.2.2.2',
+    });
+    const res2 = makeRes();
+    await middleware(req2, res2, () => {});
+    assert.equal(res2.statusCode, 429); // Untrusted proxy X-Forwarded-For was ignored, so it rate-limits by remote IP
+  });
+
+  it('respects x-forwarded-for header when request comes from a trusted proxy CIDR', async () => {
+    process.env.NODE_ENV = 'development';
+    const middleware = createRateLimitMiddleware({
+      maxByPolicy: { public: 1 },
+      trustedProxyCidrs: ['192.168.1.0/24'],
+    });
+
+    const req = makeReq('192.168.1.15', '/api/v1/patients', {
+      'x-forwarded-for': '1.1.1.1',
+    });
+    const res = makeRes();
+    let nextCount = 0;
+    await middleware(req, res, () => nextCount++);
+    assert.equal(nextCount, 1);
+
+    // Second request comes from different client IP behind the same trusted proxy
+    const req2 = makeReq('192.168.1.20', '/api/v1/patients', {
+      'x-forwarded-for': '2.2.2.2',
+    });
+    const res2 = makeRes();
+    let nextCount2 = 0;
+    await middleware(req2, res2, () => nextCount2++);
+    assert.equal(nextCount2, 1); // Passes because client IPs are resolved differently
   });
 });

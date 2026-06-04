@@ -1,7 +1,7 @@
 import { ServerResponse } from 'node:http';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createProxyMiddleware, Options } from 'http-proxy-middleware';
+import { createProxyMiddleware, Options, fixRequestBody } from 'http-proxy-middleware';
 import { GatewayRouteConfig } from './gateway-route.config';
 
 const logger = new Logger('GatewayProxy');
@@ -84,6 +84,7 @@ export function createGatewayProxy(config: ConfigService, route: GatewayRouteCon
         }
         proxyReq.setHeader('X-Gateway-Route', route.gatewayPrefix);
         proxyReq.setHeader('X-Gateway-Kind', route.kind);
+        fixRequestBody(proxyReq, req);
       },
       proxyReqWs: (proxyReq, req) => {
         const requestId = req.headers['x-request-id'];
@@ -102,6 +103,7 @@ export function createGatewayProxy(config: ConfigService, route: GatewayRouteCon
 
         proxyReq.setHeader('X-Gateway-Route', route.gatewayPrefix);
         proxyReq.setHeader('X-Gateway-Kind', route.kind);
+        fixRequestBody(proxyReq, req);
       },
       error: (error, req, res) => {
         logger.error(`Proxy error route=${route.gatewayPrefix} target=${target}: ${error.message}`);

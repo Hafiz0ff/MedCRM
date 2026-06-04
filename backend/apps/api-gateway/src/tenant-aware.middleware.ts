@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { Request, Response, NextFunction } from 'express';
 import Redis from 'ioredis';
 import * as jose from 'jose';
+import { gatewayRoutes } from './gateway-route.config';
 
 @Injectable()
 export class TenantAwareMiddleware implements NestMiddleware {
@@ -15,17 +16,29 @@ export class TenantAwareMiddleware implements NestMiddleware {
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const matchedRoute = [...gatewayRoutes]
+      .sort((a, b) => b.gatewayPrefix.length - a.gatewayPrefix.length)
+      .find((r) => req.path.startsWith(r.gatewayPrefix));
+
+    const requirement = matchedRoute?.tenantRequirement ?? 'none';
+
+    // 1. Bypass tenant context parsing and validation if route has no requirement
+    if (requirement === 'none') {
+      return next();
+    }
+
     const headerTenantId = req.headers['x-tenant-id']
       ? String(req.headers['x-tenant-id'])
       : undefined;
     const headerTenantCode = req.headers['x-tenant-code']
       ? String(req.headers['x-tenant-code'])
       : undefined;
+    const queryTenantId = req.query?.['tenantId'] ? String(req.query['tenantId']) : undefined;
 
-    let resolvedId = headerTenantId;
+    let resolvedId = headerTenantId || queryTenantId;
     let resolvedCode = headerTenantCode;
 
-    // 1. JWT verification and Tenant Extraction
+    // 2. JWT verification and Tenant Extraction
     const authHeader = req.headers['authorization'];
     let jwtTenantId: string | undefined;
 
@@ -46,12 +59,11 @@ export class TenantAwareMiddleware implements NestMiddleware {
           }
         } catch {
           // Token signature validation failed or expired.
-          // Downstream will throw 401, but we do not validate tenant mismatch for invalid tokens.
         }
       }
     }
 
-    // 2. Tenant validation & source of truth
+    // 3. Tenant validation & source of truth
     if (jwtTenantId) {
       if (headerTenantId && headerTenantId !== jwtTenantId) {
         res.status(403).json({
@@ -69,6 +81,19 @@ export class TenantAwareMiddleware implements NestMiddleware {
     }
 
     if (!resolvedId && !resolvedCode) {
+      if (requirement === 'required') {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'TENANT_CONTEXT_REQUIRED',
+            message:
+              'Tenant identification (X-Tenant-Id or X-Tenant-Code) is required for this route',
+            requestId: req.headers['x-request-id'] || 'unknown',
+            timestamp: new Date().toISOString(),
+          },
+        });
+        return;
+      }
       return next();
     }
 
@@ -114,7 +139,20 @@ export class TenantAwareMiddleware implements NestMiddleware {
         }
       }
 
-      if (status !== 'not_found' && status) {
+      if (status === 'not_found' || !status) {
+        if (requirement === 'required') {
+          res.status(400).json({
+            success: false,
+            error: {
+              code: 'TENANT_CONTEXT_INVALID',
+              message: 'The resolved tenant context is invalid or does not exist',
+              requestId: req.headers['x-request-id'] || 'unknown',
+              timestamp: new Date().toISOString(),
+            },
+          });
+          return;
+        }
+      } else {
         // Enforce both headers on the request so proxy propagates them
         req.headers['x-tenant-id'] = resolvedId;
         req.headers['x-tenant-code'] = resolvedCode;
@@ -140,6 +178,18 @@ export class TenantAwareMiddleware implements NestMiddleware {
       }
     } catch (err: any) {
       console.error('Error in TenantAwareMiddleware:', err);
+      if (requirement === 'required') {
+        res.status(503).json({
+          success: false,
+          error: {
+            code: 'TENANT_VALIDATION_UNAVAILABLE',
+            message: 'Tenant validation service is temporarily unavailable',
+            requestId: req.headers['x-request-id'] || 'unknown',
+            timestamp: new Date().toISOString(),
+          },
+        });
+        return;
+      }
     }
 
     next();
