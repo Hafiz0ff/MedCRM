@@ -1,7 +1,10 @@
+import { REDIS_CLIENT } from '@core/cache/redis.module';
+import { validateEnv } from '@core/common/env-validation';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import Redis from 'ioredis';
 import { AppModule } from './app.module';
 import { CentralizedExceptionFilter } from './centralized-exception.filter';
 import {
@@ -15,22 +18,27 @@ import { createRateLimitMiddleware } from './rate-limit.middleware';
 import { requestCorrelationMiddleware } from './request-correlation.middleware';
 
 async function bootstrap(): Promise<void> {
+  validateEnv();
   const publicApp = await NestFactory.create(AppModule, { bufferLogs: true });
   const config = publicApp.get(ConfigService);
+  const redis = publicApp.get<Redis>(REDIS_CLIENT);
   const origins = config.get<string>('CORS_ORIGINS', 'http://localhost:3002').split(',');
 
   // 1. PUBLIC GATEWAY (Port 3000)
   publicApp.use(requestCorrelationMiddleware);
   publicApp.use(
-    createRateLimitMiddleware({
-      windowMs: Number(config.get<string>('GATEWAY_RATE_LIMIT_WINDOW_MS', '60000')),
-      maxByPolicy: {
-        auth: Number(config.get<string>('GATEWAY_RATE_LIMIT_AUTH_MAX', '20')),
-        public: Number(config.get<string>('GATEWAY_RATE_LIMIT_PUBLIC_MAX', '300')),
-        internal: Number(config.get<string>('GATEWAY_RATE_LIMIT_INTERNAL_MAX', '1000')),
-        websocket: Number(config.get<string>('GATEWAY_RATE_LIMIT_WEBSOCKET_MAX', '120')),
+    createRateLimitMiddleware(
+      {
+        windowMs: Number(config.get<string>('GATEWAY_RATE_LIMIT_WINDOW_MS', '60000')),
+        maxByPolicy: {
+          auth: Number(config.get<string>('GATEWAY_RATE_LIMIT_AUTH_MAX', '20')),
+          public: Number(config.get<string>('GATEWAY_RATE_LIMIT_PUBLIC_MAX', '300')),
+          internal: Number(config.get<string>('GATEWAY_RATE_LIMIT_INTERNAL_MAX', '1000')),
+          websocket: Number(config.get<string>('GATEWAY_RATE_LIMIT_WEBSOCKET_MAX', '120')),
+        },
       },
-    }),
+      redis,
+    ),
   );
   publicApp.use(helmet());
   publicApp.enableCors({
@@ -58,17 +66,21 @@ async function bootstrap(): Promise<void> {
 
   // 2. PRIVATE GATEWAY (Port 3010)
   const privateApp = await NestFactory.create(AppModule, { bufferLogs: true });
+  const privateRedis = privateApp.get<Redis>(REDIS_CLIENT);
   privateApp.use(requestCorrelationMiddleware);
   privateApp.use(
-    createRateLimitMiddleware({
-      windowMs: Number(config.get<string>('GATEWAY_RATE_LIMIT_WINDOW_MS', '60000')),
-      maxByPolicy: {
-        auth: Number(config.get<string>('GATEWAY_RATE_LIMIT_AUTH_MAX', '20')),
-        public: Number(config.get<string>('GATEWAY_RATE_LIMIT_PUBLIC_MAX', '300')),
-        internal: Number(config.get<string>('GATEWAY_RATE_LIMIT_INTERNAL_MAX', '1000')),
-        websocket: Number(config.get<string>('GATEWAY_RATE_LIMIT_WEBSOCKET_MAX', '120')),
+    createRateLimitMiddleware(
+      {
+        windowMs: Number(config.get<string>('GATEWAY_RATE_LIMIT_WINDOW_MS', '60000')),
+        maxByPolicy: {
+          auth: Number(config.get<string>('GATEWAY_RATE_LIMIT_AUTH_MAX', '20')),
+          public: Number(config.get<string>('GATEWAY_RATE_LIMIT_PUBLIC_MAX', '300')),
+          internal: Number(config.get<string>('GATEWAY_RATE_LIMIT_INTERNAL_MAX', '1000')),
+          websocket: Number(config.get<string>('GATEWAY_RATE_LIMIT_WEBSOCKET_MAX', '120')),
+        },
       },
-    }),
+      privateRedis,
+    ),
   );
   privateApp.use(helmet());
   privateApp.enableCors({
@@ -91,29 +103,31 @@ async function bootstrap(): Promise<void> {
   }
 
   // Setup Swagger Aggregated UI strictly on the Private Gateway
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('MedCRM API Gateway (Internal)')
-    .setDescription('Gateway for MedCRM internal APIs & Documentation')
-    .setVersion('1.0.0')
-    .addBearerAuth()
-    .build();
+  if (config.get('NODE_ENV') !== 'production' || config.get('ENABLE_SWAGGER') === 'true') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('MedCRM API Gateway (Internal)')
+      .setDescription('Gateway for MedCRM internal APIs & Documentation')
+      .setVersion('1.0.0')
+      .addBearerAuth()
+      .build();
 
-  const document = SwaggerModule.createDocument(privateApp, swaggerConfig);
-  SwaggerModule.setup('docs', privateApp, document, {
-    jsonDocumentUrl: 'docs-json',
-    swaggerOptions: {
-      urls: [
-        {
-          url: '/gateway/openapi/aggregated',
-          name: 'Aggregated MedCRM APIs',
-        },
-        {
-          url: '/docs-json',
-          name: 'Gateway Management APIs',
-        },
-      ],
-    },
-  });
+    const document = SwaggerModule.createDocument(privateApp, swaggerConfig);
+    SwaggerModule.setup('docs', privateApp, document, {
+      jsonDocumentUrl: 'docs-json',
+      swaggerOptions: {
+        urls: [
+          {
+            url: '/gateway/openapi/aggregated',
+            name: 'Aggregated MedCRM APIs',
+          },
+          {
+            url: '/docs-json',
+            name: 'Gateway Management APIs',
+          },
+        ],
+      },
+    });
+  }
 
   const privatePort = config.get<number>('API_GATEWAY_INTERNAL_PORT', 3010);
   await privateApp.listen(privatePort, '0.0.0.0');

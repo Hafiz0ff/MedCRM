@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import Redis from 'ioredis';
 import { LoginDto } from './dto/login.dto';
 import { MfaConfirmDto, MfaVerifyDto } from './dto/mfa.dto';
@@ -340,13 +340,15 @@ export class AuthService {
     return this.bootstrapFromIds(user.userId, user.tenantId, context);
   }
 
-  attachRefreshCookie(response: Response, refreshToken: string): void {
+  attachRefreshCookie(response: Response, refreshToken: string, req?: Request): void {
+    const gatewayRoute = req?.headers?.['x-gateway-route'] as string | undefined;
+    const path = gatewayRoute ? `${gatewayRoute}/refresh` : '/auth/refresh';
     response.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       sameSite: 'lax',
       secure: this.config.get<string>('NODE_ENV') === 'production',
       maxAge: SESSION_SECONDS * 1000,
-      path: '/auth/refresh',
+      path,
     });
   }
 

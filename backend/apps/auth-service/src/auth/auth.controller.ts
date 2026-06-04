@@ -44,7 +44,7 @@ export class AuthController {
     if (result.mfaRequired) {
       return { mfaRequired: true, mfaToken: result.mfaToken };
     }
-    this.auth.attachRefreshCookie(response, result.refreshToken!);
+    this.auth.attachRefreshCookie(response, result.refreshToken!, request);
     return { accessToken: result.accessToken, bootstrap: result.bootstrap };
   }
 
@@ -60,7 +60,7 @@ export class AuthController {
       ipAddress: request.ip,
       userAgent: request.headers['user-agent'],
     });
-    this.auth.attachRefreshCookie(response, result.refreshToken!);
+    this.auth.attachRefreshCookie(response, result.refreshToken!, request);
     return { accessToken: result.accessToken, bootstrap: result.bootstrap };
   }
 
@@ -111,7 +111,7 @@ export class AuthController {
       ipAddress: request.ip,
       userAgent: request.headers['user-agent'],
     });
-    this.auth.attachRefreshCookie(response, result.refreshToken!);
+    this.auth.attachRefreshCookie(response, result.refreshToken!, request);
     return { accessToken: result.accessToken, bootstrap: result.bootstrap };
   }
 

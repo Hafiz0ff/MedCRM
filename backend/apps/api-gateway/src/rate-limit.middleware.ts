@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import Redis from 'ioredis';
 import { GatewayRateLimitPolicy } from './gateway-route.config';
 
 type RateLimitOptions = {
@@ -37,46 +38,96 @@ function clientKey(req: Request, policy: GatewayRateLimitPolicy): string {
   return `${policy}:${forwardedIp || req.ip || 'unknown'}`;
 }
 
-export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>) {
+export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>, redis?: Redis) {
   const windowMs = options?.windowMs ?? 60_000;
   const maxByPolicy = { ...defaultMaxByPolicy, ...options?.maxByPolicy };
   const buckets = new Map<string, Bucket>();
 
-  return function rateLimitMiddleware(req: Request, res: Response, next: NextFunction): void {
+  return async function rateLimitMiddleware(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     const now = Date.now();
     const policy = policyForPath(req.path || req.originalUrl || '');
     const max = maxByPolicy[policy];
     const key = clientKey(req, policy);
-    const existing = buckets.get(key);
-    const bucket =
-      existing && existing.resetAt > now ? existing : { count: 0, resetAt: now + windowMs };
 
-    bucket.count += 1;
-    buckets.set(key, bucket);
+    if (redis) {
+      const minute = Math.floor(now / 60000);
+      const redisKey = `gateway:rate_limit:${key}:${minute}`;
 
-    res.setHeader('X-RateLimit-Policy', policy);
-    res.setHeader('X-RateLimit-Limit', String(max));
-    res.setHeader('X-RateLimit-Remaining', String(Math.max(0, max - bucket.count)));
-    res.setHeader('X-RateLimit-Reset', String(bucket.resetAt));
+      try {
+        const [incrResult] = (await redis
+          .multi()
+          .incr(redisKey)
+          .expire(redisKey, Math.ceil(windowMs / 1000))
+          .exec()) as Array<[Error | null, any]>;
 
-    if (bucket.count > max) {
-      res.status(429).json({
-        success: false,
-        error: {
-          code: 'RATE_LIMITED',
-          message: 'Too many requests',
-          details: {
-            policy,
-            limit: max,
-            resetAt: new Date(bucket.resetAt).toISOString(),
+        if (incrResult[0]) {
+          return next();
+        }
+
+        const count = Number(incrResult[1]);
+
+        res.setHeader('X-RateLimit-Policy', policy);
+        res.setHeader('X-RateLimit-Limit', String(max));
+        res.setHeader('X-RateLimit-Remaining', String(Math.max(0, max - count)));
+        res.setHeader('X-RateLimit-Reset', String((minute + 1) * 60000));
+
+        if (count > max) {
+          res.status(429).json({
+            success: false,
+            error: {
+              code: 'RATE_LIMITED',
+              message: 'Too many requests',
+              details: {
+                policy,
+                limit: max,
+                resetAt: new Date((minute + 1) * 60000).toISOString(),
+              },
+              requestId: req.headers['x-request-id'] || 'unknown',
+              timestamp: new Date().toISOString(),
+            },
+          });
+          return;
+        }
+      } catch (err) {
+        console.error('Redis Rate Limiting Error:', err);
+      }
+      next();
+    } else {
+      const existing = buckets.get(key);
+      const bucket =
+        existing && existing.resetAt > now ? existing : { count: 0, resetAt: now + windowMs };
+
+      bucket.count += 1;
+      buckets.set(key, bucket);
+
+      res.setHeader('X-RateLimit-Policy', policy);
+      res.setHeader('X-RateLimit-Limit', String(max));
+      res.setHeader('X-RateLimit-Remaining', String(Math.max(0, max - bucket.count)));
+      res.setHeader('X-RateLimit-Reset', String(bucket.resetAt));
+
+      if (bucket.count > max) {
+        res.status(429).json({
+          success: false,
+          error: {
+            code: 'RATE_LIMITED',
+            message: 'Too many requests',
+            details: {
+              policy,
+              limit: max,
+              resetAt: new Date(bucket.resetAt).toISOString(),
+            },
+            requestId: req.headers['x-request-id'] || 'unknown',
+            timestamp: new Date().toISOString(),
           },
-          requestId: req.headers['x-request-id'] || 'unknown',
-          timestamp: new Date().toISOString(),
-        },
-      });
-      return;
-    }
+        });
+        return;
+      }
 
-    next();
+      next();
+    }
   };
 }

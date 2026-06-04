@@ -1,8 +1,10 @@
+import { validateEnv } from '@core/common/env-validation';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { WorkerAppModule } from './worker-app.module';
 
 async function bootstrap() {
+  validateEnv();
   const logger = new Logger('WorkerBootstrap');
   logger.log('Starting MedCRM background worker process...');
 

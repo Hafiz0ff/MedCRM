@@ -1,3 +1,4 @@
+import { validateEnv } from '@core/common/env-validation';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
@@ -8,6 +9,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
+  validateEnv();
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const config = app.get(ConfigService);
   const origins = config.get<string>('CORS_ORIGINS', 'http://localhost:3002').split(',');
@@ -28,8 +30,8 @@ async function bootstrap(): Promise<void> {
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
-  // Setup NestJS TCP Microservice for internal RPC calls (Port 3010)
-  const tcpPort = Number(config.get<string>('BILLING_SERVICE_TCP_PORT', '3010'));
+  // Setup NestJS TCP Microservice for internal RPC calls (Port 3012)
+  const tcpPort = Number(config.get<string>('BILLING_SERVICE_TCP_PORT', '3012'));
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.TCP,
     options: {
