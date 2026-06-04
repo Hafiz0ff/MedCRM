@@ -24,6 +24,27 @@ export function validateEnv(): void {
   }
 
   const env = result.data;
+
+  const kmsKey = process.env.KMS_MASTER_KEY;
+  if (env.NODE_ENV === 'production') {
+    if (!kmsKey) {
+      throw new Error('KMS_MASTER_KEY is required in production');
+    }
+  }
+  if (kmsKey) {
+    if (kmsKey.length < 32) {
+      throw new Error('KMS_MASTER_KEY must be at least 32 characters long');
+    }
+    const lowerKms = kmsKey.toLowerCase();
+    if (
+      lowerKms.includes('change_me') ||
+      lowerKms.includes('default') ||
+      lowerKms.includes('test')
+    ) {
+      throw new Error('KMS_MASTER_KEY cannot contain default, change_me, or test values');
+    }
+  }
+
   if (env.NODE_ENV === 'production') {
     if (env.JWT_ACCESS_SECRET && env.JWT_ACCESS_SECRET.includes('change_me')) {
       throw new Error('Unsafe production JWT_ACCESS_SECRET detected');

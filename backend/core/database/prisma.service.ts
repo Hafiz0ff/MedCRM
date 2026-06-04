@@ -128,12 +128,29 @@ async function decryptDeep(
   // Decrypt if it's a Patient record
   if (val.firstNameEnc !== undefined || val.lastNameEnc !== undefined) {
     if (val.firstNameEnc)
-      val.firstName = await encryptionService.decrypt(val.firstNameEnc, tenantId);
-    if (val.lastNameEnc) val.lastName = await encryptionService.decrypt(val.lastNameEnc, tenantId);
+      val.firstName = await encryptionService.decryptWithMigrationStrategy(
+        val.firstNameEnc,
+        tenantId,
+        'fallback-to-plaintext',
+      );
+    if (val.lastNameEnc)
+      val.lastName = await encryptionService.decryptWithMigrationStrategy(
+        val.lastNameEnc,
+        tenantId,
+        'fallback-to-plaintext',
+      );
     if (val.middleNameEnc)
-      val.middleName = await encryptionService.decrypt(val.middleNameEnc, tenantId);
+      val.middleName = await encryptionService.decryptWithMigrationStrategy(
+        val.middleNameEnc,
+        tenantId,
+        'fallback-to-plaintext',
+      );
     if (val.passportNumberEnc)
-      val.passportNumber = await encryptionService.decrypt(val.passportNumberEnc, tenantId);
+      val.passportNumber = await encryptionService.decryptWithMigrationStrategy(
+        val.passportNumberEnc,
+        tenantId,
+        'fallback-to-plaintext',
+      );
 
     if (val.firstNameEnc || val.lastNameEnc) {
       const parts = [val.lastName, val.firstName, val.middleName].filter(Boolean);
@@ -144,7 +161,11 @@ async function decryptDeep(
   // Decrypt if it's a PatientContact record
   if (val.type === 'PHONE' && val.valueEnc !== undefined) {
     if (val.valueEnc) {
-      val.value = await encryptionService.decrypt(val.valueEnc, tenantId);
+      val.value = await encryptionService.decryptWithMigrationStrategy(
+        val.valueEnc,
+        tenantId,
+        'fallback-to-plaintext',
+      );
     }
   }
 

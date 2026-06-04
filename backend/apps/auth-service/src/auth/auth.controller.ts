@@ -1,4 +1,8 @@
-import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
+import {
+  ZodValidationPipe,
+  UuidParamSchema,
+  BranchHeaderSchema,
+} from '@core/common/zod-validation.pipe';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
 import { RequirePermissions } from '@core/security/permissions.decorator';
@@ -145,9 +149,12 @@ export class AuthController {
 
   @Delete('sessions/:id')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Revoke a specific active session by ID' })
-  async revokeSessionById(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequirePermissions('auth.sessions.manage')
+  async revokeSessionById(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) id: string,
+  ) {
     return this.auth.revokeSessionById(user, id);
   }
 
@@ -159,6 +166,7 @@ export class AuthController {
     @CurrentUser() user: AuthenticatedUser,
     @Headers('x-branch-id') branchId?: string,
   ) {
-    return this.auth.bootstrap(user, branchId);
+    const validatedBranchId = new ZodValidationPipe(BranchHeaderSchema).transform(branchId);
+    return this.auth.bootstrap(user, validatedBranchId);
   }
 }

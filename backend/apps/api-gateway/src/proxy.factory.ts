@@ -7,50 +7,18 @@ import { GatewayRouteConfig } from './gateway-route.config';
 const logger = new Logger('GatewayProxy');
 
 function resolveTarget(config: ConfigService, route: GatewayRouteConfig): string {
-  if (route.targetEnv === 'AUTH_SERVICE_INTERNAL_URL') {
-    return (
-      config.get<string>('AUTH_SERVICE_INTERNAL_URL') ??
-      config.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001')
-    );
+  if (route.targetEnv.endsWith('_INTERNAL_URL')) {
+    const internalUrl = config.get<string>(route.targetEnv);
+    if (internalUrl) {
+      return internalUrl;
+    }
+    const mainTargetEnv = route.targetEnv.replace(
+      '_INTERNAL_URL',
+      '_URL',
+    ) as GatewayRouteConfig['targetEnv'];
+    return config.getOrThrow<string>(mainTargetEnv);
   }
-  if (route.targetEnv === 'SCHEDULING_SERVICE_URL') {
-    return config.get<string>('SCHEDULING_SERVICE_URL', 'http://localhost:3003');
-  }
-  if (route.targetEnv === 'SCHEDULING_SERVICE_INTERNAL_URL') {
-    return (
-      config.get<string>('SCHEDULING_SERVICE_INTERNAL_URL') ??
-      config.get<string>('SCHEDULING_SERVICE_URL', 'http://localhost:3003')
-    );
-  }
-  if (route.targetEnv === 'INTEGRATIONS_SERVICE_URL') {
-    return config.get<string>('INTEGRATIONS_SERVICE_URL', 'http://localhost:3005');
-  }
-  if (route.targetEnv === 'INTEGRATIONS_SERVICE_INTERNAL_URL') {
-    return (
-      config.get<string>('INTEGRATIONS_SERVICE_INTERNAL_URL') ??
-      config.get<string>('INTEGRATIONS_SERVICE_URL', 'http://localhost:3005')
-    );
-  }
-  if (route.targetEnv === 'ANALYTICS_SERVICE_URL') {
-    return config.get<string>('ANALYTICS_SERVICE_URL', 'http://localhost:3007');
-  }
-  if (route.targetEnv === 'ANALYTICS_SERVICE_INTERNAL_URL') {
-    return (
-      config.get<string>('ANALYTICS_SERVICE_INTERNAL_URL') ??
-      config.get<string>('ANALYTICS_SERVICE_URL', 'http://localhost:3007')
-    );
-  }
-  if (route.targetEnv === 'BILLING_SERVICE_URL') {
-    return config.get<string>('BILLING_SERVICE_URL', 'http://localhost:3009');
-  }
-  if (route.targetEnv === 'BILLING_SERVICE_INTERNAL_URL') {
-    return (
-      config.get<string>('BILLING_SERVICE_INTERNAL_URL') ??
-      config.get<string>('BILLING_SERVICE_URL', 'http://localhost:3009')
-    );
-  }
-
-  return config.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001');
+  return config.getOrThrow<string>(route.targetEnv);
 }
 
 function rewritePath(path: string, route: GatewayRouteConfig): string {
@@ -121,11 +89,6 @@ export function createGatewayProxy(config: ConfigService, route: GatewayRouteCon
             error: {
               code: 'BAD_GATEWAY',
               message: 'Upstream service is unavailable',
-              details: {
-                route: route.gatewayPrefix,
-                target,
-                reason: error.message,
-              },
               requestId: req.headers['x-request-id'] || 'unknown',
               timestamp: new Date().toISOString(),
             },

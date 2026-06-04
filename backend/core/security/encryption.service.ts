@@ -1,26 +1,53 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../database/prisma.service';
 
+/**
+ * Error thrown when a ciphertext decryption fails due to invalid parameters or key issues.
+ */
+export class DecryptionFailedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DecryptionFailedError';
+  }
+}
+
+/**
+ * Error thrown when the requested DEK key version is not found in the database.
+ */
+export class EncryptionKeyNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'EncryptionKeyNotFoundError';
+  }
+}
+
+/**
+ * Service to manage tenant-level database field encryption (using AES-256-GCM and KMS Master KEK).
+ */
 @Injectable()
 export class EncryptionService {
   private readonly logger = new Logger(EncryptionService.name);
-  private readonly rawPrisma = new PrismaClient();
   private readonly KEK: Buffer;
-
-  // Cache of decrypted DEKs: tenantId/cacheKey -> { dek, version, expiresAt }
   private readonly dekCache = new Map<
     string,
     { dek: Buffer; version: number; expiresAt: number }
   >();
   private readonly CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour cache duration
 
-  constructor() {
-    const masterKey =
-      process.env.KMS_MASTER_KEY || 'change_me_kms_master_key_default_32_bytes_fallback';
+  constructor(
+    private readonly config: ConfigService,
+    @Inject(forwardRef(() => PrismaService))
+    private readonly prisma: PrismaService,
+  ) {
+    const masterKey = this.config.getOrThrow<string>('KMS_MASTER_KEY');
     this.KEK = createHash('sha256').update(masterKey).digest();
   }
 
+  /**
+   * Retrieves or generates a Data Encryption Key (DEK) for the tenant, cached in memory.
+   */
   async getOrCreateTenantDek(tenantId: string): Promise<{ dek: Buffer; version: number }> {
     const now = Date.now();
     const cached = this.dekCache.get(tenantId);
@@ -28,8 +55,7 @@ export class EncryptionService {
       return { dek: cached.dek, version: cached.version };
     }
 
-    // Load active key from DB
-    let keyRecord = await this.rawPrisma.encryptionKey.findFirst({
+    let keyRecord = await this.prisma.encryptionKey.findFirst({
       where: { tenantId, state: 'active' },
       orderBy: { version: 'desc' },
     });
@@ -39,11 +65,11 @@ export class EncryptionService {
       const newDek = randomBytes(32);
       const encryptedDek = this.encryptDekWithKek(newDek);
 
-      keyRecord = await this.rawPrisma.encryptionKey.create({
+      keyRecord = await this.prisma.encryptionKey.create({
         data: {
           tenantId,
           version: 1,
-          encryptedDek: encryptedDek as any,
+          encryptedDek: new Uint8Array(encryptedDek),
           state: 'active',
         },
       });
@@ -84,6 +110,9 @@ export class EncryptionService {
     return Buffer.concat([decipher.update(encrypted), decipher.final()]);
   }
 
+  /**
+   * Encrypts plaintext string using the active tenant DEK.
+   */
   async encrypt(plaintext: string, tenantId: string): Promise<string> {
     if (!plaintext) return '';
     const { dek, version } = await this.getOrCreateTenantDek(tenantId);
@@ -95,25 +124,52 @@ export class EncryptionService {
     return JSON.stringify({ v: version, iv: ivStr, tag, ct });
   }
 
+  /**
+   * Decrypts ciphertext JSON string using versioned tenant DEK. Throws typed errors on failures.
+   */
   async decrypt(ciphertextJsonStr: string, tenantId: string): Promise<string> {
     if (!ciphertextJsonStr) return '';
 
-    // Check if it is a JSON. Return as-is if database contains legacy plaintext
     if (!ciphertextJsonStr.startsWith('{') || !ciphertextJsonStr.endsWith('}')) {
-      return ciphertextJsonStr;
+      throw new DecryptionFailedError('Invalid ciphertext format');
     }
 
     try {
       const { v, iv, tag, ct } = JSON.parse(ciphertextJsonStr);
+      if (v === undefined || !iv || !tag || !ct) {
+        throw new DecryptionFailedError('Missing fields in ciphertext payload');
+      }
       const dek = await this.getTenantDekByVersion(tenantId, v);
       const decipher = createDecipheriv('aes-256-gcm', dek, Buffer.from(iv, 'base64'));
       decipher.setAuthTag(Buffer.from(tag, 'base64'));
       return Buffer.concat([decipher.update(Buffer.from(ct, 'base64')), decipher.final()]).toString(
         'utf8',
       );
-    } catch (err: any) {
-      this.logger.error(`Decryption failed for ciphertext: ${err.message}`);
-      return ciphertextJsonStr;
+    } catch (err: unknown) {
+      if (err instanceof EncryptionKeyNotFoundError || err instanceof DecryptionFailedError) {
+        throw err;
+      }
+      const errMsg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Decryption failed: ${errMsg}`);
+      throw new DecryptionFailedError(`Decryption failed: ${errMsg}`);
+    }
+  }
+
+  /**
+   * Decrypts ciphertext string with an explicit migration strategy fallback for legacy plaintext.
+   */
+  async decryptWithMigrationStrategy(
+    ciphertextJsonStr: string,
+    tenantId: string,
+    strategy: 'strict' | 'fallback-to-plaintext',
+  ): Promise<string> {
+    try {
+      return await this.decrypt(ciphertextJsonStr, tenantId);
+    } catch (err: unknown) {
+      if (strategy === 'fallback-to-plaintext' && err instanceof DecryptionFailedError) {
+        return ciphertextJsonStr;
+      }
+      throw err;
     }
   }
 
@@ -125,12 +181,14 @@ export class EncryptionService {
       return cached.dek;
     }
 
-    const keyRecord = await this.rawPrisma.encryptionKey.findUnique({
+    const keyRecord = await this.prisma.encryptionKey.findUnique({
       where: { tenantId_version: { tenantId, version } },
     });
 
     if (!keyRecord) {
-      throw new Error(`Encryption key version ${version} not found for tenant ${tenantId}`);
+      throw new EncryptionKeyNotFoundError(
+        `Encryption key version ${version} not found for tenant ${tenantId}`,
+      );
     }
 
     const decryptedDek = this.decryptDekWithKek(Buffer.from(keyRecord.encryptedDek));

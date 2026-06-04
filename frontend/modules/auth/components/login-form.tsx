@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { loginSchema } from '../schemas/login.schema';
 import { MfaChallenge } from './mfa-challenge';
 import { useRouter } from '@/i18n/routing';
-import { ACCESS_TOKEN_COOKIE } from '@/shared/auth/cookies';
+import { setAccessToken } from '@/shared/api/client-api';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
@@ -72,7 +72,7 @@ export function LoginForm() {
   }
 
   function handleAuthSuccess(accessToken: string) {
-    document.cookie = `${ACCESS_TOKEN_COOKIE}=${accessToken}; path=/; max-age=900; samesite=lax`;
+    setAccessToken(accessToken);
     router.replace('/dashboard');
     router.refresh();
   }

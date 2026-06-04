@@ -1,10 +1,14 @@
+import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
 import { normalizeName, normalizePhone, computeBlindIndex } from '../../core/security/blind-index';
 import { EncryptionService } from '../../core/security/encryption.service';
 
 async function main() {
   const prisma = new PrismaClient();
-  const encryption = new EncryptionService();
+  const config = new ConfigService({
+    KMS_MASTER_KEY: process.env.KMS_MASTER_KEY,
+  });
+  const encryption = new EncryptionService(config, prisma as any);
 
   console.log('Starting PHI migration and backfill...');
 

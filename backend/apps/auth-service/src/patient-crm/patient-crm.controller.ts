@@ -1,4 +1,4 @@
-import { ZodValidationPipe } from '@core/common/zod-validation.pipe';
+import { ZodValidationPipe, UuidParamSchema } from '@core/common/zod-validation.pipe';
 import { CurrentUser } from '@core/security/current-user.decorator';
 import { AuthenticatedUser } from '@core/security/jwt-payload';
 import { RequireModule } from '@core/security/modules.decorator';
@@ -108,8 +108,8 @@ export class PatientCrmController {
   @ApiOperation({ summary: 'Assign a tag to a patient' })
   assignTag(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('id') patientId: string,
-    @Param('tagId') tagId: string,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) patientId: string,
+    @Param('tagId', new ZodValidationPipe(UuidParamSchema)) tagId: string,
   ) {
     return this.patients.assignTag(user, patientId, tagId);
   }
@@ -119,8 +119,8 @@ export class PatientCrmController {
   @ApiOperation({ summary: 'Remove a tag from a patient' })
   removeTag(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('id') patientId: string,
-    @Param('tagId') tagId: string,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) patientId: string,
+    @Param('tagId', new ZodValidationPipe(UuidParamSchema)) tagId: string,
   ) {
     return this.patients.removeTag(user, patientId, tagId);
   }
@@ -145,7 +145,10 @@ export class PatientCrmController {
   @Delete('family/members/:memberId')
   @RequirePermissions('patients.family.manage')
   @ApiOperation({ summary: 'Remove a member from a family group' })
-  removeFamilyMember(@CurrentUser() user: AuthenticatedUser, @Param('memberId') memberId: string) {
+  removeFamilyMember(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('memberId', new ZodValidationPipe(UuidParamSchema)) memberId: string,
+  ) {
     return this.patients.removeFamilyMember(user, memberId);
   }
 
@@ -160,7 +163,10 @@ export class PatientCrmController {
   // Patient specific details
   @Get(':id')
   @RequirePermissions('patients.read')
-  get(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+  get(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) id: string,
+  ) {
     return this.patients.get(user, id);
   }
 
@@ -169,7 +175,7 @@ export class PatientCrmController {
   @UsePipes(new ZodValidationPipe(updatePatientSchema))
   update(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('id') id: string,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) id: string,
     @Body() dto: UpdatePatientDto,
   ) {
     return this.patients.update(user, id, dto);
@@ -178,14 +184,20 @@ export class PatientCrmController {
   @Get(':id/family')
   @RequirePermissions('patients.read')
   @ApiOperation({ summary: 'Get family group and all members for a patient' })
-  getFamily(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+  getFamily(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) id: string,
+  ) {
     return this.patients.getFamily(user, id);
   }
 
   @Get(':id/documents')
   @RequirePermissions('patients.documents.read')
   @ApiOperation({ summary: 'List signed legal documents for a patient' })
-  listLegalDocuments(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+  listLegalDocuments(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) id: string,
+  ) {
     return this.patients.listLegalDocuments(user, id);
   }
 
@@ -195,7 +207,7 @@ export class PatientCrmController {
   @UsePipes(new ZodValidationPipe(PatientLegalDocumentSchema))
   signLegalDocument(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('id') patientId: string,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) patientId: string,
     @Body() dto: PatientLegalDocumentDto,
   ) {
     return this.patients.signLegalDocument(user, patientId, dto);
@@ -204,7 +216,10 @@ export class PatientCrmController {
   @Get(':id/timeline')
   @RequirePermissions('patients.read')
   @ApiOperation({ summary: 'Get patient chronological timeline events' })
-  getTimeline(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+  getTimeline(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) id: string,
+  ) {
     return this.patients.getTimeline(user, id);
   }
 
@@ -214,7 +229,7 @@ export class PatientCrmController {
   @UsePipes(new ZodValidationPipe(PatientNoteSchema))
   createNote(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('id') patientId: string,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) patientId: string,
     @Body() dto: PatientNoteDto,
   ) {
     return this.patients.createNote(user, patientId, dto);
@@ -223,7 +238,10 @@ export class PatientCrmController {
   @Get(':id/metrics')
   @RequirePermissions('patients.metrics.read')
   @ApiOperation({ summary: 'Get patient CRM metrics (LTV, visits, check average)' })
-  getMetrics(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+  getMetrics(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) id: string,
+  ) {
     return this.patients.getMetrics(user, id);
   }
 
@@ -233,7 +251,7 @@ export class PatientCrmController {
   @UsePipes(new ZodValidationPipe(PatientLeadSchema))
   trackLead(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('id') patientId: string,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) patientId: string,
     @Body() dto: PatientLeadDto,
   ) {
     return this.patients.trackLead(user, patientId, dto);
@@ -253,7 +271,7 @@ export class PatientCrmController {
   @UsePipes(new ZodValidationPipe(createContactSchema))
   addContact(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('id') patientId: string,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) patientId: string,
     @Body() dto: CreateContactDto,
   ) {
     return this.patients.addContact(user, patientId, dto);
@@ -265,8 +283,8 @@ export class PatientCrmController {
   @UsePipes(new ZodValidationPipe(updateContactSchema))
   updateContact(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('id') patientId: string,
-    @Param('contactId') contactId: string,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) patientId: string,
+    @Param('contactId', new ZodValidationPipe(UuidParamSchema)) contactId: string,
     @Body() dto: UpdateContactDto,
   ) {
     return this.patients.updateContact(user, patientId, contactId, dto);
@@ -277,8 +295,8 @@ export class PatientCrmController {
   @ApiOperation({ summary: 'Remove a patient contact' })
   deleteContact(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('id') patientId: string,
-    @Param('contactId') contactId: string,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) patientId: string,
+    @Param('contactId', new ZodValidationPipe(UuidParamSchema)) contactId: string,
   ) {
     return this.patients.deleteContact(user, patientId, contactId);
   }
@@ -289,7 +307,7 @@ export class PatientCrmController {
   @UsePipes(new ZodValidationPipe(patientStatusTransitionSchema))
   updateStatus(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('id') patientId: string,
+    @Param('id', new ZodValidationPipe(UuidParamSchema)) patientId: string,
     @Body() dto: PatientStatusTransitionDto,
   ) {
     return this.patients.updateStatus(user, patientId, dto);

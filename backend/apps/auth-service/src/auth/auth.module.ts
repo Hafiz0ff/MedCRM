@@ -6,6 +6,13 @@ import { ScimController } from '../sso/scim.controller';
 import { SsoController } from '../sso/sso.controller';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthAuditService } from './services/auth-audit.service';
+import { AuthCookieService } from './services/auth-cookie.service';
+import { BootstrapService } from './services/bootstrap.service';
+import { LoginService } from './services/login.service';
+import { MfaService } from './services/mfa.service';
+import { RefreshTokenService } from './services/refresh-token.service';
+import { SessionService } from './services/session.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
@@ -23,6 +30,16 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
   ],
   controllers: [AuthController, SsoController, ScimController],
-  providers: [AuthService, JwtStrategy],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    LoginService,
+    RefreshTokenService,
+    SessionService,
+    MfaService,
+    BootstrapService,
+    AuthCookieService,
+    AuthAuditService,
+  ],
 })
 export class AuthModule {}

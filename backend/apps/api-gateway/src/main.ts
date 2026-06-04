@@ -25,6 +25,17 @@ async function bootstrap(): Promise<void> {
   validateEnv();
   const publicApp = await NestFactory.create(AppModule, { bufferLogs: true });
   const config = publicApp.get(ConfigService);
+
+  const isProd = config.get<string>('NODE_ENV') === 'production';
+  const privateHost = config.get<string>('API_GATEWAY_INTERNAL_HOST', '127.0.0.1');
+  const allowPublic = config.get<string>('ALLOW_PUBLIC_INTERNAL_GATEWAY') === 'true';
+
+  if (isProd && privateHost === '0.0.0.0' && !allowPublic) {
+    throw new Error(
+      'Fatal: API_GATEWAY_INTERNAL_HOST cannot be set to 0.0.0.0 in production without ALLOW_PUBLIC_INTERNAL_GATEWAY=true',
+    );
+  }
+
   const redis = publicApp.get<Redis>(REDIS_CLIENT);
   const origins = config.get<string>('CORS_ORIGINS', 'http://localhost:3002').split(',');
 
@@ -154,8 +165,10 @@ async function bootstrap(): Promise<void> {
   }
 
   const privatePort = config.get<number>('API_GATEWAY_INTERNAL_PORT', 3010);
-  await privateApp.listen(privatePort, '0.0.0.0');
-  console.log(`[Gateway] Private/Internal API Gateway listening on port ${privatePort}`);
+  await privateApp.listen(privatePort, privateHost);
+  console.log(
+    `[Gateway] Private/Internal API Gateway listening on host ${privateHost} port ${privatePort}`,
+  );
 }
 
 void bootstrap();

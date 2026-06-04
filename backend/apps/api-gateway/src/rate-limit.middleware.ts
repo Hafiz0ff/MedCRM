@@ -1,7 +1,7 @@
 import * as crypto from 'node:crypto';
 import { NextFunction, Request, Response } from 'express';
 import Redis from 'ioredis';
-import { GatewayRouteConfig, gatewayRoutes } from './gateway-route.config';
+import { gatewayRoutes } from './gateway-route.config';
 import { getClientIp } from './rate-limit/client-ip';
 import { RateLimitPolicy, RateLimitOptions } from './rate-limit/rate-limit.types';
 
@@ -13,9 +13,37 @@ const defaultMaxByPolicy: Record<RateLimitPolicy, number> = {
 };
 
 /**
- * Creates a production-grade fail-closed rate limiting middleware.
+ * Extracts userId and tenantId from Bearer token payload without checking signature.
+ * Useful for rate limiting before auth middleware has run.
+ */
+function getPrincipalFromToken(authHeader: string | undefined): {
+  userId?: string;
+  tenantId?: string;
+} {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return {};
+  }
+  try {
+    const token = authHeader.substring(7).trim();
+    const parts = token.split('.');
+    if (parts.length === 3) {
+      const payloadStr = Buffer.from(parts[1], 'base64').toString('utf8');
+      const payload = JSON.parse(payloadStr);
+      return {
+        userId: typeof payload.sub === 'string' ? payload.sub : undefined,
+        tenantId: typeof payload.tenant_id === 'string' ? payload.tenant_id : undefined,
+      };
+    }
+  } catch {
+    // Ignore decoding errors
+  }
+  return {};
+}
+
+/**
+ * Creates a production-grade strict Redis-only rate limiting middleware.
  * @param options RateLimitOptions configuration.
- * @param redis Optional Redis connection client.
+ * @param redis Redis connection client.
  */
 export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>, redis?: Redis) {
   const windowMs = options?.windowMs ?? 60_000;
@@ -27,9 +55,6 @@ export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>, r
   };
   const failOpenPolicies = options?.failOpenPolicies ?? ['public'];
   const trustedProxyCidrs = options?.trustedProxyCidrs ?? [];
-
-  // Memory fallback bucket storage (local/development only)
-  const memoryBuckets = new Map<string, { count: number; resetAt: number }>();
 
   return async function rateLimitMiddleware(
     req: Request,
@@ -48,13 +73,26 @@ export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>, r
     // 2. Resolve client IP address
     const clientIp = getClientIp(req, trustedProxyCidrs);
 
-    // 3. Resolve tenant context from headers
-    const tenantId = req.headers['x-tenant-id'] || (req.query && req.query['tenantId']) || 'public';
+    // 3. Resolve identity info (userId, tenantId)
+    const tokenInfo = getPrincipalFromToken(req.headers['authorization']);
+    const userId = tokenInfo.userId;
+    const tenantId =
+      tokenInfo.tenantId ||
+      req.headers['x-tenant-id'] ||
+      req.headers['X-Tenant-Id'] ||
+      (req.query && typeof req.query['tenantId'] === 'string' ? req.query['tenantId'] : '') ||
+      'public';
 
-    // 4. Construct rate limiting key
-    let key = `gateway:rate-limit:${policy}:${tenantId}:${clientIp}`;
+    // 4. Construct clientId
+    const clientIdParts = [
+      userId ? `user_${userId}` : '',
+      tenantId ? `tenant_${tenantId}` : '',
+      `ip_${clientIp}`,
+    ].filter(Boolean);
+    const clientId = clientIdParts.join(':');
 
     // 5. Append auth payload hashes if present
+    let hashSuffix = '';
     if (policy === 'auth' && req.body && typeof req.body === 'object') {
       if (req.body.email) {
         const emailHash = crypto
@@ -62,7 +100,7 @@ export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>, r
           .update(String(req.body.email))
           .digest('hex')
           .slice(0, 16);
-        key += `:email:${emailHash}`;
+        hashSuffix += `:email:${emailHash}`;
       }
       if (req.body.tenantCode) {
         const codeHash = crypto
@@ -70,19 +108,22 @@ export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>, r
           .update(String(req.body.tenantCode))
           .digest('hex')
           .slice(0, 16);
-        key += `:tenant:${codeHash}`;
+        hashSuffix += `:tenant:${codeHash}`;
       }
     }
 
     const envNode = process.env.NODE_ENV;
-    const envApp = process.env.APP_ENV;
-    const isLocalEnv = envNode === 'development' || envApp === 'local' || envNode === 'test';
+    const isProd = envNode === 'production';
+    const failOpenEnv = process.env.GATEWAY_RATE_LIMIT_FAIL_OPEN;
 
-    // 6. Redis Rate Limiter (with Fail-Closed enforcement)
+    // Determine fail-open behavior: production defaults to fail-closed, development defaults to fail-open
+    const shouldFailOpen = isProd ? failOpenEnv === 'true' : failOpenEnv !== 'false';
+
+    const minute = Math.floor(now / 60000);
+    const redisKey = `gateway:rate_limit:${policy}:${clientId}${hashSuffix}:${minute}`;
+
+    // 6. Redis Rate Limiter
     if (redis) {
-      const minute = Math.floor(now / 60000);
-      const redisKey = `${key}:${minute}`;
-
       try {
         const results = await redis
           .multi()
@@ -90,13 +131,18 @@ export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>, r
           .expire(redisKey, Math.ceil(windowMs / 1000))
           .exec();
 
-        if (!results || !results[0]) {
+        if (!results) {
           throw new Error('Redis transaction returned empty result');
         }
 
         const incrResult = results[0];
-        if (incrResult[0]) {
-          throw incrResult[0]; // Throw the connection/command execution error
+        if (!incrResult) {
+          throw new Error('Redis transaction returned no results');
+        }
+
+        const incrError = incrResult[0];
+        if (incrError) {
+          throw incrError;
         }
 
         const count = Number(incrResult[1]);
@@ -125,11 +171,11 @@ export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>, r
         }
 
         return next();
-      } catch (err: any) {
-        console.error(`Rate limit Redis failure for policy ${policy}:`, err.message || err);
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.error(`Rate limit Redis failure for policy ${policy}:`, errMsg);
 
-        // If Redis failed, verify if the policy is configured to fail open
-        if (failOpenPolicies.includes(policy)) {
+        if (shouldFailOpen || failOpenPolicies.includes(policy)) {
           return next();
         }
 
@@ -146,56 +192,19 @@ export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>, r
       }
     }
 
-    // 7. Memory fallback (strict check: local/development only)
-    if (!isLocalEnv) {
-      // If we are in production but Redis is not configured, we must fail closed for security
-      if (failOpenPolicies.includes(policy)) {
-        return next();
-      }
-
-      res.status(503).json({
-        success: false,
-        error: {
-          code: 'RATE_LIMIT_UNAVAILABLE',
-          message: 'Distributed rate limiting service is required in production',
-          requestId: req.headers['x-request-id'] || 'unknown',
-          timestamp: new Date().toISOString(),
-        },
-      });
-      return;
+    // 7. Enforce fail-closed when Redis is completely missing
+    if (shouldFailOpen || failOpenPolicies.includes(policy)) {
+      return next();
     }
 
-    // In-memory bucket counting for local environments
-    const existing = memoryBuckets.get(key);
-    const bucket =
-      existing && existing.resetAt > now ? existing : { count: 0, resetAt: now + windowMs };
-
-    bucket.count += 1;
-    memoryBuckets.set(key, bucket);
-
-    res.setHeader('X-RateLimit-Policy', policy);
-    res.setHeader('X-RateLimit-Limit', String(max));
-    res.setHeader('X-RateLimit-Remaining', String(Math.max(0, max - bucket.count)));
-    res.setHeader('X-RateLimit-Reset', String(bucket.resetAt));
-
-    if (bucket.count > max) {
-      res.status(429).json({
-        success: false,
-        error: {
-          code: 'RATE_LIMITED',
-          message: 'Too many requests',
-          details: {
-            policy,
-            limit: max,
-            resetAt: new Date(bucket.resetAt).toISOString(),
-          },
-          requestId: req.headers['x-request-id'] || 'unknown',
-          timestamp: new Date().toISOString(),
-        },
-      });
-      return;
-    }
-
-    next();
+    res.status(503).json({
+      success: false,
+      error: {
+        code: 'RATE_LIMIT_UNAVAILABLE',
+        message: 'Distributed rate limiting service is required',
+        requestId: req.headers['x-request-id'] || 'unknown',
+        timestamp: new Date().toISOString(),
+      },
+    });
   };
 }
